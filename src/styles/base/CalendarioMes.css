@@ -1,0 +1,67 @@
+.base-calendario-mes {
+  background: #232323;
+  border: 1px solid #383838;
+  border-radius: 6px;
+  padding: 10px;
+}
+.base-calendario-mes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.base-calendario-mes-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+.base-calendario-mes-nav {
+  background: transparent;
+  border: 1px solid #444;
+  color: #ccc;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.base-calendario-mes-nav:hover {
+  background: #333;
+  color: #fff;
+}
+.base-calendario-mes-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.base-calendario-mes-dia-semana {
+  text-align: center;
+  font-weight: 600;
+  font-size: 10.5px;
+  color: #888;
+}
+.base-calendario-mes-dia-vacio {
+  padding: 6px;
+}
+.base-calendario-mes-dia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 2px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: #ddd;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.base-calendario-mes-dia:hover {
+  background: #333;
+}
+.base-calendario-mes-dia-ocupado {
+  color: #888;
+}
+.base-calendario-mes-dia-seleccionado {
+  background: #1a56db;
+  color: #fff;
+  font-weight: 600;
+}

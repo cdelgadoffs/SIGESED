@@ -1,0 +1,40 @@
+.base-buscador-global {
+  position: relative;
+  display: inline-block;
+}
+.base-buscador-global-input {
+  width: 200px;
+  padding: 6px 12px;
+  padding-right: 30px;
+  border-radius: 6px;
+  border: 1px solid #3a3a3a;
+  background: #2a2a2a;
+  color: #f0f0f0;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.2s, width 0.2s;
+}
+.base-buscador-global-input::placeholder {
+  color: #888;
+}
+.base-buscador-global-input:focus {
+  outline: none;
+  border-color: #666;
+  width: 240px;
+}
+.base-buscador-global-limpiar {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #aaa;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 50%;
+  transition: color 0.2s, background 0.2s;
+}
+.base-buscador-global-limpiar:hover {
+  color: #f0f0f0;
+}

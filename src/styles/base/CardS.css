@@ -1,0 +1,82 @@
+.base-card-s {
+  background: #232323;
+  border: 1px solid #383838;
+  border-left: 4px solid #555;
+  border-radius: 4px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.base-card-s:hover {
+  background: #2d2d2d;
+  border-color: #555;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+.base-card-s-celebrada { border-left-color: #4caf50; }
+.base-card-s-no-celebrada { border-left-color: #f44336; }
+.base-card-s-proxima {
+  border-left-color: #551ffa;
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), #232323 55%);
+  border-color: rgba(255, 193, 7, 0.35);
+}
+.base-card-s-pendiente { border-left-color: #888; }
+
+.base-card-s-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.base-card-s-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.base-card-s-titulo {
+  font-weight: 600;
+  font-size: 13px;
+  color: #fff;
+}
+.base-card-s-subtitulo {
+  color: #aaa;
+  font-size: 12px;
+}
+.base-card-s-estado {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #262626;
+  color: #bbb;
+}
+.base-card-s-celebrada .base-card-s-estado { background: #1e3a22; color: #6fcf7a; }
+.base-card-s-no-celebrada .base-card-s-estado { background: #3a1e1e; color: #f47a6b; }
+.base-card-s-proxima .base-card-s-estado { background: #3a321e; color: #ffd54a; }
+.base-card-s-pendiente .base-card-s-estado { background: #262626; color: #bbb; }
+
+.base-card-s-eliminar {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.base-card-s-eliminar:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ff6b5e;
+}
+.base-card-s-eliminar:disabled {
+  color: #555;
+  cursor: default;
+}

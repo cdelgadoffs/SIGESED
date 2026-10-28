@@ -1,0 +1,239 @@
+# Arquitectura de SIGESED (Sistema Integral de Gestión Educativa)
+
+Este documento es el estándar obligatorio de arquitectura para este proyecto. Cualquier trabajo futuro (en este chat o en uno nuevo) debe seguirlo al pie de la letra. Si una instrucción del usuario parece contradecirlo, aplica la regla obligatoria de abajo.
+
+## Regla obligatoria: el estándar se respeta
+
+**El estándar no se rompe, ni siquiera cuando una petición lo pide.** Si una petición del usuario obliga a violar una regla de este documento o de `EstandarNodos.md` (una capa que importa lo que no debe, una excepción "solo por esta vez", un atajo que mezcla responsabilidades), **no se implementa tal cual**. En su lugar:
+
+1. **Se señala la regla que se rompería** y por qué.
+2. **Se buscan y se proponen alternativas que sí la respeten**, con sus ventajas y costos, e incluyendo una recomendación (precedente: las preferencias visuales persistentes no se guardaron desde `UIContext`, sino en su propio contexto-puente `AjustesVisualesContext`).
+3. **Se espera la decisión del usuario.** Solo si el usuario decide cambiar la regla misma, se modifica primero el estándar (en los dos `.md`) y después el código; nunca se hace una excepción silenciosa ni se implementa lo que lo viola "provisionalmente".
+
+La regla manda sobre la comodidad y sobre la rapidez: un estándar con excepciones deja de ser verificable.
+
+El estándar general, independiente de esta app, vive en `EstandarNodos.md`. Este documento es su aplicación a este proyecto, con precedentes concretos y el estado actual de cada flujo.
+
+Este proyecto usó antes un esquema de tres capas (`L1`/`L2`/`L3`, con metáfora de restaurante Michelín). Se reemplazó por el esquema de dos capas descrito abajo (`base`/`widgets`) por ser más directo y con una regla de pertenencia mecánica y verificable, en vez de depender de juicio caso por caso.
+
+## Referencias y origen
+
+- SIGESED se rediseña sobre el estándar y la arquitectura de la app de la Comisión Sustanciadora (`C:\Users\22H2\Desktop\csustanciadora`), de donde se copiaron el esqueleto, todos los `base/`, `hooks/`, `Topbar`, `AtenuadorPantalla`, `OpcionesNavegacion`, los contexts de interfaz y la estructura de `services/`. Ese repositorio es la **referencia visual de solo lectura**: nunca se escribe en él.
+- **Los precedentes citados en las secciones de arquitectura** (`MenuPrincipalSesion`, `FormularioPunto`, `CintaSesiones`, `Sidebar2`, `pages/panelcontrol/`, etc.) **son de esa app**: se conservan porque explican el porqué de cada regla, aunque el archivo no exista aquí.
+- El HTML anterior de SIGESED se perdió. Hay desarrollos en **Python/Streamlit** que se integrarán como módulos: nunca se copian tal cual; se **traducen** al patrón (reglas y cálculos → API/contrato y `LocalAPI/reglas.js`; datos → `context/`; pantalla → `widgets`/`base`).
+- **Datos de captura frecuente (asistencias, tareas asignadas): offline primero** (decisión del usuario, opción A). Pasan por el API como todo lo demás y terminan en la nube; se escriben al instante en la cola de `SesionIndexedDB` (estado `local` del `IndicadorSync`) y se sincronizan al haber conexión. `SesionIndexedDB` sigue sin ser fuente de verdad.
+- **JSON:** el API debe poder leer y escribir JSON (historias académicas, reportes, respaldos) mediante operaciones de exportar/importar en el contrato. Los documentos oficiales los arma el API; cómo persiste el servidor (archivos JSON o base de datos) no lo ve el cliente.
+
+## Las capas
+
+| Capa | Qué es |
+|---|---|
+| `Skeleton` | Instancia única y global, siempre presente, el fondo visual. |
+| `components/base/` | Átomos y moldes de layout puros. Ver regla mecánica abajo. |
+| `components/widgets/` | Todo lo que compone piezas de `base` y/o toca contexto directamente. |
+| `context/` | Almacén central de datos y acciones de negocio. |
+| `services/` | I/O externo: el API (intercambiable `LocalAPI`/`ServerConnection`) y el almacenamiento del cliente (`SesionIndexedDB`). Solo los llama `context/`. Ver "Arquitectura de datos". |
+| `pages/` | Ensambla una vista completa: monta sus propias instancias de `base`/`widgets` + contenido estático trivial. |
+| `App.jsx` | Decide qué page se sirve (routing vía `vistaActual`) y monta solo piezas verdaderamente globales que no pertenecen a ninguna page (hoy: `Sidebar4` y `AtenuadorPantalla`). |
+
+## La regla mecánica: `base` vs `widgets`
+
+**Un archivo es `base` solo si lo único que importa es: (1) su propio CSS, (2) React (hooks nativos como `useState`, `useEffect`, `useRef`, y `react-dom` para portales) y (3) hooks propios puros de `hooks/` (sin JSX, sin contexto, sin importar componentes). Si importa cualquier otra cosa — otro componente, un hook de contexto, `utils/`, `services/` — es `widget`.**
+
+Esto reemplaza cualquier juicio caso por caso. En concreto:
+
+- Importar **otro componente del proyecto** (sea de `base` o de `widgets`) → widget. Ej.: `Topbar` importa `BuscadorGlobal` y `FechaDia` → widget. `MenuPrincipalSesion` importa `BotonAgregar` → widget.
+- Importar **un hook de contexto** (`useUI`, `useProyecto`, `useAuth`) → widget. Ej.: `BotonSalirSesion` llama `useAuth()` → widget, aunque solo envuelva un único `BotonS`.
+- Un componente puede disparar ambas condiciones a la vez (compone Y toca contexto) — sigue siendo widget de todas formas, la regla no se acumula ni se pondera, con que dispare una basta.
+- Hooks nativos de React (`useState`, `useEffect`, `useRef`) para estado puramente local de UI **no** cuentan — ej. `FechaDia` usa `useState`/`useEffect` para el reloj y sigue siendo `base`.
+- Los hooks propios **puros** de `hooks/` tampoco cuentan — ej. `Sidebar1`, `PanelPrincipal` y `Sidebar5` importan `useScrollbarPersonalizada` y siguen siendo `base`. Un hook de `hooks/` es puro solo si únicamente importa React: en cuanto importe un contexto o un componente deja de serlo, y quien lo use pasa a ser `widget`.
+
+### `components/base/`
+- Recibe todo por props, incluyendo posicionamiento (`izquierda`, `arriba`, `ancho`, `abierto`) y slots genéricos (`children`, `accionesHeader` en `Sidebar5`, `botonCerrar` en `Sidebar2-5`) sin saber qué se le va a meter ahí.
+- **Nunca importa otro componente ni un hook de contexto** — eso es justo lo que lo mantiene `base` (ver regla mecánica). Lo único permitido fuera de su CSS es React y los hooks puros de `hooks/`.
+- Cada componente de `base` tiene su propio archivo CSS en `styles/base/`, que él mismo importa. No existen archivos CSS "compartidos" cargados globalmente desde `App.jsx` — cada uno es autosuficiente y se puede diferenciar de los demás sin tocar nada ajeno. Precedente: `Sidebar1.css` … `Sidebar5.css` son independientes entre sí, aunque visualmente compartan proporciones parecidas (duplicar esas ~10 líneas es preferible a una dependencia cruzada).
+- Un símbolo/ícono se vuelve **intrínseco** al componente (hardcodeado dentro de él, ej. un `<button>✕</button>` nativo escrito directamente en el JSX) cuando ese componente/variante tiene un único uso con un único significado en todo el proyecto. Precedente: el botón ✕ de cada Sidebar está escrito directamente en su propio JSX (no se importa un átomo compartido para eso), porque así el Sidebar no deja de ser `base`.
+- **"Cada mesa su propio mantel":** un componente de `base` se define una sola vez, pero cada page que lo necesita monta su **propia instancia** — nunca una instancia compartida entre pages. Esto es intencional: si una page no monta cierto componente, solo el fondo (`Skeleton`) debe quedar visible ahí — eso es comportamiento correcto del patrón, no un bug a parchear. `Sidebar4` tiene **dos usos**: la instancia **global** de `App.jsx` (no pertenece a ninguna page; hoy sin trigger) y las instancias **propias de una page** cuando el panel le pertenece a esa page (precedente: el panel "Información" de `Inicio`). Cambio de estándar decidido por el usuario (opción A, como en SIGEP): antes `Sidebar4` solo lo montaba `App.jsx`.
+- Una capacidad nueva (ej. un modo "expandible" con etiqueta en hover) se agrega a un componente de `base` **solo si es genuinamente reutilizable** por cualquier futuro consumidor — nunca para resolver la necesidad puntual de un solo lugar. Se implementa **opt-in vía prop**, sin cambiar el comportamiento por defecto de los consumidores existentes.
+
+### `components/widgets/`
+- Combina piezas de `base` y/o llama a los hooks de contexto directamente — nunca recibe esos datos por props desde una page.
+- No es obligatorio que un widget use átomos de `base` para calificar como tal — puede llamar contexto directamente sin componer nada más y ya calificar (ver regla mecánica arriba). Lo que **no** lo hace widget es tener varias piezas internas o estado propio de React si nada de eso importa otro componente ni contexto — eso sigue siendo `base` (precedente: `ListaExpandible` tiene toggle + menú flotante + lógica de posición/cierre, todo autocontenido con `useState`/`useRef`/`useEffect`, y es `base` porque no importa ningún componente ni contexto).
+- Cuando un widget necesita iterar una lista de sub-ítems (ej. un menú con N opciones), **la iteración vive en el mismo widget**, sin envolver cada ítem individual en su propio widget — eso sería sobre-abstracción. Precedente: `MenuPrincipalSesion` itera `VISTAS_MENU_PRINCIPAL` y pinta múltiples `BotonSeleccionableMenu` sin un wrapper por ítem; `MenuPanelControl` hace lo mismo con `ITEMS_PANEL_CONTROL`.
+- **Dos sabores de widget, sin clasificación aparte** (ambos viven en `components/widgets/` y cumplen la misma regla mecánica; es un criterio de diseño, no una capa):
+  - **Conectado:** llama a los hooks de contexto y contiene la lógica de su tarea concreta. Se elige cuando hace siempre lo mismo, con un único significado. Precedentes: `Topbar`, `MenuPrincipalSesion`, `FormularioPunto`, `CintaSesiones`.
+  - **Compuesto por props:** solo combina piezas de `base`, no toca contexto y recibe los manejadores desde fuera. Se elige cuando se reutiliza para comportamientos distintos. Precedentes: `OpcionesNavegacion` (recibe `onAnterior`/`onSiguiente`) y, antes, `SubMenuDD` (eliminado al quitar la clasificación por secciones). Un widget reutilizable **nunca** cambia su comportamiento según la page o la vista en la que está (no lee `vistaActual` para ramificar): cada consumidor le pasa lo que debe hacer y la lógica vive en el widget consumidor.
+- **Anfitrión / huésped:** quien aloja a otro componente (widget o page) controla **cuándo, dónde y cómo se ve**: visibilidad, hover, posición, qué botones se ocultan o se añaden (vía props/slots) y las reglas CSS que dependen del anfitrión (ej. `.anfitrion:hover .huesped { … }` va en el CSS del anfitrión, nunca en el del huésped; precedente: `MenuPrincipalSesion.css` con el botón "+" de "Proyecto del orden del día"). El huésped ejecuta su función propia y **no conoce a su anfitrión**. Un huésped conectado recibe del anfitrión solo **sobre qué actuar** (el dato) y cómo mostrarse, jamás la lógica de negocio; un huésped compuesto recibe los manejadores.
+- Cuando dos partes de un mismo widget necesitan aparecer en dos regiones visuales distintas del layout (ej. un botón en el header de Sidebar5 y su contenido en el body), y ambas piezas son instancias de componente separadas, el estado que las coordina **se levanta a `UIContext`** (nunca se intenta compartir estado local de React entre instancias distintas).
+- Un widget puede **controlar directamente una relación de comportamiento con un componente de `base`** sin necesitar que una page se la pase por props, siempre que la relación sea intrínseca a ese widget. Precedente: `Topbar` llama `useUI()` para obtener `toggleSidebar5` y dispara la apertura de `Sidebar5` él mismo (antes se pasaba `onToggleSidebar` desde cada page — era wiring redundante repetido 4 veces sin razón, porque `Topbar` ya es un widget con acceso legítimo a contexto).
+- Mismo criterio con el buscador: `Topbar` lee `terminoBusqueda`/`setTerminoBusqueda` de `useUI()` y se los pasa a su `base/BuscadorGlobal`; antes las 4 pages los leían y se los pasaban por props (wiring repetido sin razón).
+- Si una pieza que antes era un componente separado **solo se usa en un único lugar, con un único significado, y ese lugar ya es un widget con acceso legítimo a context**, se embebe directamente ahí en vez de mantenerla como componente aparte — construida a partir de átomos de `base` + el hook de contexto que necesite. Precedentes: el ☰ de `Topbar` (antes `BotonMenuLateral`) y el botón "Salir" de `Topbar` (antes `BotonSalirSesion`, un `BotonS` + `useAuth().cerrarSesion` envuelto en un componente propio) se eliminaron como componentes independientes y quedaron escritos directamente dentro de `Topbar.jsx`. Esto no aplica si la pieza se reutiliza en más de un lugar o si su consumidor no es ya un widget con esa relación de contexto.
+- Cada widget que necesita ajustes de estilo propios tiene su CSS en `styles/widgets/`, que él mismo importa.
+
+### Excepción documentada: `pages/panelcontrol/`
+Los archivos en `pages/panelcontrol/*.jsx` (ej. `CalendarizacionMensual.jsx`) **son, por rol, widgets** — llaman al contexto directamente y combinan piezas de `base` + comportamiento — pero viven en esa carpeta (no en `components/widgets/`) porque `MenuPanelControl` (el switcher genérico de Sidebar5) necesita referenciarlos con una forma específica: `export default` = contenido del body, `export function BotonX` = acción del header, ambos desde el mismo archivo.
+
+Esto es una excepción **acotada a esa carpeta**, no una redefinición general de qué es una "page". Las 4 pages reales (`Inicio`, `ProyectoOrdenDia`, `Sesion`, `Historial`) siguen siendo ensambladoras puras — nunca llaman a contexto para construir contenido de negocio, solo montan `base`/`widgets` ya armados. Si en el futuro se agrega otro ítem al panel de control, va en `pages/panelcontrol/OtroItem.jsx` siguiendo el mismo patrón.
+
+Estos archivos "de excepción" **solo son visibles/montables dentro de `Sidebar5`** (300–420px de ancho) — nunca se diseñan pensando en ancho completo de pantalla, y no se les monta contenido pensado para ese contexto (ej. `CintaSesiones`, que es de ancho completo, no pertenece ahí).
+
+### `pages/` — el ensamblador
+- Monta instancias de `base`/`widgets` + contenido estático trivial de la vista.
+- **No llama a contexto para construir contenido de negocio** — eso es trabajo de un widget. No es que no lea contexto en absoluto; lo que sí y no hace:
+  - **Sí lee `UIContext`** para cablear los `base` que monta (`abierto`, `onCerrar`, posiciones, etc.).
+  - **Sí lee valores simples de un context de negocio** para pasarlos como props a un `base` (ej. el título de la sesión a `Sidebar1`, el conteo de puntos al badge de `Sidebar2`).
+  - **No** recorre, filtra ni transforma datos de negocio, no arma tarjetas ni listas, y no llama a acciones de negocio (`agregarPunto`, `eliminarPunto`…). Todo eso es de un widget conectado, que habla con el contexto por sí mismo; la page solo lo monta.
+  - Si la page necesitara procesar datos de negocio para mostrarlos, esa parte es un widget. Los textos de presentación derivados del dato crudo (ej. "Reunión N° 3") los arma la page con una función de `utils/` (`encabezadoSesion` en `utils/sesiones.js`); el context solo expone el dato (`sesionSeleccionada`).
+- Contenido estático, trivial y único de una sola page (ej. un `<h1>` + texto placeholder) puede quedarse inline en la page sin volverse un widget — no toda page necesita un widget para su contenido si ese contenido no tiene relación de negocio que combinar.
+- **Quien monta un componente de `base` es quien wirea sus props estructurales** (`abierto`, `onCerrar`, etc.). Para `Sidebar1/5` eso son las 4 pages (cada una monta su propia instancia); `Sidebar3` solo lo monta `ProyectoOrdenDia` y `Sidebar2` solo `Sesion`. Para la instancia global de `Sidebar4` es `App.jsx`; para una instancia propia de una page (hoy el panel "Información" de `Inicio`), es esa page. Un widget puede **además** disparar una acción específica de negocio sobre ese mismo estado compartido (ej. `MenuPrincipalSesion` decide cuándo abrir `Sidebar3`) sin que eso le quite a quien monta el componente su responsabilidad de wirear el resto — son dos responsabilidades independientes sobre el mismo estado de `UIContext`.
+- **"Sal al gusto":** cuando una page necesita un ajuste de estilo puramente presentacional y de un solo uso sobre un componente reutilizable (ej. un margen para separarlo del borde), se aplica como `style` inline en un wrapper dentro de la page — **nunca** se modifica el CSS del componente compartido (eso filtraría el ajuste a todos los demás consumidores), y tampoco se crea un archivo CSS nuevo solo para una declaración estática (sobre-ingeniería).
+
+### `context/` — la despensa
+- Solo aquí vive el estado de negocio **en el cliente** (un espejo de lo que dice el API) y las acciones que lo mueven. Las **reglas** de negocio no viven aquí: viven del otro lado del puente (ver "Arquitectura de datos").
+- Los context exponen datos (`FECHAS_SESIONES`, `sesionActivaFecha`, `SECCIONES_DOCUMENTO`, etc.) y acciones (`agregarSesiones`, `cargarSesion`, etc.) — nunca lógica de presentación: ni tablas de menú, ni textos de interfaz, ni conteos para mostrar (el badge por sección se cuenta en el widget que lo pinta, a partir de `PUNTOS`).
+- Los context **de negocio** son los puentes hacia `services/`; `UIContext` **no** lo es (solo estado de interfaz, jamás llama a `services/`). Las **preferencias visuales persistentes** tienen su propio puente, `AjustesVisualesContext`, que es el único que llama a `services/AjustesVisuales.js` (ver "Estado actual de la capa de datos"): así `UIContext` se queda como estado transitorio de interfaz y la regla "solo `context/` toca `services/`" no tiene excepciones.
+- Las acciones son asíncronas: llaman a `services/api.js`, esperan la respuesta y actualizan el estado con **lo que el API devolvió**, nunca con lo que el cliente supone. Las acciones que pueden fallar lanzan el error hacia el componente que las disparó (el widget decide cómo mostrarlo); el context lleva el estado de carga y de error **por recurso** (catálogos, sesiones, puntos) y expone `cargando` (alguno en curso) y `error` (el primer fallo activo, con `mensaje`).
+- Nunca se llama a `services/` desde dentro de un updater de `setState` (efecto secundario dentro de una función pura — se ejecuta doble en StrictMode).
+
+### `services/` — los proveedores
+- I/O externo puro. Funciones async simples, sin JSX, sin conocimiento de React.
+- Solo los llama `context/`, nunca componentes directamente.
+- Estructura, nombres y responsabilidades en la sección "Arquitectura de datos" (abajo).
+
+## Arquitectura de datos: cliente / API intercambiable
+
+Estándar para todo proyecto de este tipo. Se desarrolla como **prototipo 100% front**, con un API simulado que se comporta como un servidor real, para que el usuario pruebe y se hagan ajustes antes de conectar. Al conectar, **no cambia nada fuera de `services/` y de la configuración**.
+
+```
+context/ (puente)  ──▶  services/api.js  ──▶  LocalAPI/          (prototipo: servidor simulado + su propia IndexedDB "LocalAPI")
+                    │                    └──▶  ServerConnection/  (producción: fetch al backend real)
+                    └─▶  services/SesionIndexedDB.js              (cliente, permanente en ambos modos)
+```
+
+### Quién controla qué
+- **API (fuente de verdad)** — todo lo que debe ser seguro, íntegro u oficial: identidad y roles, permisos, **confidencialidad** (el servidor no envía lo que el usuario no puede ver), validación de datos, estados derivados del reloj del servidor (`proxima`, `no-celebrada`), consecutivos oficiales (`numeroSesion`), unicidad (una sesión por fecha), transiciones de estado (celebrar es una operación atómica), inmutabilidad tras celebrar, IDs/timestamps/autoría, control de versiones (`version`), archivos, auditoría.
+- **Catálogos de dominio** (secciones, remitentes, etc.) — son **datos del API, no código**: el API ofrece un mecanismo genérico (`listarCatalogos()`) y cada proyecto carga sus propias filas (semilla), con atributos que llevan las reglas (ej. `requiereAcuerdo`). Así el API valida y aplica reglas sin conocer el proyecto, y es reutilizable. El cliente los lee vía context y los usa para pintar y para su validación de UX; **nunca** los hardcodea ni los duplica.
+- **Cliente** — la **estructura de la interfaz** (tablas de menú, textos, íconos) vive en el **widget** que la pinta (precedente: `ITEMS_PANEL_CONTROL` en `MenuPanelControl`, `VISTAS_MENU_PRINCIPAL` en `MenuPrincipalSesion`), nunca en el context ni en el API. Además: todo `UIContext`, borradores de formularios, validación de UX (deshabilitar "Añadir", mensajes inline — **duplica** la del servidor, nunca la reemplaza), presentación derivada (formato de etiquetas, agrupar por sección, contar badges, filtrar por mes), qué sesión está activa en pantalla, navegación.
+- **Regla de decisión:** si una regla "valida" o "calcula" algo oficial, va en el API. Si aparece en un context o un componente, es una señal de que está del lado equivocado del puente. Los datos **derivados** (estados, consecutivos) nunca se persisten: se calculan al leer.
+
+### Estructura de `services/`
+| Archivo / carpeta | Rol | ¿Sobrevive a la conexión real? |
+|---|---|---|
+| `api.js` | Único punto de entrada para `context/`. Elige la implementación según `VITE_API_MODE` y re-exporta las mismas operaciones. | Sí |
+| `ApiError.js` | Forma única de error (`{ codigo, mensaje }`) que ambas implementaciones lanzan. | Sí |
+| `LocalAPI/` | Servidor simulado: `index.js` (operaciones), `reglas.js` (validaciones, estados, permisos, usuario simulado), `semilla.js` (filas iniciales de los catálogos del proyecto), `db.js` (su propia IndexedDB, nombre `LocalAPI`). | **No** — se borra la carpeta completa al conectar |
+| `ServerConnection/` | Cliente del backend real. Mismas firmas que `LocalAPI`. | Sí (es el real) |
+| `AjustesVisuales.js` | `localStorage` **del cliente** (clave `ajustesVisuales`, un objeto JSON): preferencias visuales del usuario (hoy `brilloPantalla`) para que sobrevivan a las recargas. Solo lo llama `AjustesVisualesContext`. Nunca guarda datos de negocio; lee y escribe con `try/catch` (si el almacenamiento está bloqueado, la app sigue con los valores por defecto). | Sí, siempre |
+| `SesionIndexedDB.js` | IndexedDB **del cliente** (nombre `SesionIndexedDB`): `borradores` (formularios sin confirmar), `cache` (última copia conocida para abrir rápido) y a futuro `cola` (escritura offline). **Nunca es fuente de verdad**: si discrepa del servidor, gana el servidor. | Sí, siempre |
+
+- **Dos bases distintas, dos roles**: `SesionIndexedDB` es del producto final; `LocalAPI` es el servidor de mentira. No se mezclan nunca.
+- **Interruptor**: `.env.development` → `VITE_API_MODE=local`; `.env.production` → `VITE_API_MODE=real` (+ `VITE_API_URL`). Se decide **al compilar** (Vite reemplaza la variable y el build de producción no incluye `LocalAPI`). Todo lo `VITE_*` queda visible en el bundle: nunca poner secretos ahí.
+- **Contrato**: `docs/CONTRATO_API.md` — firmas, modelo de datos, errores y reglas. Es lo que se congela y lo que el backend implementa; `LocalAPI` y `ServerConnection` son gemelos que lo cumplen. Cualquier cambio de contrato se hace primero en ese documento.
+- **`LocalAPI` debe comportarse como un servidor**, no como un almacén: las reglas viven en `LocalAPI/reglas.js`, nunca en el context ni en componentes; operaciones atómicas (nunca "guardar todo"); todo async y puede fallar con `ApiError`.
+- **Límites del modo local**: la seguridad real y el multiusuario no se pueden probar ahí (todo está en el navegador). Sirve para validar flujo y contrato.
+
+### Estado de sincronización (`IndicadorSync`)
+- Cada dato que el context entrega lleva `sincronizacion`: `'servidor'` | `'local'` | `'error'`. **Lo pone el cliente** (el context/la cola), no el API. Hoy todo es `'servidor'`; `'local'` aparecerá con la cola offline.
+- `base/IndicadorSync.jsx` es el átomo que lo pinta (ícono + tooltip intrínsecos); los widgets lo montan.
+
+### Borradores
+- Un widget con formulario guarda su borrador **vía el context** (`guardarBorrador`/`obtenerBorrador`/`eliminarBorrador`), nunca llamando a `SesionIndexedDB` directo (es un widget; solo `context/` toca `services/`).
+- Clave por contexto de uso (ej. `formularioPunto:<seccion>`); se guarda con debounce, se restaura al abrir y se elimina cuando el formulario queda vacío (tras añadir o borrar). Hasta que termina la restauración no se guarda nada, para no pisar el borrador existente.
+
+### `utils/` — datos y funciones de referencia puros
+- Constantes/funciones **estáticas y reutilizables sin estado**, sin JSX, sin conocimiento de React ni de contexto (ej. `MESES`, formateo de fechas). No es "estado de negocio" (eso es `context/`) ni I/O externo (eso es `services/`) — es la tercera categoría: datos de referencia que cualquier capa puede necesitar.
+- **No se duplica el mismo dato/función en dos archivos porque cada uno lo necesita.** Si tanto `context/` como un `widget` necesitan lo mismo (precedente: `MESES` estaba hardcodeado igual en `ProyectoContext.jsx` y en `CintaSesiones.jsx`), se extrae una sola vez a `utils/` y ambos importan de ahí — nunca se decide "cuál de los dos es el dueño", porque ninguno lo es.
+- Lo importan `context/` y `components/widgets/` libremente. `components/base/` **no** lo importa (sus únicas dependencias permitidas son CSS, React y hooks puros — ver regla mecánica): si un `base` necesitara un dato o función de `utils/`, o se le pasa por props, o ese componente es en realidad un `widget`.
+- **Generación de documentos (decidido, `EstandarNodos.md` §8, antes pendiente 14.2):** constructor puro en `utils/` cuando se arma con datos que el cliente ya tiene (precedente: `utils/ordenDia.js` + `widgets/BotonDescargar`); lo genera el API si es oficial (se guarda, adjunta, envía o audita) o necesita datos solo del servidor.
+- **`LocalAPI` no importa `utils/`** (se borra al conectar): para formatear usa la plataforma, no copias de datos del cliente (precedente: `fechaEnTexto` de `LocalAPI/reglas.js` usaba `Intl.DateTimeFormat('es-MX')` en vez de una lista de meses propia; se eliminó cuando la frase de las actas pasó al cliente). Si el texto necesita algo que la plataforma no da (ej. ordinales en letras), **el API entrega los datos y el cliente redacta** (precedente: actas pendientes).
+
+### `hooks/` — comportamiento reutilizable con React
+- Hooks propios que encapsulan **lógica con estado/efectos/refs** reutilizable por varios consumidores (precedente: `useScrollbarPersonalizada`), sin JSX.
+- **Puros:** solo importan React. Nunca importan un contexto, un componente, `utils/` ni `services/`. Por eso los puede importar tanto `base/` como `widgets/` sin cambiar la clasificación de nadie.
+- Comparten la **lógica**, no el marcado: cada consumidor pone su propio JSX y CSS (ver "Scrollbars minimalistas"). Un hook que necesite contexto no va aquí: es lógica de un widget y vive en él.
+- No es `utils/` (que no tiene React ni estado) ni `context/` (estado de negocio compartido): un hook tiene estado propio **por instancia**.
+
+### `App.jsx`
+- Decide el routing (`vistaActual` → `PAGES` map) y monta las piezas verdaderamente globales que no pertenecen a ninguna page (hoy `Sidebar4` y `widgets/AtenuadorPantalla`, la capa de brillo, que es global y no pertenece a ninguna page).
+- No conoce el estado interno de ninguna page ni de Sidebar5 — esa lógica de cierre/reset vive centralizada en `UIContext` (ver `toggleSidebar5`/`cerrarSidebar5`), nunca duplicada en cada page ni empujada a `App.jsx`.
+- Si en el futuro un widget gana una relación propia con `Sidebar4` (ej. algo que lo abra, como ya pasa con `Topbar`→`Sidebar5`), `App.jsx` pierde el control de esa apertura específica, pero conserva el montaje y el cierre — porque sigue siendo la única pieza que `App.jsx` hospeda. "Controlar la apertura" y "montar el componente" son responsabilidades independientes.
+
+## Otras reglas transversales
+
+- **Nombres repetidos entre carpetas no chocan.** `widgets/X.jsx` y `pages/panelcontrol/X.jsx` pueden coexistir con el mismo nombre base — la ruta completa los distingue, y refuerza que cada carpeta tiene una responsabilidad distinta aunque el nombre coincida.
+- **CSS con altura fija cuando otros elementos dependen de ella.** Si un componente (ej. `CintaSesiones`) va a ser usado por otros componentes para calcular offsets de posición (`arriba`, `ALTO_*`), su altura debe ser explícita (`height` + `box-sizing: border-box`), nunca auto/dependiente de contenido — de lo contrario cualquier cambio de contenido desalinea todo lo que se posiciona en base a esa constante.
+- **Sin sobre-ingeniería.** No crear abstracciones, wrappers, archivos CSS o capas nuevas para necesidades hipotéticas o de un solo uso. Tres líneas parecidas son mejor que una abstracción prematura.
+- **Sin comentarios en el código**, salvo que el usuario lo pida explícitamente para un caso puntual.
+
+## Flujo de trabajo de planificación (antes de implementar)
+
+Antes de escribir código para cualquier funcionalidad nueva (no aplica a preguntas conceptuales, ni a fixes triviales ya acordados explícitamente en la misma conversación), primero se explica en texto el flujo de cómo se va a construir:
+
+- Qué capas se van a tocar (`base`, `widgets`, `context`, `services`, `utils`, `pages`) y por qué cada una.
+- Qué archivos se crean y cuáles se modifican.
+- El orden en que se harán los cambios.
+
+No se escribe ni edita código todavía en ese punto — es una explicación previa, para poder detectar inconsistencias con el patrón antes de escribir una sola línea (mismo criterio ya aplicado informalmente en features anteriores: Calendarización Mensual, FormularioPunto). Se espera confirmación explícita del usuario sobre ese flujo antes de empezar a implementar.
+
+## Flujo de trabajo de verificación
+
+1. `npm run build` primero, siempre.
+2. Para verificar UI: `npm install --no-save playwright-core` (confirmar con `ls` que cae en la carpeta correcta del proyecto), dev server con `nohup npm run dev -- --port <N> --strictPort --force &`, y un script `.cjs` con Playwright usando Edge del sistema (`C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe` como `executablePath`, ya que el Chromium embebido falla detrás del proxy corporativo).
+3. Limpiar siempre al final: borrar el script, los screenshots, `node_modules/playwright-core`, y matar el dev server (en Windows: `Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'vite.*<puerto>' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`; `pkill` no existe en este entorno).
+
+
+## Scrollbars minimalistas
+
+- `base/Scrollbar.jsx` — nuevo átomo (`<div className="base-scrollbar">{children}</div>`, `overflow-y: auto`, estilo delgado/discreto en `styles/base/Scrollbar.css`). **Solo lo importan `pages/` o `widgets/`**, nunca otro `base/*` — si un `base` existente lo importara, se volvería `widget` por la regla mecánica, así que es exclusivamente para contenido scrollable nuevo que se ensambla desde una page o un widget.
+- **`index.css`** (`html`/`body`) tiene `overflow: hidden` — sin esto, el navegador agregaba su propia scrollbar de página completa por encima de las de cada panel, porque el shell de esta SPA es 100% `position: fixed` y cada panel maneja su propio scroll interno; el `body` nunca debe scrollear por sí mismo.
+- **La personalización de `::-webkit-scrollbar` (ancho/color) se descartó** porque Windows tiene una opción de accesibilidad ("Mostrar siempre las barras de desplazamiento") que, si está activada, fuerza a Chromium/Edge a dibujar la scrollbar nativa del sistema (gruesa, con flechas) **ignorando** esas reglas CSS por completo. La única forma de garantizar el look minimalista sin depender de esa configuración del usuario es no confiar en la scrollbar nativa en absoluto.
+- **`hooks/useScrollbarPersonalizada.js`** (primer contenido real de `hooks/`) — scrollbar 100% construida por la app: oculta la nativa de verdad (`scrollbar-width: none` + `::-webkit-scrollbar { display: none }`, que sí funcionan siempre, a diferencia de solo *personalizarla*) y dibuja un thumb propio (`div` absoluto) sincronizado por `onScroll`, `ResizeObserver` (cambios de tamaño del contenedor) y `MutationObserver` (cambios de contenido interno, ej. cuando `PUNTOS` carga async desde IndexedDB y el `ResizeObserver` no lo detecta porque el contenedor en sí no cambia de tamaño). Soporta arrastrar el thumb con el mouse. Se extrajo a `hooks/` desde el primer momento (no se esperó a un "segundo consumidor") porque nació con 4 consumidores simultáneos: `Sidebar1`, `PanelPrincipal`, `Sidebar5` (todos `base`, usan el hook directo, nunca importan `Scrollbar.jsx` porque eso los volvería `widget`) y `FormularioPunto` (`widget`, podría importar `Scrollbar.jsx` pero usa el hook directo igual, para no añadir un wrapper extra sobre su `key={form.seccion}`/animación ya existentes).
+- El thumb en fondo claro usa `rgba(0,0,0,0.15)`; en `Sidebar5` (fondo oscuro) usa `rgba(255,255,255,0.2)` — mismo patrón, clase con nombre distinto (`base-sidebar5-scrollbar-thumb`) para no chocar con el resto.
+- `base/Scrollbar.jsx` (el wrapper genérico) sigue existiendo para contenido scrollable **nuevo** que una page/widget quiera montar desde cero — los 4 contenedores que ya scrolleaban antes de este trabajo no lo importan, duplican el patrón (misma lógica del hook, JSX propio) para no romper su clasificación de capa ni su layout ya afinado.
+
+
+## Estado actual del plantel único y el Panel de control (referencia funcional)
+
+- **Un solo plantel por instalación** (decisión del usuario, opción A; reemplazó al CRUD de varios planteles). En el API es un registro único: `obtenerPlantel()` (`null` sin configurar) y `guardarPlantel(version, datos)` (crea o reemplaza, con `CONFLICTO`). El plantel no tiene `estatus` ni se elimina. Personal y estudiantes **no llevan `plantelId`**: crearlos sin plantel da `PLANTEL_NO_CONFIGURADO` (`exigirPlantel` en `reglas.js`).
+- **`LocalAPI` `DB_VERSION` 2:** almacén `unicos` (clave `plantel`). La actualización desde la v1 **borra** planteles, personal, estudiantes y contador de matrícula, y reescribe los catálogos (decisión del usuario: empezar en blanco). Se quitó el catálogo `estatusPlantel`.
+- **Panel de control (`Sidebar5`):** `widgets/MenuPanelControl` (tabla `ITEMS_PANEL_CONTROL`, igual que en la app de referencia) con "Datos del plantel" → `pages/panelcontrol/DatosPlantel.jsx` (excepción documentada): formulario con `MarcoFormulario` en modo `oscuro` (prop opt-in nueva: etiquetas, errores, borde y botones para fondo oscuro), ensancha `Sidebar5` a 420 px mientras está montado (`sidebar5Ancho`), borrador `datosPlantel` mientras no exista el plantel, "Guardar" vuelve al menú del panel y "Cancelar" también. `UIContext` tiene `panelControlActivo`, `sidebar5Ancho` y `abrirPanelControl(id)` (abre `Sidebar5` en un ítem); `cerrarSidebar5`/`toggleSidebar5` reinician el ítem. Todas las pages montan `MenuPanelControl`.
+- **Context:** `RegistrosContext` expone `PLANTEL` (objeto o `null`, con caché) y `guardarPlantel(datos)` (manda la `version` que tiene; con `CONFLICTO` recarga).
+- **Pages:** `Sidebar1` titula con el nombre del plantel y subtitula "CCT …" (o "SIGESED" / "Sistema Integral de Gestión Educativa" sin plantel); la page solo pasa ese valor.
+- **Formularios de personal y estudiantes:** sin selector de plantel; sin plantel muestran "Configura los datos del plantel para poder registrar." con un botón "Ir al Panel de control" (`abrirPanelControl('plantel')`) y no dejan añadir.
+
+## Estado actual de los ciclos escolares (referencia funcional)
+
+Equivalente a la calendarización anual de SIGEP (solo consulta), simplificado. Contrato en `docs/CONTRATO_API.md` ("Ciclo escolar").
+
+- **Dato:** cada año tiene 3 cuatrimestres divididos en 2 módulos de 2 meses: 6 ciclos `AAAA-1` … `AAAA-6` (el `id` es la nomenclatura). **Sin fechas** (decisión del usuario: el calendario cambia con frecuencia; solo se sabe `duracionMeses: 2`), así que no hay estados por reloj (actual/concluido). La regla (6 por año, 2 meses) vive en `LocalAPI/reglas.js` (`ciclosDelAnio`, `ordenarCiclos`).
+- **API:** `listarCiclos()` y `crearCiclosAnuales(anio)` (año entero 2000–2100; idempotente: solo crea los que faltan; devuelve todos). Almacén `ciclos`, `DB_VERSION` 6. `ServerConnection`: `NO_IMPLEMENTADO`.
+- **Context:** `RegistrosContext` tiene el recurso `ciclos` (caché como los demás), `CICLOS`, `crearCiclosAnuales(anio)` y el ciclo activo en pantalla: `cicloActivoId` (el elegido con `seleccionarCiclo`; por omisión, el primero del año en curso o el primero que exista). Elegir un ciclo **solo lo marca** por ahora (decisión del usuario): servirá cuando haya datos por ciclo.
+- **Panel de control:** ítem "Calendarización anual" → `pages/panelcontrol/CalendarizacionAnual.jsx` (excepción documentada; CSS en `styles/pages/panelcontrol/`): ensancha `Sidebar5`, año con `OpcionesNavegacion` (el en curso por omisión), botón "Crear calendarización anual de ciclos escolares" (se oculta si el año ya tiene sus 6; duplica como UX la regla del API) y los ciclos del año como `base/CardS` (el activo con "Activo"; un clic lo elige).
+- **`widgets/CintaCiclos`** (renombre y adaptación de `CintaSesiones` de la referencia, CSS propio con altura fija de 50 px, `ALTO_CINTA` en `UIContext`): `OpcionesNavegacion` para cambiar de año, `ListaExpandible` con los años ("Ciclos 2026"), los ciclos del año con `base/FechasSesiones` (el activo en azul, `estado` `proxima`; el resto gris) y "volver al ciclo activo" cuando se mira otro año. **Solo la monta `Inicio`** (decisión del usuario), que baja su `Sidebar1` y su panel `ALTO_TOPBAR + ALTO_CINTA`.
+
+## Estado actual de Registros (referencia funcional)
+
+CRUD de personal administrativo y estudiantes. Contrato en `docs/CONTRATO_API.md`.
+
+- **Menú (`widgets/MenuPrincipal`, en `Sidebar1`):** "Inicio" y "Registros", contraíble como en SIGEP (decisión del usuario): "Registros" no es una vista, es un `BotonSeleccionableMenu` `expandible` que abre o cierra el grupo (activo si la vista es uno de sus hijos; empieza abierto); el estado vive en `UIContext.registrosAbierto` porque cada page monta su propia instancia del menú (como `acordeonAbierto` en SIGEP). Debajo, `widgets/SubMenuDD` (compuesto por props, copiado de SIGEP con su CSS: línea gris a la izquierda, `variante="submenu"`) con Personal administrativo y Estudiantes, badge con el total y un "+" que aparece **al pasar el cursor por cualquier fila** (no solo la activa; siempre visible en pantallas táctiles; regla de anfitrión en `SubMenuDD.css`); el "+" cambia a esa vista y abre el formulario nuevo. Tabla `ITEMS_MENU_PRINCIPAL` (con `hijos`) en el widget. Ids de vista: `inicio`, `personal`, `estudiantes`.
+- **Personal administrativo (decisión del usuario):** solo Nombre(s), Apellido paterno, Apellido materno, Teléfono, Correo y Género; obligatorios nombre, apellido paterno y género. **Género con `BadgeDinamico`**, como en `FormularioInvitado` de la Comisión Sustanciadora: siempre tiene valor (empieza en el primero del catálogo, Mujer), alterna con cada clic (Mujer morado `ri-women-line` ⇄ Hombre azul `ri-men-line`) y va sin etiqueta a la derecha de Nombre(s) (`FormularioPersonal.css`); la tabla de estilo es `estiloGenero` de `utils/registros.js` (la usan formulario, lista y ficha). **Roles (decisión del usuario):** catálogo `roles` con el atributo `maximo` (Administrador TI y Director, 1; Coordinador educativo, Administrador escolar, Docente y Secretario, sin límite: `null`); `Personal.roles` es una lista de ids, **al menos uno**. El API valida la lista (`tipo: 'lista'` en la especificación, `validarLista`: ids del catálogo, sin repetidos, en el orden del catálogo) y el máximo contra las demás personas (`validarRolesDisponibles` → `ROL_OCUPADO` con el nombre de quien lo tiene). En `FormularioPersonal` (en `Sidebar3`, al registrar y al editar) un `base/Checkbox` por rol en dos columnas (`FormularioPersonal.css`); validación de UX duplicada: un rol lleno se **bloquea** (deshabilitado con el nombre del titular entre paréntesis; para pasarlo, primero se le quita a esa persona). La ficha muestra los roles como badges azules. `DB_VERSION` 5 reescribe los catálogos y deja `roles: []` al personal existente (se exige al editarlo); `listarPersonal` también entrega `[]` si falta. `useFormularioRegistro` conserva los campos de lista (no los convierte a texto) y compara con JSON para decidir si hay borrador.
+- **Estudiantes (decisión del usuario):** solo Nombre(s), Apellido paterno, Apellido materno, Teléfono, Correo, Programa educativo, Tiempo y Modalidad (obligatorios nombre, apellido paterno y los tres catálogos; sin género). Catálogos `programasEducativos` (Bachillerato, Licenciatura en Pedagogía), `tiempos` (1 año, 2 años, 3 años, Exprés) y `modalidades` (Sabatino, Semanal, Online). **Matrícula del API** (`generarMatricula` en `reglas.js`): 2 letras del apellido paterno + 1 del materno + 1 del primer nombre + 6 dígitos aleatorios (`LORA482913`), sin acentos, Ñ → `X`, sin materno → `X`, paterno de una letra completado con `X`; única (reintenta) y **fija** (no cambia al editar el nombre; decisión del usuario). Se muestra en la ficha (badge gris `ri-id-card-line`) y deshabilitada en el formulario de edición; el buscador también la encuentra.
+- **Campos compartidos:** `primerApellido`/`segundoApellido` se etiquetan "Apellido paterno/materno". **Foco y mayúsculas** en los dos formularios: al abrir `Sidebar3` y tras cada "Añadir", el foco va a Nombre(s) (`base/CampoTexto` ganó, opt-in, `enfocar`: enfoca cada vez que cambia a un valor verdadero); nombre y apellidos se normalizan a mayúscula inicial en cada palabra (también tras guion, el resto en minúscula): **regla del API** (`capitalizar` en la especificación, que además colapsa espacios) duplicada como UX mientras se escribe con `capitalizarPalabras` de `utils/texto.js`.
+- **Pages:** `Inicio` (texto estático), `Personal` y `Estudiantes`, cada una con su propio `Sidebar1`, `Sidebar2`, `Sidebar3` (formulario), `Sidebar5` (panel de control) y `PanelPrincipal`. La page arma el badge de `Sidebar3` ("Nuevo estudiante"/"Editar estudiante").
+- **Lista en `Sidebar2` y ficha en el panel (decisión del usuario, reemplazó a las tablas):** cada page monta su propio `Sidebar2` siempre abierto (`mostrarCerrar={false}`), entre `Sidebar1` y `Sidebar3` (la page calcula las posiciones con `ANCHO_SIDEBAR2`); encabezado con el nombre de la lista y el total y, en `accionesHeader`, un `base/BotonIcono` "+" que llama `abrirNuevoRegistro`. `widgets/ListaPersonalSidebar` y `widgets/ListaEstudiantesSidebar` (conectados, CSS y scrollbar propios con `useScrollbarPersonalizada`): un `BotonSeleccionableMenu` por registro con "Nombre Apellidos" (`nombreCompleto`), filtrado por el buscador (`filtrarPersonas`: nombre, teléfono, correo y matrícula); en personal, las mujeres en morado en hover y activo (regla de anfitrión copiada de `ListaInvitados` de la referencia). La selección es `UIContext.registroSeleccionadoId` (lista y ficha están en regiones distintas; se limpia al cambiar de vista); sin selección válida el activo es el primero (`registroActivo`). `widgets/FichaPersonal` y `widgets/FichaEstudiante` (conectados, CSS propio) ocupan el `PanelPrincipal`: `base/Card` con nombre, badge (género o matrícula) e `IndicadorSync`, los datos y `OpcionesRegistro` (Editar abre `Sidebar3`, Eliminar con confirmación; la selección cae al primero). Tras "Añadir" el nuevo queda seleccionado. Se borraron `ListaPersonal`, `ListaEstudiantes`, `base/Tabla` y `MarcoLista`.
+- **API (`LocalAPI`, `DB_VERSION` 6):** catálogos por datos (`nivelesEducativos`, `turnos`, `generos`, `roles`, `programasEducativos`, `tiempos`, `modalidades`). Reglas en `reglas.js` con una especificación por entidad (`prepararRegistro`, solo campos de texto): obligatorios, longitud, formato (teléfono, correo, CCT), referencias a catálogo, normalización de nombres, matrícula y `version` (`CONFLICTO`). La v3 → v4 reescribe los catálogos, **borra los estudiantes** (decisión del usuario) y quita el almacén `contadores`; la v2 → v3 había quitado CURP, puesto y estatus del personal. Usuario simulado con rol `administrador`.
+- **Context (`RegistrosContext`):** puente de negocio; caché primero y servidor después; carga y error **por recurso** (`CARGA`), `cargando`, `error`; acciones `crear/editar/eliminar` por entidad (crear y editar vuelven a pedir la lista, porque el orden lo da el API; con `CONFLICTO` recarga); borradores. Cada registro lleva `sincronizacion: 'servidor'`.
+- **`base` nuevos:** `CampoFormulario` (etiqueta, `*` de obligatorio, error, `medio` para media fila). `CampoTexto` ganó, opt-in, `tipo` (`email`, `tel`…) y `enfocar`.
+- **`hooks/useFormularioRegistro`** (puro: las funciones de borrador le llegan como parámetros): estado del formulario, carga del registro en edición, restauración y guardado del borrador con debounce (solo en modo nuevo) y `apertura` (para atar los errores a la apertura del panel).
+- **Widgets compuestos por props:** `MarcoFormulario` (campos en filas que envuelven, error, Cancelar/Añadir-Guardar, scrollbar propia, `oscuro` opt-in; estiliza `ListaExpandible` como anfitrión) y `OpcionesRegistro` (Editar/Eliminar con confirmación en `Modal` y el error del API dentro).
+- **Formularios (`FormularioPersonal`, `FormularioEstudiante`):** validación de UX duplicada en `utils/validaciones.js`; tras "Añadir" se quedan abiertos y vacíos; al guardar una edición se cierran.
+- **Puerto 5181** (`vite.config.js`, `strictPort`): IndexedDB y `localStorage` van por origen; no compartir puerto con la Comisión Sustanciadora (5180) ni con SIGEP (5173).
+
+## Pendientes
+
+- Exportar/importar JSON (historias académicas, reportes, respaldos) en el contrato y el API.
+- Módulos de asistencias y tareas asignadas con escritura offline primero (cola en `SesionIndexedDB`).
+- Integración de los desarrollos en Python/Streamlit.
+- Autenticación real (`AuthContext` está en esqueleto) y roles.
+- `Sidebar4` global sin trigger.
+- **Perfil tipo blog del personal (pospuesto por el usuario hasta tener más datos, como los grupos asignados):** convertir `FichaPersonal` en perfil con encabezado (avatar de iniciales por género, contacto, Editar/Eliminar) y un muro cronológico de entradas: notas manuales (nuevo registro de API: persona, texto, fecha y autor del servidor), movimientos automáticos derivados al leer (alta, datos actualizados), luego adjuntos y formato (TipTap), y a futuro grupos, asistencias y tareas. Alternativa considerada: pestañas Datos · Bitácora · Documentos.

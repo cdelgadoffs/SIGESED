@@ -1,0 +1,18 @@
+.widget-formulario-personal-fila {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.widget-formulario-personal-genero {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.widget-formulario-personal-roles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  padding-top: 2px;
+}

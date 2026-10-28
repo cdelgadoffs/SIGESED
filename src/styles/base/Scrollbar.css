@@ -1,0 +1,26 @@
+.base-scrollbar-wrap {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+.base-scrollbar {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.base-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.base-scrollbar-thumb {
+  position: absolute;
+  right: 2px;
+  width: 6px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.base-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+}

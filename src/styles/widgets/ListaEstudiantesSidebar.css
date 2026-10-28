@@ -1,0 +1,37 @@
+.widget-lista-estudiantes-sidebar-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+}
+.widget-lista-estudiantes-sidebar {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.widget-lista-estudiantes-sidebar::-webkit-scrollbar {
+  display: none;
+}
+.widget-lista-estudiantes-sidebar-mensaje {
+  margin: 8px 16px;
+  font-size: 12.5px;
+  color: #999;
+}
+.widget-lista-estudiantes-sidebar .base-boton-seleccionable-menu > span:nth-child(2) {
+  min-width: 0;
+}
+.widget-lista-estudiantes-sidebar-nombre {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.widget-lista-estudiantes-sidebar-thumb {
+  position: absolute;
+  right: 2px;
+  width: 6px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}

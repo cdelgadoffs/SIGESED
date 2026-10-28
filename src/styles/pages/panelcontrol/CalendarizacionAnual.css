@@ -1,0 +1,32 @@
+.panelcontrol-calendarizacion-anual {
+  margin: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.panelcontrol-calendarizacion-anual-volver {
+  align-self: flex-start;
+}
+.panelcontrol-calendarizacion-anual-anio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.panelcontrol-calendarizacion-anual-anio-texto {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+.panelcontrol-calendarizacion-anual-nota {
+  margin: 0;
+  font-size: 12.5px;
+  color: #aaa;
+}
+.panelcontrol-calendarizacion-anual-error {
+  color: #ff8a80;
+}
+.panelcontrol-calendarizacion-anual-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

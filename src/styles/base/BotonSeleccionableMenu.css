@@ -1,0 +1,98 @@
+.base-boton-seleccionable-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  font-size: 12.5px;
+  color: #1a1a1a;
+  transition: all 0.15s;
+  font-weight: 400;
+}
+.base-boton-seleccionable-menu:hover:not(.base-boton-seleccionable-menu-deshabilitado) {
+  background: #e8f0fe;
+  border-left-color: #1a56db;
+  color: #1a56db;
+}
+.base-boton-seleccionable-menu-activo {
+  border-left-color: #1a56db;
+  background: #e8f0fe;
+  color: #1a56db;
+  font-weight: 700;
+}
+.base-boton-seleccionable-menu-deshabilitado {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.base-boton-seleccionable-menu-punto {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+.base-boton-seleccionable-menu-activo .base-boton-seleccionable-menu-punto {
+  opacity: 1;
+}
+.base-boton-seleccionable-menu-badge {
+  background: #e0e0e0;
+  border: 1px solid #c4c4c4;
+  border-radius: 10px;
+  padding: 0 6px;
+  font-size: 10px;
+  color: #666;
+  font-weight: 500;
+  margin-left: auto;
+  line-height: 1.6;
+}
+.base-boton-seleccionable-menu-activo .base-boton-seleccionable-menu-badge {
+  background: #d0e0ff;
+  border-color: #a9c4f5;
+  color: #1a56db;
+}
+.base-boton-seleccionable-menu-chevron {
+  margin-left: auto;
+  transform: rotate(90deg);
+  transition: transform 0.15s ease;
+  font-size: 14px;
+  color: #888;
+}
+.base-boton-seleccionable-menu-chevron-expandido {
+  transform: rotate(-90deg);
+}
+.base-boton-seleccionable-menu-submenu {
+  padding: 6px 8px;
+  border-left-width: 2px;
+  font-size: 13px;
+  color: inherit;
+  transition: none;
+  font-weight: 400;
+}
+.base-boton-seleccionable-menu-submenu .base-boton-seleccionable-menu-punto {
+  display: none;
+}
+.base-boton-seleccionable-menu-submenu:hover:not(.base-boton-seleccionable-menu-deshabilitado) {
+  background: #f2f2f2;
+  border-left-color: #1a1a1a;
+  color: inherit;
+}
+.base-boton-seleccionable-menu-submenu.base-boton-seleccionable-menu-activo:not(.base-boton-seleccionable-menu-deshabilitado) {
+  background: #e8e8e8;
+  font-weight: 600;
+  border-left-color: #1a1a1a;
+  color: inherit;
+}
+.base-boton-seleccionable-menu-submenu.base-boton-seleccionable-menu-activo .base-boton-seleccionable-menu-badge {
+  background: #e0e0e0;
+  border-color: #c4c4c4;
+  color: #666;
+}
+.base-boton-seleccionable-menu-completado,
+.base-boton-seleccionable-menu-completado:hover:not(.base-boton-seleccionable-menu-deshabilitado) {
+  background: #e6f4ea;
+  border-left-color: #2e7d32;
+  color: #2e7d32;
+}

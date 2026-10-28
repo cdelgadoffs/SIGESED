@@ -1,0 +1,63 @@
+.base-sidebar3 {
+  position: fixed;
+  top: 52px;
+  height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  width: 500px;
+  border-right: 1px solid #d0d0d0;
+  background: #eaeaea;
+  z-index: 30;
+}
+.base-sidebar3-oculto {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.base-sidebar3-header {
+  min-height: 64px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #d0d0d0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  text-align: left;
+}
+.base-sidebar3-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.base-sidebar3-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: #777;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.base-sidebar3-cerrar {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 4px;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+.base-sidebar3-cerrar:hover {
+  opacity: 1;
+}

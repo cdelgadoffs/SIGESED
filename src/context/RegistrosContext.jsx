@@ -1,0 +1,149 @@
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import * as api from '../services/api.js';
+import { guardarCache, obtenerCache, guardarBorrador, obtenerBorrador, eliminarBorrador } from '../services/SesionIndexedDB.js';
+
+const RECURSOS = {
+  catalogos: { listar: api.listarCatalogos },
+  plantel: { listar: api.obtenerPlantel },
+  personal: { listar: api.listarPersonal, crear: api.crearPersonal, editar: api.editarPersonal, eliminar: api.eliminarPersonal },
+  estudiantes: { listar: api.listarEstudiantes, crear: api.crearEstudiante, editar: api.editarEstudiante, eliminar: api.eliminarEstudiante },
+  ciclos: { listar: api.listarCiclos },
+};
+const CLAVES = Object.keys(RECURSOS);
+const VACIOS = { catalogos: {}, plantel: null, personal: [], estudiantes: [], ciclos: [] };
+
+const RegistrosContext = createContext(null);
+
+function conSincronizacion(recurso, valor) {
+  if (recurso === 'catalogos' || !valor) return valor;
+  if (recurso === 'plantel') return { ...valor, sincronizacion: 'servidor' };
+  return valor.map((r) => ({ ...r, sincronizacion: 'servidor' }));
+}
+
+function errorVisible(e) {
+  return { codigo: e?.codigo ?? 'DESCONOCIDO', mensaje: e?.mensaje ?? 'Ocurrió un error inesperado.' };
+}
+
+export function RegistrosProvider({ children }) {
+  const [datos, setDatos] = useState(VACIOS);
+  const [carga, setCarga] = useState(() => Object.fromEntries(CLAVES.map((c) => [c, { cargando: true, error: null }])));
+  const datosRef = useRef(VACIOS);
+  const [cicloElegidoId, setCicloElegidoId] = useState(null);
+
+  function fijar(recurso, valor) {
+    datosRef.current = { ...datosRef.current, [recurso]: valor };
+    setDatos(datosRef.current);
+  }
+
+  function fijarCarga(recurso, estado) {
+    setCarga((c) => ({ ...c, [recurso]: estado }));
+  }
+
+  async function recargar(recurso) {
+    fijarCarga(recurso, { cargando: true, error: null });
+    try {
+      const valor = conSincronizacion(recurso, await RECURSOS[recurso].listar());
+      fijar(recurso, valor);
+      fijarCarga(recurso, { cargando: false, error: null });
+      guardarCache(recurso, valor).catch(() => {});
+    } catch (e) {
+      fijarCarga(recurso, { cargando: false, error: errorVisible(e) });
+    }
+  }
+
+  useEffect(() => {
+    CLAVES.forEach(async (recurso) => {
+      const enCache = await obtenerCache(recurso).catch(() => null);
+      if (enCache) fijar(recurso, enCache);
+      recargar(recurso);
+    });
+  }, []);
+
+  async function crear(recurso, valores) {
+    const registro = await RECURSOS[recurso].crear(valores);
+    await recargar(recurso);
+    return registro;
+  }
+
+  async function editar(recurso, id, cambios) {
+    const actual = datosRef.current[recurso].find((r) => r.id === id);
+    try {
+      const registro = await RECURSOS[recurso].editar(id, actual?.version, cambios);
+      await recargar(recurso);
+      return registro;
+    } catch (e) {
+      if (e?.codigo === 'CONFLICTO' || e?.codigo === 'NO_ENCONTRADO') recargar(recurso);
+      throw e;
+    }
+  }
+
+  async function guardarPlantel(valores) {
+    try {
+      const plantel = conSincronizacion('plantel', await api.guardarPlantel(datosRef.current.plantel?.version ?? null, valores));
+      fijar('plantel', plantel);
+      guardarCache('plantel', plantel).catch(() => {});
+      return plantel;
+    } catch (e) {
+      if (e?.codigo === 'CONFLICTO') recargar('plantel');
+      throw e;
+    }
+  }
+
+  async function crearCiclosAnuales(anio) {
+    const ciclos = conSincronizacion('ciclos', await api.crearCiclosAnuales(anio));
+    fijar('ciclos', ciclos);
+    guardarCache('ciclos', ciclos).catch(() => {});
+    return ciclos;
+  }
+
+  async function eliminar(recurso, id) {
+    await RECURSOS[recurso].eliminar(id);
+    const valor = datosRef.current[recurso].filter((r) => r.id !== id);
+    fijar(recurso, valor);
+    guardarCache(recurso, valor).catch(() => {});
+  }
+
+  const errores = CLAVES.map((c) => carga[c].error).filter(Boolean);
+  const { catalogos, ciclos } = datos;
+  const anioEnCurso = new Date().getFullYear();
+  const cicloActivo = ciclos.find((c) => c.id === cicloElegidoId)
+    ?? ciclos.find((c) => c.anio === anioEnCurso)
+    ?? ciclos[0]
+    ?? null;
+
+  const value = {
+    NIVELES_EDUCATIVOS: catalogos.nivelesEducativos || [],
+    TURNOS: catalogos.turnos || [],
+    GENEROS: catalogos.generos || [],
+    ROLES: catalogos.roles || [],
+    PROGRAMAS_EDUCATIVOS: catalogos.programasEducativos || [],
+    TIEMPOS: catalogos.tiempos || [],
+    MODALIDADES: catalogos.modalidades || [],
+    PLANTEL: datos.plantel,
+    PERSONAL: datos.personal,
+    ESTUDIANTES: datos.estudiantes,
+    CICLOS: ciclos,
+    cicloActivoId: cicloActivo?.id ?? null,
+    seleccionarCiclo: setCicloElegidoId,
+    crearCiclosAnuales,
+    CARGA: carga,
+    cargando: CLAVES.some((c) => carga[c].cargando),
+    error: errores[0] ?? null,
+    guardarPlantel,
+    crearPersonal: (v) => crear('personal', v),
+    editarPersonal: (id, c) => editar('personal', id, c),
+    eliminarPersonal: (id) => eliminar('personal', id),
+    crearEstudiante: (v) => crear('estudiantes', v),
+    editarEstudiante: (id, c) => editar('estudiantes', id, c),
+    eliminarEstudiante: (id) => eliminar('estudiantes', id),
+    guardarBorrador,
+    obtenerBorrador,
+    eliminarBorrador,
+  };
+
+  return <RegistrosContext.Provider value={value}>{children}</RegistrosContext.Provider>;
+}
+
+export function useRegistros() {
+  return useContext(RegistrosContext);
+}

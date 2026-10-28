@@ -1,0 +1,17 @@
+.base-boton-seleccionable-panel {
+  padding: 10px 20px;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+  color: #ccc;
+  font-size: 13px;
+  transition: color 0.15s, background 0.15s;
+}
+.base-boton-seleccionable-panel:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+.base-boton-seleccionable-panel-activo {
+  color: #fff;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+}
