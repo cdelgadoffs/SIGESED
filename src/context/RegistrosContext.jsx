@@ -10,9 +10,10 @@ const RECURSOS = {
   estudiantes: { listar: api.listarEstudiantes, crear: api.crearEstudiante, editar: api.editarEstudiante, eliminar: api.eliminarEstudiante },
   ciclos: { listar: api.listarCiclos },
   evaluaciones: { listar: api.listarEvaluaciones },
+  reportes: { listar: api.listarReportes, crear: api.crearReporte },
 };
 const CLAVES = Object.keys(RECURSOS);
-const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [] };
+const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [], reportes: [] };
 
 const RegistrosContext = createContext(null);
 
@@ -99,9 +100,17 @@ export function RegistrosProvider({ children }) {
   }
 
   async function configurarCiclo(id, valores) {
+    return actualizarCiclo(id, (version) => api.configurarCiclo(id, version, valores));
+  }
+
+  async function concluirCiclo(id) {
+    return actualizarCiclo(id, (version) => api.concluirCiclo(id, version));
+  }
+
+  async function actualizarCiclo(id, operacion) {
     const actual = datosRef.current.ciclos.find((c) => c.id === id);
     try {
-      const [ciclo] = conSincronizacion('ciclos', [await api.configurarCiclo(id, actual?.version ?? 1, valores)]);
+      const [ciclo] = conSincronizacion('ciclos', [await operacion(actual?.version ?? 1)]);
       const valor = datosRef.current.ciclos.map((c) => (c.id === ciclo.id ? ciclo : c));
       fijar('ciclos', valor);
       guardarCache('ciclos', valor).catch(() => {});
@@ -143,25 +152,27 @@ export function RegistrosProvider({ children }) {
     ?? null;
 
   const value = {
-    NIVELES_EDUCATIVOS: catalogos.nivelesEducativos || [],
-    TURNOS: catalogos.turnos || [],
     GENEROS: catalogos.generos || [],
     ROLES: catalogos.roles || [],
     PROGRAMAS_EDUCATIVOS: catalogos.programasEducativos || [],
     TIEMPOS: catalogos.tiempos || [],
     MODALIDADES: catalogos.modalidades || [],
     MATERIAS: catalogos.materias || [],
+    TIPOS_REPORTE: catalogos.tiposReporte || [],
     PLANTEL: datos.plantel,
     GRUPOS: datos.grupos,
     PERSONAL: datos.personal,
     ESTUDIANTES: datos.estudiantes,
     CICLOS: ciclos,
     EVALUACIONES: datos.evaluaciones,
+    REPORTES: datos.reportes,
+    crearReporte: (v) => crear('reportes', v),
     guardarEvaluacion,
     cicloActivoId: cicloActivo?.id ?? null,
     seleccionarCiclo: setCicloElegidoId,
     crearCiclosAnuales,
     configurarCiclo,
+    concluirCiclo,
     SEMANAS_CICLO: catalogos.semanasCiclo || [],
     CARGA: carga,
     cargando: CLAVES.some((c) => carga[c].cargando),

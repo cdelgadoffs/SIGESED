@@ -179,5 +179,16 @@ export default function FormularioCiclo() {
   const { CICLOS, cicloActivoId } = useRegistros();
   const ciclo = CICLOS.find((c) => c.id === cicloActivoId);
   if (!ciclo) return null;
+  const abierto = CICLOS.find((c) => c.id !== ciclo.id && c.fechaInicio && !c.cerrado
+    && (c.anio < ciclo.anio || (c.anio === ciclo.anio && c.numero < ciclo.numero)));
+  if (ciclo.cerrado || abierto) {
+    return (
+      <p className="widget-formulario-ciclo-aviso">
+        {ciclo.cerrado
+          ? `El ciclo ${ciclo.id} ya se concluyó y no se puede modificar.`
+          : `Primero concluye el ciclo ${abierto.id} (Panel de control › Calendarización anual) para poder configurar el ${ciclo.id}.`}
+      </p>
+    );
+  }
   return <Configuracion key={`${ciclo.id}:${ciclo.version}`} ciclo={ciclo} />;
 }

@@ -2,7 +2,6 @@ import { ApiError } from '../ApiError.js';
 
 const USUARIO = { id: 'usuario-local', nombre: 'Administrador local', rol: 'administrador' };
 
-const RE_CCT = /^\d{2}[A-Z]{3}\d{4}[A-Z]$/;
 const RE_GMAIL = /^(?=[a-z0-9.]{6,30}@)[a-z0-9]+(\.[a-z0-9]+)*@gmail\.com$/;
 const RE_TELEFONO = /^\d{10}$/;
 
@@ -16,19 +15,22 @@ const CAMPOS_PERSONA = {
 
 const ESPECIFICACIONES = {
   plantel: {
-    cct: { etiqueta: 'CCT', requerido: true, mayusculas: true, formato: RE_CCT, mensajeFormato: 'La CCT no tiene un formato válido (ej. 09DPR1234X).' },
-    nombre: { etiqueta: 'Nombre', requerido: true, max: 150 },
-    nivel: { etiqueta: 'Nivel educativo', requerido: true, catalogo: 'nivelesEducativos' },
-    turno: { etiqueta: 'Turno', requerido: true, catalogo: 'turnos' },
+    institucion: { etiqueta: 'Nombre de la institución', requerido: true, max: 150, colapsar: true },
+    nombre: { etiqueta: 'Nombre del plantel', requerido: true, max: 150, colapsar: true },
     municipio: { etiqueta: 'Municipio', requerido: true, max: 100 },
-    domicilio: { etiqueta: 'Domicilio', max: 250 },
     telefono: { etiqueta: 'Teléfono', formato: RE_TELEFONO, mensajeFormato: 'El teléfono debe tener 10 dígitos.' },
+    domicilio: { etiqueta: 'Domicilio', max: 250 },
   },
   grupo: {
-    nombre: { etiqueta: 'Nombre del grupo', requerido: true, max: 100, colapsar: true },
+    nombre: { etiqueta: 'Nombre del grupo', requerido: true, max: 100, colapsar: true, mayusculas: true },
     programaEducativo: { etiqueta: 'Programa educativo', requerido: true, catalogo: 'programasEducativos' },
     modalidad: { etiqueta: 'Modalidad', requerido: true, catalogo: 'modalidades' },
     activo: { etiqueta: 'Activo', tipo: 'booleano', omision: true },
+  },
+  reporte: {
+    tipo: { etiqueta: 'Tipo de reporte', requerido: true, catalogo: 'tiposReporte' },
+    descripcion: { etiqueta: 'Descripción', requerido: true, max: 2000 },
+    acciones: { etiqueta: 'Acciones tomadas', max: 1000 },
   },
   personal: {
     ...CAMPOS_PERSONA,
@@ -277,6 +279,28 @@ export function validarCicloSinEncimar(id, inicio, fin, otros) {
   if (encimado) throw falla(`Las fechas se enciman con el ciclo ${encimado.id} (${encimado.fechaInicio} a ${encimado.fechaFin}).`);
 }
 
+export function validarFechaReporte(fecha, hoy) {
+  const t = exigirFecha(fecha, 'La fecha del reporte');
+  const iso = aIso(t);
+  if (iso > hoy) throw falla('La fecha del reporte no puede ser posterior a hoy.');
+  return iso;
+}
+
+export function cicloDeFecha(fecha, ciclos) {
+  return ciclos.find((c) => c.fechaInicio && c.fechaFin && fecha >= c.fechaInicio && fecha <= c.fechaFin)?.id ?? null;
+}
+
+export function ordenarReportes(reportes) {
+  return [...reportes].sort((a, b) => b.fecha.localeCompare(a.fecha) || b.creadoEn.localeCompare(a.creadoEn));
+}
+
+export function exigirCiclosAnterioresCerrados(ciclo, todos) {
+  if (ciclo.cerrado) throw falla(`El ciclo ${ciclo.id} ya se concluyó y no se puede modificar.`);
+  const abierto = todos.find((c) => c.id !== ciclo.id && c.fechaInicio && !c.cerrado
+    && (c.anio < ciclo.anio || (c.anio === ciclo.anio && c.numero < ciclo.numero)));
+  if (abierto) throw falla(`Primero concluye el ciclo ${abierto.id} para poder configurar el ${ciclo.id}.`);
+}
+
 export function cicloConDerivados(guardado, semanasCatalogo, hoy) {
   const ciclo = {
     ...guardado,
@@ -285,6 +309,7 @@ export function cicloConDerivados(guardado, semanasCatalogo, hoy) {
     vacaciones: guardado.vacaciones ?? [],
     asuetos: guardado.asuetos ?? [],
     version: guardado.version ?? 1,
+    cerrado: guardado.cerrado ?? false,
   };
   const { semanas, periodosVacacionales, fechaFin } = calendarioCiclo(ciclo, semanasCatalogo);
   let estado = 'sin-configurar';
@@ -305,7 +330,7 @@ export function ordenarCiclos(ciclos) {
   return [...ciclos].sort((a, b) => a.anio - b.anio || a.numero - b.numero);
 }
 
-const CALIFICACION_MINIMA = 1;
+const CALIFICACION_MINIMA = 5;
 const CALIFICACION_MAXIMA = 10;
 const MAX_OBSERVACIONES = 1000;
 

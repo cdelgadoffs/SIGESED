@@ -1,16 +1,6 @@
+import PLAN_ESTUDIOS from './planEstudios.json';
+
 export const CATALOGOS_SEMILLA = {
-  nivelesEducativos: [
-    { id: 'preescolar', nombre: 'Preescolar' },
-    { id: 'primaria', nombre: 'Primaria' },
-    { id: 'secundaria', nombre: 'Secundaria' },
-    { id: 'media-superior', nombre: 'Media superior' },
-    { id: 'superior', nombre: 'Superior' },
-  ],
-  turnos: [
-    { id: 'matutino', nombre: 'Matutino' },
-    { id: 'vespertino', nombre: 'Vespertino' },
-    { id: 'mixto', nombre: 'Mixto' },
-  ],
   generos: [
     { id: 'mujer', nombre: 'Mujer' },
     { id: 'hombre', nombre: 'Hombre' },
@@ -48,15 +38,13 @@ export const CATALOGOS_SEMILLA = {
     { id: 'examenes', nombre: 'Periodo de exámenes', numero: 7 },
     { id: 'cierre', nombre: 'Cierre de ciclo', numero: 8 },
   ],
-  materias: [
-    { id: 'desarrollo-habilidades-docentes', nombre: 'Desarrollo de Habilidades Docentes', programaEducativo: 'licenciatura-pedagogia' },
-    { id: 'educacion-america-latina', nombre: 'Educación en América Latina', programaEducativo: 'licenciatura-pedagogia' },
-    { id: 'historia-general-educacion-1', nombre: 'Historia General de la Educación 1', programaEducativo: 'licenciatura-pedagogia' },
-    { id: 'psicotecnica-pedagogica', nombre: 'Psicotécnica Pedagógica', programaEducativo: 'licenciatura-pedagogia' },
-    { id: 'antropologia-filosofica', nombre: 'Antropología Filosófica', programaEducativo: 'licenciatura-pedagogia' },
-    { id: 'teoria-pedagogica-1', nombre: 'Teoría Pedagógica 1', programaEducativo: 'licenciatura-pedagogia' },
-    { id: 'metodologia-investigacion-1', nombre: 'Metodología de la Investigación 1', programaEducativo: 'licenciatura-pedagogia' },
-    { id: 'introduccion-psicologia', nombre: 'Introducción a la Psicología', programaEducativo: 'licenciatura-pedagogia' },
-    { id: 'seminario-titulacion-2', nombre: 'Seminario de Titulación 2', programaEducativo: 'licenciatura-pedagogia' },
+  tiposReporte: [
+    { id: 'conducta', nombre: 'Conducta' },
+    { id: 'presentacion', nombre: 'Uniforme o presentación' },
+    { id: 'puntualidad', nombre: 'Puntualidad' },
+    { id: 'celular', nombre: 'Uso de celular' },
+    { id: 'instalaciones', nombre: 'Daño a instalaciones' },
+    { id: 'otro', nombre: 'Otro' },
   ],
+  materias: PLAN_ESTUDIOS,
 };

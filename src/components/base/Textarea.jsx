@@ -1,8 +1,12 @@
 import { useEffect, useRef } from 'react';
 import '../../styles/base/Textarea.css';
 
-export default function Textarea({ value, onChange, placeholder, disabled = false }) {
+export default function Textarea({ value, onChange, placeholder, disabled = false, enfocar }) {
   const ref = useRef(null);
+
+  useEffect(() => {
+    if (enfocar && ref.current) ref.current.focus({ preventScroll: true });
+  }, [enfocar]);
 
   useEffect(() => {
     if (!ref.current) return;

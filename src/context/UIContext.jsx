@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from 'react';
 
 export const ANCHO_SIDEBAR1 = 270;
 export const ANCHO_SIDEBAR2 = 250;
+export const ANCHO_SIDEBAR2_AMPLIO = 380;
 export const ANCHO_SIDEBAR3 = 500;
 export const ALTO_TOPBAR = 52;
 export const ALTO_CINTA = 50;
@@ -14,6 +15,7 @@ export function UIProvider({ children }) {
   const [sidebar4Abierto, setSidebar4Abierto] = useState(false);
   const [sidebar5Abierto, setSidebar5Abierto] = useState(false);
   const [sidebar5Ancho, setSidebar5Ancho] = useState(false);
+  const [sidebar2Amplio, setSidebar2Amplio] = useState(false);
   const [panelControlActivo, setPanelControlActivo] = useState(null);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [vistaActual, setVistaActualEstado] = useState('inicio');
@@ -67,6 +69,7 @@ export function UIProvider({ children }) {
     sidebar4Abierto, setSidebar4Abierto,
     sidebar5Abierto, toggleSidebar5, cerrarSidebar5,
     sidebar5Ancho, setSidebar5Ancho,
+    sidebar2Amplio, setSidebar2Amplio,
     panelControlActivo, setPanelControlActivo, abrirPanelControl,
     terminoBusqueda, setTerminoBusqueda,
     vistaActual, setVistaActual,

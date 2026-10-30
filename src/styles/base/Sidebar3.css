@@ -61,3 +61,8 @@
 .base-sidebar3-cerrar:hover {
   opacity: 1;
 }
+.base-sidebar3-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}

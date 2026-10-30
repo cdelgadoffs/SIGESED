@@ -66,13 +66,16 @@
 }
 .base-boton-seleccionable-menu-chevron {
   margin-left: auto;
-  transform: rotate(90deg);
+  width: 14px;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
+  opacity: 0.6;
+  flex-shrink: 0;
   transition: transform 0.15s ease;
-  font-size: 14px;
-  color: #888;
 }
 .base-boton-seleccionable-menu-chevron-expandido {
-  transform: rotate(-90deg);
+  transform: rotate(90deg);
 }
 .base-boton-seleccionable-menu-submenu {
   padding: 6px 8px;

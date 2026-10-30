@@ -2,7 +2,7 @@ import { ApiError } from '../ApiError.js';
 import { CATALOGOS_SEMILLA } from './semilla.js';
 
 const DB_NAME = 'LocalAPI';
-const DB_VERSION = 11;
+const DB_VERSION = 14;
 
 export const STORE_CATALOGOS = 'catalogos';
 export const STORE_UNICOS = 'unicos';
@@ -11,6 +11,7 @@ export const STORE_ESTUDIANTES = 'estudiantes';
 export const STORE_CICLOS = 'ciclos';
 export const STORE_EVALUACIONES = 'evaluaciones';
 export const STORE_GRUPOS = 'grupos';
+export const STORE_REPORTES = 'reportes';
 
 function quitarCamposPersonal(store) {
   store.getAll().onsuccess = (evento) => {
@@ -85,10 +86,11 @@ function conectar() {
           if (db.objectStoreNames.contains(nombre)) db.deleteObjectStore(nombre);
         });
       }
-      if (anterior >= 5 && anterior < 11) db.deleteObjectStore(STORE_CATALOGOS);
+      if (anterior >= 5 && anterior < 14) db.deleteObjectStore(STORE_CATALOGOS);
+      if (anterior > 0 && anterior < 14 && db.objectStoreNames.contains(STORE_EVALUACIONES)) db.deleteObjectStore(STORE_EVALUACIONES);
       if (anterior >= 4 && anterior < 8) agregarGeneroVacio(req.transaction.objectStore(STORE_ESTUDIANTES));
       if (anterior >= 4 && anterior < 9) pasarEstudiantesAGrupo(req.transaction.objectStore(STORE_ESTUDIANTES));
-      [STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS].forEach((nombre) => {
+      [STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES].forEach((nombre) => {
         if (!db.objectStoreNames.contains(nombre)) db.createObjectStore(nombre, { keyPath: 'id' });
       });
       if (!db.objectStoreNames.contains(STORE_UNICOS)) db.createObjectStore(STORE_UNICOS, { keyPath: 'clave' });

@@ -3,19 +3,23 @@ import BotonS from '../base/BotonS.jsx';
 import IndicadorSync from '../base/IndicadorSync.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { filtrarEstudiantes, nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
-import { evaluacionDe } from '../../utils/evaluaciones.js';
+import { filtrarEstudiantes, nombreCompleto, registroActivo, segunEstado } from '../../utils/registros.js';
+import { CALIFICACION_MINIMA, evaluacionDe, filasDeBoleta, materiasDelPrograma } from '../../utils/evaluaciones.js';
 import { ALTO_HOJA, ANCHO_HOJA, documentoBoleta } from '../../utils/boleta.js';
+import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import logoIcom from '../../assets/Icom.jpg';
 import logo55 from '../../assets/55.jpg';
 import '../../styles/widgets/VistaPreviaBoleta.css';
+
+const ESPACIO_LEMA = 90;
 
 export default function VistaPreviaBoleta() {
   const { ESTUDIANTES, GRUPOS, EVALUACIONES, MATERIAS, PLANTEL, cicloActivoId } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, filtroEstado } = useUI();
   const iframeRef = useRef(null);
-  const marcoRef = useRef(null);
+  const { contenedorRef: marcoRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   const [escala, setEscala] = useState(0);
+  const [altoDocumento, setAltoDocumento] = useState(ALTO_HOJA);
   const alumno = registroActivo(segunEstado(filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda), filtroEstado), registroSeleccionadoId);
   const evaluacion = alumno && cicloActivoId ? evaluacionDe(EVALUACIONES, alumno.id, cicloActivoId) : null;
 
@@ -35,11 +39,13 @@ export default function VistaPreviaBoleta() {
   }
 
   const documento = documentoBoleta({
+    institucion: PLANTEL?.institucion ?? '',
     plantel: PLANTEL?.nombre ?? '',
     ciclo: cicloActivoId,
     alumno: nombreCompleto(alumno),
     genero: alumno.genero,
-    filas: evaluacion.calificaciones.map((c) => ({ materia: nombreDeCatalogo(MATERIAS, c.materia), calificacion: c.calificacion })),
+    filas: filasDeBoleta(materiasDelPrograma(MATERIAS, GRUPOS.find((g) => g.id === alumno.grupo)?.programaEducativo), evaluacion.calificaciones)
+      .map((f) => ({ ...f, reprobada: f.calificacion === CALIFICACION_MINIMA })),
     promedio: evaluacion.promedio,
     observaciones: evaluacion.observaciones,
     logoIzquierdo: new URL(logoIcom, window.location.href).href,
@@ -47,23 +53,42 @@ export default function VistaPreviaBoleta() {
     hoja: true,
   });
 
+  function medirDocumento() {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) return;
+    const boleta = doc.getElementById('boleta');
+    const lema = doc.querySelector('#boleta .lema');
+    const contenido = boleta ? boleta.getBoundingClientRect().bottom + (lema?.offsetHeight ?? 0) + ESPACIO_LEMA : ALTO_HOJA;
+    setAltoDocumento(Math.max(ALTO_HOJA, Math.ceil(contenido)));
+  }
+
   return (
     <div className="widget-vista-previa-boleta">
       <div className="widget-vista-previa-boleta-acciones">
         <IndicadorSync estado={evaluacion.sincronizacion} />
         <BotonS variant="claro" onClick={() => iframeRef.current?.contentWindow?.print()}>Imprimir / PDF</BotonS>
       </div>
-      <div ref={marcoRef} className="widget-vista-previa-boleta-marco">
-        <div className="widget-vista-previa-boleta-hoja" style={{ width: ANCHO_HOJA * escala, height: ALTO_HOJA * escala }}>
-          <iframe
-            ref={iframeRef}
-            className="widget-vista-previa-boleta-documento"
-            title="Boleta de calificaciones"
-            srcDoc={documento}
-            scrolling="no"
-            style={{ width: ANCHO_HOJA, height: ALTO_HOJA, transform: `scale(${escala})` }}
-          />
+      <div className="widget-vista-previa-boleta-zona">
+        <div ref={marcoRef} className="widget-vista-previa-boleta-marco" onScroll={onScroll}>
+          <div className="widget-vista-previa-boleta-hoja" style={{ width: ANCHO_HOJA * escala, height: altoDocumento * escala }}>
+            <iframe
+              ref={iframeRef}
+              className="widget-vista-previa-boleta-documento"
+              title="Boleta de calificaciones"
+              srcDoc={documento}
+              scrolling="no"
+              onLoad={medirDocumento}
+              style={{ width: ANCHO_HOJA, height: altoDocumento, transform: `scale(${escala})` }}
+            />
+          </div>
         </div>
+        {thumb.visible && (
+          <div
+            className="widget-vista-previa-boleta-thumb"
+            style={{ height: thumb.alto, top: thumb.top }}
+            onMouseDown={onArrastrarThumb}
+          />
+        )}
       </div>
     </div>
   );

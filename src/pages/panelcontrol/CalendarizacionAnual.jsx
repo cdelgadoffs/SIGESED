@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import BotonS from '../../components/base/BotonS.jsx';
 import CardS from '../../components/base/CardS.jsx';
+import Modal from '../../components/base/Modal.jsx';
 import OpcionesNavegacion from '../../components/widgets/OpcionesNavegacion.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
@@ -10,7 +11,10 @@ import '../../styles/pages/panelcontrol/CalendarizacionAnual.css';
 const CICLOS_POR_ANIO = 6;
 
 export default function CalendarizacionAnual() {
-  const { CICLOS, cicloActivoId, seleccionarCiclo, crearCiclosAnuales, CARGA } = useRegistros();
+  const { CICLOS, cicloActivoId, seleccionarCiclo, crearCiclosAnuales, concluirCiclo, CARGA } = useRegistros();
+  const [porConcluir, setPorConcluir] = useState(null);
+  const [errorCierre, setErrorCierre] = useState(null);
+  const [cerrando, setCerrando] = useState(false);
   const { setPanelControlActivo, setSidebar5Ancho, setVistaActual, setCicloEnEdicionId, cerrarSidebar5 } = useUI();
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [enviando, setEnviando] = useState(false);
@@ -34,6 +38,24 @@ export default function CalendarizacionAnual() {
     setVistaActual('inicio');
     setCicloEnEdicionId(id);
     cerrarSidebar5();
+  }
+
+  function cerrarModal() {
+    setPorConcluir(null);
+    setErrorCierre(null);
+  }
+
+  async function confirmarCierre() {
+    setCerrando(true);
+    setErrorCierre(null);
+    try {
+      await concluirCiclo(porConcluir);
+      setPorConcluir(null);
+    } catch (e) {
+      setErrorCierre(e?.mensaje ?? 'No se pudo concluir el ciclo.');
+    } finally {
+      setCerrando(false);
+    }
   }
 
   async function crear() {
@@ -87,13 +109,26 @@ export default function CalendarizacionAnual() {
               estado={estado.cinta}
               titulo={`Ciclo ${c.id}${c.id === cicloActivoId ? ' · activo' : ''}`}
               subtitulo={c.fechaInicio ? `${c.fechaInicio} a ${c.fechaFin}` : `${c.duracionMeses} meses`}
-              estadoLabel={estado.texto}
+              estadoLabel={c.cerrado ? 'Cerrado' : estado.texto}
+              accion={c.fechaInicio && !c.cerrado
+                ? <BotonS variant="claro" onClick={() => setPorConcluir(c.id)}>Concluir ciclo escolar</BotonS>
+                : undefined}
               onClick={() => seleccionarCiclo(c.id)}
-              onEditar={() => editar(c.id)}
+              onEditar={c.cerrado ? undefined : () => editar(c.id)}
             />
           );
         })}
       </div>
+      <Modal abierto={porConcluir !== null} titulo="Concluir ciclo escolar" onCerrar={cerrarModal}>
+        <p className="panelcontrol-calendarizacion-anual-modal-texto">
+          ¿Concluir el ciclo escolar {porConcluir}? Ya no podrá modificarse y se habilitará la configuración del siguiente ciclo.
+        </p>
+        {errorCierre && <p className="panelcontrol-calendarizacion-anual-modal-error">{errorCierre}</p>}
+        <div className="panelcontrol-calendarizacion-anual-modal-acciones">
+          <BotonS variant="claro" onClick={cerrarModal}>Cancelar</BotonS>
+          <BotonS variant="claro" onClick={confirmarCierre} disabled={cerrando}>Concluir</BotonS>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -96,3 +96,10 @@
   color: #fff;
   border-color: #888;
 }
+.base-card-s-accion {
+  margin-left: auto;
+  display: inline-flex;
+}
+.base-card-s-accion + .base-card-s-editar {
+  margin-left: 6px;
+}

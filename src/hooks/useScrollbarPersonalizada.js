@@ -31,7 +31,7 @@ export function useScrollbarPersonalizada() {
     }
     if (typeof MutationObserver !== 'undefined') {
       const mo = new MutationObserver(recalcular);
-      mo.observe(el, { childList: true, subtree: true, characterData: true });
+      mo.observe(el, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style'] });
       observadores.push(mo);
     }
     return () => observadores.forEach((o) => o.disconnect());

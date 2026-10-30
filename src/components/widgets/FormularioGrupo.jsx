@@ -89,7 +89,7 @@ export default function FormularioGrupo() {
       <CampoFormulario etiqueta="Nombre del grupo" requerido error={nombreRepetido ? 'Ya existe un grupo con ese nombre.' : null}>
         <CampoTexto
           value={form.nombre}
-          onChange={(v) => cambiar('nombre', v)}
+          onChange={(v) => cambiar('nombre', v.toUpperCase())}
           enfocar={sidebar3Abierto ? `${apertura}:${altas}` : null}
         />
       </CampoFormulario>

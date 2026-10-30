@@ -1,0 +1,36 @@
+.widget-lista-plan-estudios-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+}
+.widget-lista-plan-estudios {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.widget-lista-plan-estudios::-webkit-scrollbar {
+  display: none;
+}
+.widget-lista-plan-estudios-mensaje {
+  margin: 8px 16px;
+  font-size: 12.5px;
+  color: #999;
+}
+.widget-lista-plan-estudios .base-boton-seleccionable-menu > span:nth-child(2) {
+  min-width: 0;
+}
+.widget-lista-plan-estudios-thumb {
+  position: absolute;
+  right: 2px;
+  width: 6px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+.widget-lista-plan-estudios .base-boton-seleccionable-menu-submenu {
+  white-space: nowrap;
+}

@@ -20,14 +20,13 @@ export default function BotonSeleccionableMenu({ icono, activo = false, deshabil
         <span className="base-boton-seleccionable-menu-badge">{badge}</span>
       )}
       {expandible && (
-        <span
+        <i
           className={
-            'base-boton-seleccionable-menu-chevron' +
+            'ri-arrow-right-s-line base-boton-seleccionable-menu-chevron' +
             (expandido ? ' base-boton-seleccionable-menu-chevron-expandido' : '')
           }
-        >
-          &#8250;
-        </span>
+          aria-hidden="true"
+        ></i>
       )}
       {accion}
     </div>

@@ -1,4 +1,3 @@
-export const INSTITUTO = 'Instituto Comercial México';
 export const LEMA = 'La enseñanza del presente para las generaciones del futuro';
 
 const reglasHoja = (p) => `
@@ -96,6 +95,7 @@ body {
 #boleta table td { padding: 10px 10px; border-bottom: 1px solid #d8dde5; }
 #boleta table tr:last-child td { border-bottom: none; }
 #boleta table td:last-child { text-align: center; font-weight: 700; font-size: 17px; }
+#boleta table td.reprobada { color: #c62828; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 #boleta .promedio {
   background: #f4f7fc;
   padding: 14px 20px;
@@ -145,8 +145,8 @@ export function tituloBoleta(alumno, ciclo) {
   return `${alumno} - ${ciclo}`;
 }
 
-export function documentoBoleta({ plantel, ciclo, alumno, genero, filas, promedio, observaciones, logoIzquierdo, logoDerecho, hoja = false }) {
-  const renglones = filas.map((f) => `<tr><td>${escapar(f.materia)}</td><td>${escapar(f.calificacion)}</td></tr>`).join('');
+export function documentoBoleta({ institucion, plantel, ciclo, alumno, genero, filas, promedio, observaciones, logoIzquierdo, logoDerecho, hoja = false }) {
+  const renglones = filas.map((f) => `<tr><td>${escapar(f.materia)}</td><td${f.reprobada ? ' class="reprobada"' : ''}>${escapar(f.calificacion)}</td></tr>`).join('');
   const obs = (observaciones || '').trim();
   return `<!DOCTYPE html>
 <html lang="es"${hoja ? ' class="hoja"' : ''}>
@@ -161,7 +161,7 @@ export function documentoBoleta({ plantel, ciclo, alumno, genero, filas, promedi
   <div class="header header-logos">
     <img src="${escapar(logoIzquierdo)}" alt="Logo ICOM" />
     <div class="header-texto">
-      <h1>${escapar(INSTITUTO)}</h1>
+      <h1>${escapar(institucion)}</h1>
       <h2>${escapar(plantel)}</h2>
       <div class="titulo-boleta">Boleta de Calificaciones</div>
       <div class="periodo">Ciclo Escolar ${escapar(ciclo)}</div>
@@ -180,7 +180,7 @@ export function documentoBoleta({ plantel, ciclo, alumno, genero, filas, promedi
   </div>
   <div class="firma-sello">
     <div class="col"><div class="linea-firma"></div><div class="etiqueta">Firma de conformidad</div><div class="sub">${escapar(alumno)}</div></div>
-    <div class="col"><div class="linea-firma"></div><div class="etiqueta">Sello de la Institución</div><div class="sub">${escapar(INSTITUTO)}</div></div>
+    <div class="col"><div class="linea-firma"></div><div class="etiqueta">Sello de la Institución</div><div class="sub">${escapar(institucion)}</div></div>
   </div>
   <div class="lema">${escapar(LEMA)}</div>
 </div>

@@ -21,6 +21,9 @@ export const {
   listarCiclos,
   crearCiclosAnuales,
   configurarCiclo,
+  concluirCiclo,
+  listarReportes,
+  crearReporte,
   listarEvaluaciones,
   guardarEvaluacion,
 } = implementacion;

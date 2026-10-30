@@ -8,7 +8,7 @@ import MarcoFormulario from './MarcoFormulario.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { filtrarEstudiantes, nombreCompleto, registroActivo, segunEstado } from '../../utils/registros.js';
-import { ajustarCalificacion, evaluacionDe, materiasDelPrograma } from '../../utils/evaluaciones.js';
+import { CALIFICACION_MAXIMA, CALIFICACION_MINIMA, ajustarCalificacion, calificacionValida, evaluacionDe, materiasDelPrograma } from '../../utils/evaluaciones.js';
 import '../../styles/widgets/FormularioEvaluacion.css';
 
 function desdeEvaluacion(evaluacion) {
@@ -66,7 +66,8 @@ function Captura({ alumno, cicloId, evaluacion, materias }) {
   }
 
   const marcadas = materias.filter((m) => m.id in form.calificaciones);
-  const completas = marcadas.length > 0 && marcadas.every((m) => form.calificaciones[m.id] !== '');
+  const fueraDeRango = marcadas.some((m) => form.calificaciones[m.id] !== '' && !calificacionValida(form.calificaciones[m.id]));
+  const completas = marcadas.length > 0 && marcadas.every((m) => calificacionValida(form.calificaciones[m.id]));
   const puedeConfirmar = restaurado && completas && !igual(form, base) && !ocupado;
 
   function descartar() {
@@ -102,7 +103,11 @@ function Captura({ alumno, cicloId, evaluacion, materias }) {
       <CampoFormulario etiqueta="Alumno(a)">
         <CampoTexto value={nombreCompleto(alumno)} disabled />
       </CampoFormulario>
-      <CampoFormulario etiqueta="Materias y calificaciones" requerido>
+      <CampoFormulario
+        etiqueta="Materias y calificaciones"
+        requerido
+        error={fueraDeRango ? `Las calificaciones van de ${CALIFICACION_MINIMA} a ${CALIFICACION_MAXIMA}.` : null}
+      >
         <div className="widget-formulario-evaluacion-materias">
           {materias.map((m) => {
             const marcada = m.id in form.calificaciones;

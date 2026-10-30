@@ -1,6 +1,6 @@
 import '../../styles/base/CardS.css';
 
-export default function CardS({ estado, titulo, subtitulo, estadoLabel, onClick, onEditar, onEliminar, eliminarDeshabilitado }) {
+export default function CardS({ estado, titulo, subtitulo, estadoLabel, accion, onClick, onEditar, onEliminar, eliminarDeshabilitado }) {
   return (
     <div className={'base-card-s' + (estado ? ' base-card-s-' + estado : '')} onClick={onClick}>
       <div className="base-card-s-top">
@@ -9,6 +9,7 @@ export default function CardS({ estado, titulo, subtitulo, estadoLabel, onClick,
       </div>
       <div className="base-card-s-bottom">
         <span className="base-card-s-subtitulo">{subtitulo}</span>
+        {accion && <span className="base-card-s-accion" onClick={(e) => e.stopPropagation()}>{accion}</span>}
         {onEditar && (
           <button
             type="button"

@@ -9,7 +9,7 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 - Todos los timestamps son ISO 8601 UTC, asignados por el **servidor**.
 - Todo registro modificable lleva `version` (entero, empieza en 1, +1 en cada cambio). Se usa para detectar conflictos.
 - `id`, `creadoEn`, `creadoPor` y `modificadoEn` los asigna el servidor; el cliente nunca los envía.
-- Los textos se guardan sin espacios sobrantes al inicio ni al final. Las claves oficiales (`cct`, `matricula`) van en mayúsculas.
+- Los textos se guardan sin espacios sobrantes al inicio ni al final. La clave oficial `matricula` va en mayúsculas.
 - Un campo opcional vacío se guarda como `""`.
 - La identidad y el rol salen del token en el servidor, nunca del cliente.
 - **Un solo plantel por instalación:** el plantel es un registro único del sistema; el personal y los estudiantes le pertenecen sin referirlo. Registrar personal o estudiantes exige que el plantel esté configurado.
@@ -20,15 +20,14 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 
 | Catálogo | Atributos | Uso |
 |---|---|---|
-| `nivelesEducativos` | | Nivel del plantel. |
-| `turnos` | | Turno del plantel. |
 | `generos` | | Personal y estudiantes. |
 | `roles` | `maximo` (int | null), `asignacion` (`registro` \| `entra-id`) | Roles del personal. `maximo`: cuántas personas pueden tenerlo a la vez (`null` = sin límite); hoy Director, 1. `asignacion`: `registro` se asigna en Personal; `entra-id` **no** se asigna a personas registradas: lo trae el token de Microsoft Entra ID al iniciar sesión (hoy Administrador TI, decisión del usuario). |
 | `programasEducativos` | | Programa educativo del grupo. |
 | `tiempos` | | Duración del programa que cursa el estudiante. |
 | `modalidades` | | Modalidad del grupo. |
 | `semanasCiclo` | `numero` (1–8) | Semanas de trabajo de cada ciclo, en orden: Semana 1 … Semana 6, Periodo de exámenes (7), Cierre de ciclo (8). |
-| `materias` | `programaEducativo` (id de `programasEducativos`) | Materias que se evalúan; cada una pertenece a un programa. A futuro, el ciclo escolar decidirá cuáles se imparten. |
+| `tiposReporte` | | Tipos de reporte disciplinario de la bitácora estudiantil. |
+| `materias` | `programaEducativo` (id de `programasEducativos`), `clave` (ej. `P101`), `cuatrimestre` (1–9), `objetivo`, `temas` (`{ titulo, items[] }[]`), `actividadesDocente[]`, `actividadesIndependiente[]`, `evaluacion` (`{ concepto, porcentaje }[]`, porcentaje como texto) | Plan de estudios. El `id` es la clave en minúsculas (`p101`). La semilla es un archivo JSON del API (`planEstudios.json`; Licenciatura en Pedagogía, 52 materias en 9 cuatrimestres). Por ahora se evalúan todas las del programa; a futuro, cada grupo se inscribirá en 3 materias por ciclo y solo esas se mostrarán a sus estudiantes. |
 
 ## Modelo
 
@@ -36,20 +35,20 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 | Campo | Tipo | Notas |
 |---|---|---|
 | `id` | string | UUID del servidor, asignado al crearlo. |
-| `cct` | string | Clave de Centro de Trabajo. Formato `^\d{2}[A-Z]{3}\d{4}[A-Z]$` (ej. `09DPR1234X`). |
-| `nombre` | string | 1–150. |
-| `nivel` | string | `id` de `nivelesEducativos`. |
-| `turno` | string | `id` de `turnos`. |
+| `institucion` | string | Nombre de la institución, 1–150 (ej. «Instituto Comercial México»). Aparece en la boleta. |
+| `nombre` | string | Nombre del plantel, 1–150. |
 | `municipio` | string | 1–100. |
-| `domicilio` | string | Opcional, máx. 250. |
 | `telefono` | string | Opcional, 10 dígitos. |
+| `domicilio` | string | Opcional, máx. 250. |
 | `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
+
+Decisión del usuario: el plantel solo lleva esos campos (se quitaron CCT, nivel educativo y turno, y sus catálogos). Al guardarlo se reemplaza con los datos completos; los campos anteriores se descartan.
 
 ### Grupo
 | Campo | Tipo | Notas |
 |---|---|---|
 | `id` | string | UUID del servidor. |
-| `nombre` | string | 1–100. **Único** (sin distinguir mayúsculas ni espacios sobrantes). |
+| `nombre` | string | 1–100, se guarda en **mayúsculas**. **Único** (sin distinguir mayúsculas ni espacios sobrantes). |
 | `programaEducativo` | string | `id` de `programasEducativos`. |
 | `modalidad` | string | `id` de `modalidades`. |
 | `activo` | boolean | Estado del grupo. Por omisión `true`; los grupos anteriores al campo se leen como `true`. Se cambia con `editarGrupo(id, version, { activo })`. |
@@ -100,6 +99,8 @@ El grupo **no pertenece a un ciclo escolar** (decisión del usuario): son indepe
 | `diaInicioSemana` | int \| null | 0 = domingo … 6 = sábado. Día en que empieza cada semana del ciclo. |
 | `vacaciones` | `{ inicio, semanas }[]` | Periodos vacacionales de **semanas completas**: `inicio` (`AAAA-MM-DD`) debe ser el inicio de una semana del ciclo y `semanas` es un entero ≥ 1. **Recorren** las semanas de trabajo. |
 | `asuetos` | string[] | Días de asueto (`AAAA-MM-DD`), dentro del ciclo, sin repetidos. **No recorren** las semanas. |
+| `cerrado` | boolean | `true` cuando se **concluyó voluntariamente** con `concluirCiclo` (segundo paso obligatorio, aunque por fecha ya esté concluido). Libera la configuración del ciclo siguiente y deja el ciclo **inmutable**. Por omisión `false`. |
+| `cerradoEn`, `cerradoPor` | string | Timestamp y usuario del cierre (servidor). |
 | `version` | int | Empieza en 1; los ciclos anteriores al campo se leen con 1. |
 | `creadoEn`, `creadoPor`, `modificadoEn` | | |
 
@@ -113,7 +114,7 @@ El grupo **no pertenece a un ciclo escolar** (decisión del usuario): son indepe
 | `semanaActual` | Mientras está en curso: `{ numero, nombre }` de la semana de hoy, o `{ numero: null, nombre: 'Vacaciones' }`. Si no, `null`. |
 | `asuetoHoy` | `true` si hoy es día de asueto. |
 
-**Calendarización anual:** cada año tiene 3 cuatrimestres divididos en 2 módulos de 2 meses: **6 ciclos** (`2026-1` … `2026-6`). La regla (6 ciclos, 2 meses) es del servidor. Los ciclos se crean sin configurar; cada uno se configura (fecha de inicio, día de inicio de semana, vacaciones y asuetos) conforme va a comenzar (decisión del usuario, reemplazó a «ciclos sin fechas»). Dos ciclos configurados no pueden encimarse.
+**Calendarización anual:** cada año tiene 3 cuatrimestres divididos en 2 módulos de 2 meses: **6 ciclos** (`2026-1` … `2026-6`). La regla (6 ciclos, 2 meses) es del servidor. Los ciclos se crean sin configurar; cada uno se configura (fecha de inicio, día de inicio de semana, vacaciones y asuetos) conforme va a comenzar (decisión del usuario, reemplazó a «ciclos sin fechas»). Dos ciclos configurados no pueden encimarse. **Cierre (decisión del usuario):** el `estado` por fecha es automático, pero para configurar un ciclo **todos los ciclos configurados anteriores deben estar `cerrado`**; cerrar es una acción voluntaria (`concluirCiclo`). A futuro: el cierre solo se ofrecerá en la semana 8 y solo el Administrador TI (Entra ID) podrá reabrir un ciclo.
 
 ### Evaluación
 | Campo | Tipo | Notas |
@@ -121,12 +122,26 @@ El grupo **no pertenece a un ciclo escolar** (decisión del usuario): son indepe
 | `id` | string | `<cicloId>:<estudianteId>`: hay **una evaluación por estudiante y ciclo**. |
 | `estudianteId` | string | Estudiante existente. |
 | `cicloId` | string | Ciclo existente. |
-| `calificaciones` | `{ materia, calificacion }[]` | `materia`: `id` de `materias` **del programa del grupo del estudiante**, sin repetidos, en el orden del catálogo. `calificacion`: entero 1–10. **Al menos una.** |
+| `calificaciones` | `{ materia, calificacion }[]` | `materia`: `id` de `materias` **del programa del grupo del estudiante**, sin repetidos, en el orden del catálogo. `calificacion`: entero 5–10. **Al menos una.** |
 | `observaciones` | string | Opcional, máx. 1000. |
 | `promedio` | number | **Derivado al leer** (suma ÷ número de materias, sin redondear); nunca se guarda. |
 | `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
 
-La boleta de calificaciones se arma en el cliente con estos datos (el tratamiento «Alumna»/«Alumno» sale del `genero` del estudiante; sin género, «Alumno(a)») (`utils/boleta.js`); si llega a ser un documento que se guarde o envíe, la armará el servidor.
+La boleta de calificaciones se arma en el cliente con estos datos (el tratamiento «Alumna»/«Alumno» sale del `genero` del estudiante; sin género, «Alumno(a)»; lista **todas** las materias del programa del grupo y las no capturadas salen como **NP**, que no cuenta en el promedio; el 5 se imprime en rojo) (`utils/boleta.js`); si llega a ser un documento que se guarde o envíe, la armará el servidor.
+
+### Reporte disciplinario (bitácora estudiantil)
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | string | UUID del servidor. |
+| `estudianteId` | string | Estudiante existente. |
+| `fecha` | string | `AAAA-MM-DD`. Obligatoria; no puede ser posterior a hoy (reloj del servidor). |
+| `tipo` | string | `id` de `tiposReporte`. |
+| `descripcion` | string | Obligatoria, máx. 2000. |
+| `acciones` | string | Acciones tomadas. Opcional, máx. 1000. |
+| `cicloId` | string \| null | Lo asigna el servidor: el ciclo configurado cuyas fechas contienen `fecha` (o `null`). |
+| `creadoEn`, `creadoPor` | | Del servidor. |
+
+Decisión del usuario: los reportes **no se editan ni se eliminan**; solo se agregan (si hubo un error, se levanta otro aclarándolo). A futuro, el Administrador TI podría anular.
 
 ## Operaciones
 
@@ -149,7 +164,10 @@ La boleta de calificaciones se arma en el cliente con estos datos (el tratamient
 | `eliminarEstudiante(id)` | `{ id }` | `CON_EVALUACIONES` si tiene evaluaciones registradas. |
 | `listarCiclos()` | `Ciclo[]` | Ordenados por año y número, con sus derivados. |
 | `crearCiclosAnuales(anio)` | `Ciclo[]` | Crea los 6 ciclos de `anio` (entero, 2000–2100; si no, `VALIDACION`). Idempotente: solo crea los que falten. Devuelve **todos** los ciclos. |
-| `configurarCiclo(id, version, datos)` | `Ciclo` | `datos`: `{ fechaInicio, diaInicioSemana, vacaciones, asuetos }` completos. Valida fechas, que `fechaInicio` caiga en `diaInicioSemana`, que cada vacación empiece al inicio de una semana del ciclo, que los asuetos estén dentro del ciclo y que no se encime con otro ciclo (`VALIDACION`). Exige `version` (`CONFLICTO`). |
+| `configurarCiclo(id, version, datos)` | `Ciclo` | `datos`: `{ fechaInicio, diaInicioSemana, vacaciones, asuetos }` completos. Valida fechas, que `fechaInicio` caiga en `diaInicioSemana`, que cada vacación empiece al inicio de una semana del ciclo, que los asuetos estén dentro del ciclo y que no se encime con otro ciclo (`VALIDACION`). Exige `version` (`CONFLICTO`). Un ciclo `cerrado` no se puede configurar, y no se puede configurar uno nuevo mientras haya un ciclo configurado anterior sin cerrar (`VALIDACION`). |
+| `concluirCiclo(id, version)` | `Ciclo` | Marca `cerrado`. Exige que el ciclo esté configurado y no cerrado (`VALIDACION`) y su `version` (`CONFLICTO`). |
+| `listarReportes()` | `Reporte[]` | Del más reciente al más antiguo (`fecha`, luego `creadoEn`). |
+| `crearReporte(datos)` | `Reporte` | `datos`: `{ estudianteId, fecha, tipo, descripcion, acciones }`. `NO_ENCONTRADO` si el estudiante no existe; `VALIDACION` si está inactivo. |
 | `listarEvaluaciones()` | `Evaluacion[]` | Con `promedio`. |
 | `guardarEvaluacion(estudianteId, cicloId, version, datos)` | `Evaluacion` | `datos`: `{ calificaciones, observaciones }`. Si no existe la crea (`version` = `null`); si existe la reemplaza y exige su `version` (`CONFLICTO`). `NO_ENCONTRADO` si el estudiante o el ciclo no existen. |
 

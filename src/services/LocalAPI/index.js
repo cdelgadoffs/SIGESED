@@ -1,6 +1,6 @@
 import { ApiError } from '../ApiError.js';
 import {
-  STORE_CATALOGOS, STORE_UNICOS, STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS,
+  STORE_CATALOGOS, STORE_UNICOS, STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES,
   obtenerTodos, obtener, guardar, escribirVarios,
 } from './db.js';
 import {
@@ -8,7 +8,8 @@ import {
   exigirPlantel, generarMatricula, ordenarPersonas, validarRolesDisponibles, validarRolesAsignables, ciclosDelAnio, ordenarCiclos,
   prepararEvaluacion, idEvaluacion, conPromedio,
   gruposSegunRol, validarNombreGrupoUnico, ordenarGrupos,
-  prepararConfiguracionCiclo, validarCicloSinEncimar, cicloConDerivados, hoyServidor,
+  prepararConfiguracionCiclo, validarCicloSinEncimar, cicloConDerivados, hoyServidor, exigirCiclosAnterioresCerrados,
+  validarFechaReporte, cicloDeFecha, ordenarReportes,
 } from './reglas.js';
 
 const CLAVE_PLANTEL = 'plantel';
@@ -55,7 +56,8 @@ export async function guardarPlantel(version, datos) {
   let plantel;
   if (actual) {
     exigirVersion(actual, version);
-    plantel = registroEditado(actual, limpio);
+    const { id, version: v, creadoEn, creadoPor, modificadoEn } = actual;
+    plantel = registroEditado({ id, version: v, creadoEn, creadoPor, modificadoEn }, limpio);
   } else {
     plantel = nuevoRegistro(limpio);
   }
@@ -181,9 +183,11 @@ export async function configurarCiclo(id, version, datos) {
   exigirEscritura();
   const actual = await exigirExistente(STORE_CICLOS, id, 'El ciclo escolar no existe.');
   exigirVersion({ version: actual.version ?? 1 }, version);
+  const todos = await listarCiclos();
+  exigirCiclosAnterioresCerrados({ ...actual, cerrado: actual.cerrado ?? false }, todos);
   const { semanasCiclo = [] } = await listarCatalogos();
   const { fechaFin, ...limpio } = prepararConfiguracionCiclo(datos, semanasCiclo);
-  validarCicloSinEncimar(id, limpio.fechaInicio, fechaFin, await listarCiclos());
+  validarCicloSinEncimar(id, limpio.fechaInicio, fechaFin, todos);
   const registro = { ...actual, ...limpio, version: (actual.version ?? 1) + 1, modificadoEn: new Date().toISOString() };
   await guardar(STORE_CICLOS, registro);
   return cicloConDerivados(registro, semanasCiclo, hoyServidor());
@@ -199,6 +203,19 @@ export async function crearCiclosAnuales(anio) {
     .map((c) => ({ ...c, creadoEn: ahora, creadoPor: usuarioActual().id }));
   await escribirVarios({ poner: nuevos.map((valor) => ({ store: STORE_CICLOS, valor })) });
   return listarCiclos();
+}
+
+export async function concluirCiclo(id, version) {
+  exigirEscritura();
+  const actual = await exigirExistente(STORE_CICLOS, id, 'El ciclo escolar no existe.');
+  exigirVersion({ version: actual.version ?? 1 }, version);
+  if (!actual.fechaInicio) throw new ApiError('VALIDACION', 'Configura el ciclo antes de concluirlo.');
+  if (actual.cerrado) throw new ApiError('VALIDACION', `El ciclo ${id} ya está concluido.`);
+  const ahora = new Date().toISOString();
+  const registro = { ...actual, cerrado: true, cerradoEn: ahora, cerradoPor: usuarioActual().id, version: (actual.version ?? 1) + 1, modificadoEn: ahora };
+  await guardar(STORE_CICLOS, registro);
+  const { semanasCiclo = [] } = await listarCatalogos();
+  return cicloConDerivados(registro, semanasCiclo, hoyServidor());
 }
 
 export async function listarEvaluaciones() {
@@ -223,4 +240,28 @@ export async function guardarEvaluacion(estudianteId, cicloId, version, datos) {
   }
   await guardar(STORE_EVALUACIONES, evaluacion);
   return conPromedio(evaluacion);
+}
+
+export async function listarReportes() {
+  return ordenarReportes(await obtenerTodos(STORE_REPORTES));
+}
+
+export async function crearReporte(datos) {
+  exigirEscritura();
+  if (!datos || typeof datos !== 'object') throw new ApiError('VALIDACION', 'Faltan los datos del reporte.');
+  const estudiante = await exigirExistente(STORE_ESTUDIANTES, datos.estudianteId, 'El estudiante no existe.');
+  if (estudiante.activo === false) throw new ApiError('VALIDACION', 'No se pueden levantar reportes a un estudiante inactivo.');
+  const fecha = validarFechaReporte(datos.fecha, hoyServidor());
+  const limpio = prepararRegistro('reporte', datos, await listarCatalogos());
+  const registro = {
+    id: crypto.randomUUID(),
+    estudianteId: datos.estudianteId,
+    fecha,
+    ...limpio,
+    cicloId: cicloDeFecha(fecha, await listarCiclos()),
+    creadoEn: new Date().toISOString(),
+    creadoPor: usuarioActual().id,
+  };
+  await guardar(STORE_REPORTES, registro);
+  return registro;
 }
