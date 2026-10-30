@@ -9,7 +9,8 @@ export function capitalizarPalabras(texto) {
 }
 
 export function coincideBusqueda(termino, valores) {
-  const buscado = normalizarTexto(termino);
-  if (!buscado) return true;
-  return valores.some((v) => normalizarTexto(v).includes(buscado));
+  const palabras = normalizarTexto(termino).split(/\s+/).filter(Boolean);
+  if (palabras.length === 0) return true;
+  const texto = valores.map((v) => normalizarTexto(v)).join(' ');
+  return palabras.every((p) => texto.includes(p));
 }

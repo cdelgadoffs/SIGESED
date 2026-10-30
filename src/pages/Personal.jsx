@@ -4,9 +4,10 @@ import Sidebar2 from '../components/base/Sidebar2.jsx';
 import Sidebar3 from '../components/base/Sidebar3.jsx';
 import Sidebar5 from '../components/base/Sidebar5.jsx';
 import PanelPrincipal from '../components/base/PanelPrincipal.jsx';
-import BotonIcono from '../components/base/BotonIcono.jsx';
 import MenuPrincipal from '../components/widgets/MenuPrincipal.jsx';
 import MenuPanelControl from '../components/widgets/MenuPanelControl.jsx';
+import RolesSesion from '../components/widgets/RolesSesion.jsx';
+import FiltroEstado from '../components/widgets/FiltroEstado.jsx';
 import ListaPersonalSidebar from '../components/widgets/ListaPersonalSidebar.jsx';
 import FichaPersonal from '../components/widgets/FichaPersonal.jsx';
 import FormularioPersonal from '../components/widgets/FormularioPersonal.jsx';
@@ -16,7 +17,7 @@ import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR2, ANCHO_SIDEBAR3, ALTO_TOPBAR } fr
 export default function Personal() {
   const {
     izquierdaSidebar1,
-    sidebar3Abierto, cerrarSidebar3, registroEnEdicionId, abrirNuevoRegistro,
+    sidebar3Abierto, cerrarSidebar3, registroEnEdicionId,
     sidebar5Abierto, cerrarSidebar5, sidebar5Ancho,
   } = useUI();
   const { PLANTEL, PERSONAL } = useRegistros();
@@ -36,7 +37,7 @@ export default function Personal() {
         mostrarCerrar={false}
         badge="Personal administrativo"
         subtitulo={`${PERSONAL.length} ${PERSONAL.length === 1 ? 'persona' : 'personas'}`}
-        accionesHeader={<BotonIcono icono="ri-add-line" ariaLabel="Nuevo registro de personal" onClick={abrirNuevoRegistro} />}
+        accionesHeader={<FiltroEstado />}
       >
         <ListaPersonalSidebar />
       </Sidebar2>
@@ -49,7 +50,7 @@ export default function Personal() {
       >
         <FormularioPersonal />
       </Sidebar3>
-      <Sidebar5 abierto={sidebar5Abierto} ancho={sidebar5Ancho} arriba={ALTO_TOPBAR} onCerrar={cerrarSidebar5}>
+      <Sidebar5 debajoTitulo={<RolesSesion />} abierto={sidebar5Abierto} ancho={sidebar5Ancho} arriba={ALTO_TOPBAR} onCerrar={cerrarSidebar5}>
         <MenuPanelControl />
       </Sidebar5>
       <PanelPrincipal izquierda={panelIzquierda} arriba={ALTO_TOPBAR}>

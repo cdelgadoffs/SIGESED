@@ -26,6 +26,21 @@ export function filtrarPersonas(personas, termino) {
   return personas.filter((p) => coincideBusqueda(termino, [nombreCompleto(p), p.telefono, p.correo, p.matricula]));
 }
 
+export function filtrarEstudiantes(estudiantes, grupos, termino) {
+  return estudiantes.filter((e) => coincideBusqueda(termino, [
+    nombreCompleto(e), e.matricula, e.telefono, e.correo, grupos.find((g) => g.id === e.grupo)?.nombre,
+  ]));
+}
+
 export function registroActivo(registros, id) {
-  return registros.find((r) => r.id === id) ?? registros[0] ?? null;
+  return registros.find((r) => r.id === id) ?? null;
+}
+
+export function segunEstado(registros, filtro) {
+  const activos = filtro !== 'inactivos';
+  return registros.filter((r) => (r.activo !== false) === activos);
+}
+
+export function ordenarPorTexto(registros, texto) {
+  return [...registros].sort((a, b) => texto(a).localeCompare(texto(b), 'es', { sensitivity: 'base', numeric: true }));
 }

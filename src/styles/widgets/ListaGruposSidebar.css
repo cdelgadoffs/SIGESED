@@ -35,3 +35,8 @@
   background: rgba(0, 0, 0, 0.15);
   cursor: pointer;
 }
+.widget-lista-grupos-sidebar-estado {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}

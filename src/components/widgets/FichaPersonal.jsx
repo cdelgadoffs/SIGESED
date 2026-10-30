@@ -1,33 +1,32 @@
 import Card from '../base/Card.jsx';
 import BadgeDinamico from '../base/BadgeDinamico.jsx';
-import IndicadorSync from '../base/IndicadorSync.jsx';
 import OpcionesRegistro from './OpcionesRegistro.jsx';
+import EstadoConfirmado from './EstadoConfirmado.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { estiloGenero, filtrarPersonas, nombreCompleto, nombreDeCatalogo, registroActivo } from '../../utils/registros.js';
+import { estiloGenero, filtrarPersonas, nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
 import '../../styles/widgets/FichaPersonal.css';
 
 export default function FichaPersonal() {
-  const { PERSONAL, GENEROS, ROLES, GRUPOS, CARGA, eliminarPersonal } = useRegistros();
-  const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro } = useUI();
-  const persona = registroActivo(filtrarPersonas(PERSONAL, terminoBusqueda), registroSeleccionadoId);
+  const { PERSONAL, GENEROS, ROLES, GRUPOS, CARGA, eliminarPersonal, editarPersonal } = useRegistros();
+  const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro, filtroEstado } = useUI();
+  const persona = registroActivo(segunEstado(filtrarPersonas(PERSONAL, terminoBusqueda), filtroEstado), registroSeleccionadoId);
 
   if (!persona) {
     const mensaje = PERSONAL.length === 0 && CARGA.personal.cargando
       ? 'Cargando…'
       : 'Registra al personal administrativo con el botón «+» de la lista.';
-    return <p className="widget-ficha-personal-mensaje">{PERSONAL.length > 0 ? 'Sin coincidencias.' : mensaje}</p>;
+    return <p className="widget-ficha-personal-mensaje">{PERSONAL.length > 0 ? 'Elige a una persona de la lista.' : mensaje}</p>;
   }
 
   const estilo = estiloGenero(persona.genero);
 
   return (
-    <div className="widget-ficha-personal">
+    <div className={'widget-ficha-personal' + (persona.activo !== false ? ' widget-ficha-personal-activo' : '')}>
       <Card>
         <div className="widget-ficha-personal-encabezado">
           <span className="widget-ficha-personal-nombre">{nombreCompleto(persona)}</span>
           <BadgeDinamico texto={nombreDeCatalogo(GENEROS, persona.genero)} icono={estilo.icono} tono={estilo.tono} />
-          <IndicadorSync estado={persona.sincronizacion} />
         </div>
         <dl className="widget-ficha-personal-datos">
           <dt>Teléfono</dt>
@@ -50,6 +49,7 @@ export default function FichaPersonal() {
           )}
         </dl>
         <div className="widget-ficha-personal-acciones">
+          <EstadoConfirmado tamano="grande" encendido={persona.activo !== false} descripcion={`a ${nombreCompleto(persona)}`} onCambiar={(activo) => editarPersonal(persona.id, { activo })} />
           <OpcionesRegistro
             descripcion={`a ${nombreCompleto(persona)} del personal`}
             onEditar={() => abrirEdicionRegistro(persona.id)}

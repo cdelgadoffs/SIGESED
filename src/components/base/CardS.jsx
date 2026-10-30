@@ -1,6 +1,6 @@
 import '../../styles/base/CardS.css';
 
-export default function CardS({ estado, titulo, subtitulo, estadoLabel, onClick, onEliminar, eliminarDeshabilitado }) {
+export default function CardS({ estado, titulo, subtitulo, estadoLabel, onClick, onEditar, onEliminar, eliminarDeshabilitado }) {
   return (
     <div className={'base-card-s' + (estado ? ' base-card-s-' + estado : '')} onClick={onClick}>
       <div className="base-card-s-top">
@@ -9,6 +9,17 @@ export default function CardS({ estado, titulo, subtitulo, estadoLabel, onClick,
       </div>
       <div className="base-card-s-bottom">
         <span className="base-card-s-subtitulo">{subtitulo}</span>
+        {onEditar && (
+          <button
+            type="button"
+            className="base-card-s-editar"
+            title="Editar"
+            aria-label={`Editar ${titulo}`}
+            onClick={(e) => { e.stopPropagation(); onEditar(); }}
+          >
+            <i className="ri-pencil-line" aria-hidden="true"></i>
+          </button>
+        )}
         {onEliminar && (
           <button
             type="button"

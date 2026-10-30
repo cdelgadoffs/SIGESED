@@ -3,7 +3,7 @@ import BotonS from '../base/BotonS.jsx';
 import IndicadorSync from '../base/IndicadorSync.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { filtrarPersonas, nombreCompleto, nombreDeCatalogo, registroActivo } from '../../utils/registros.js';
+import { filtrarEstudiantes, nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
 import { evaluacionDe } from '../../utils/evaluaciones.js';
 import { ALTO_HOJA, ANCHO_HOJA, documentoBoleta } from '../../utils/boleta.js';
 import logoIcom from '../../assets/Icom.jpg';
@@ -11,12 +11,12 @@ import logo55 from '../../assets/55.jpg';
 import '../../styles/widgets/VistaPreviaBoleta.css';
 
 export default function VistaPreviaBoleta() {
-  const { ESTUDIANTES, EVALUACIONES, MATERIAS, PLANTEL, cicloActivoId } = useRegistros();
-  const { terminoBusqueda, registroSeleccionadoId } = useUI();
+  const { ESTUDIANTES, GRUPOS, EVALUACIONES, MATERIAS, PLANTEL, cicloActivoId } = useRegistros();
+  const { terminoBusqueda, registroSeleccionadoId, filtroEstado } = useUI();
   const iframeRef = useRef(null);
   const marcoRef = useRef(null);
   const [escala, setEscala] = useState(0);
-  const alumno = registroActivo(filtrarPersonas(ESTUDIANTES, terminoBusqueda), registroSeleccionadoId);
+  const alumno = registroActivo(segunEstado(filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda), filtroEstado), registroSeleccionadoId);
   const evaluacion = alumno && cicloActivoId ? evaluacionDe(EVALUACIONES, alumno.id, cicloActivoId) : null;
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function VistaPreviaBoleta() {
   if (!evaluacion) {
     const mensaje = alumno && cicloActivoId
       ? `Aún no hay calificaciones guardadas de ${nombreCompleto(alumno)} en el ciclo ${cicloActivoId}. Captúralas y guarda para ver su boleta.`
-      : 'La boleta aparecerá aquí cuando el estudiante tenga calificaciones guardadas.';
+      : 'Elige un estudiante de la lista para ver su boleta.';
     return <p className="widget-vista-previa-boleta-mensaje">{mensaje}</p>;
   }
 

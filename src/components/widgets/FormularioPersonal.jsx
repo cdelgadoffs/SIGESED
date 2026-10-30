@@ -8,9 +8,9 @@ import MarcoFormulario from './MarcoFormulario.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { useFormularioRegistro } from '../../hooks/useFormularioRegistro.js';
-import { estiloGenero, nombreCompleto } from '../../utils/registros.js';
+import { estiloGenero } from '../../utils/registros.js';
 import { capitalizarPalabras } from '../../utils/texto.js';
-import { esCorreo, esTelefono, MENSAJES_FORMATO } from '../../utils/validaciones.js';
+import { DOMINIO_CORREO, correoCompleto, esTelefono, esUsuarioGmail, usuarioDeCorreo, MENSAJES_FORMATO } from '../../utils/validaciones.js';
 import '../../styles/widgets/FormularioPersonal.css';
 
 const VACIO = { nombre: '', primerApellido: '', segundoApellido: '', telefono: '', correo: '', genero: '', roles: [], grupos: [] };
@@ -71,18 +71,25 @@ export default function FormularioPersonal() {
   }
 
   const esDocente = form.roles.includes(ROL_CON_GRUPOS);
+  const rolesAsignables = ROLES.filter((r) => r.asignacion !== 'entra-id');
 
   const errores = {
     telefono: form.telefono && !esTelefono(form.telefono) ? MENSAJES_FORMATO.telefono : null,
-    correo: form.correo && !esCorreo(form.correo) ? MENSAJES_FORMATO.correo : null,
+    correo: usuarioDeCorreo(form.correo) && !esUsuarioGmail(form.correo) ? MENSAJES_FORMATO.correo : null,
   };
-  const completo = form.nombre.trim() && form.primerApellido.trim() && generoActual && form.roles.length > 0 && PLANTEL;
+  const completo = form.nombre.trim() && form.primerApellido.trim() && usuarioDeCorreo(form.correo).trim() && generoActual
+    && form.roles.some((id) => rolesAsignables.some((r) => r.id === id)) && PLANTEL;
   const puedeConfirmar = !!completo && !Object.values(errores).some(Boolean) && !ocupado;
 
   async function confirmar() {
     setOcupado(true);
     setFallo(null);
-    const datos = { ...form, genero: generoActual.id };
+    const datos = {
+      ...form,
+      genero: generoActual.id,
+      correo: correoCompleto(form.correo),
+      roles: form.roles.filter((id) => rolesAsignables.some((r) => r.id === id)),
+    };
     try {
       if (registro) {
         await editarPersonal(registro.id, datos);
@@ -152,25 +159,30 @@ export default function FormularioPersonal() {
           enfocar={sidebar3Abierto && cambiosGenero ? `${apertura}:${cambiosGenero}` : null}
         />
       </CampoFormulario>
-      <CampoFormulario etiqueta="Correo" medio error={errores.correo}>
-        <CampoTexto tipo="email" value={form.correo} onChange={(v) => cambiar('correo', v)} />
+      <CampoFormulario etiqueta="Correo" requerido medio error={errores.correo}>
+        <div className="widget-formulario-personal-correo">
+          <CampoTexto
+            value={usuarioDeCorreo(form.correo)}
+            onChange={(v) => cambiar('correo', v.replace(/\s/g, '').toLowerCase())}
+            placeholder="usuario"
+            ariaLabel="Usuario de Gmail"
+          />
+          <span className="widget-formulario-personal-dominio">{DOMINIO_CORREO}</span>
+        </div>
       </CampoFormulario>
       <CampoFormulario etiqueta="Roles" requerido>
         <div className="widget-formulario-personal-roles">
-          {ROLES.map((rol) => {
-            const marcado = form.roles.includes(rol.id);
-            const titulares = rol.maximo ? titularesDe(rol) : [];
-            const rolOcupado = !marcado && titulares.length >= rol.maximo && rol.maximo !== null;
-            return (
-              <Checkbox
-                key={rol.id}
-                checked={marcado}
-                disabled={rolOcupado}
-                label={rolOcupado ? `${rol.nombre} (${titulares.map(nombreCompleto).join(', ')})` : rol.nombre}
-                onChange={(v) => alternarRol(rol.id, v)}
-              />
-            );
-          })}
+          {rolesAsignables.filter((rol) => {
+            if (!rol.maximo || form.roles.includes(rol.id)) return true;
+            return titularesDe(rol).length < rol.maximo;
+          }).map((rol) => (
+            <Checkbox
+              key={rol.id}
+              checked={form.roles.includes(rol.id)}
+              label={rol.nombre}
+              onChange={(v) => alternarRol(rol.id, v)}
+            />
+          ))}
         </div>
       </CampoFormulario>
       {esDocente && (

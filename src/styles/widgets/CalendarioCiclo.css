@@ -1,0 +1,84 @@
+.widget-calendario-ciclo {
+  align-self: flex-start;
+  width: 100%;
+  max-width: 1100px;
+  padding: 24px 32px;
+  box-sizing: border-box;
+}
+.widget-calendario-ciclo-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f3f3f3;
+  border-bottom: 1px solid #e0e0e0;
+}
+.widget-calendario-ciclo-titulo {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-calendario-ciclo-cuerpo {
+  display: grid;
+    padding: 16px;
+}
+.widget-calendario-ciclo-vacio {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+}
+.widget-calendario-ciclo-calendario {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.widget-calendario-ciclo-semana {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  border-left: 3px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fafafa;
+  font-size: 12.5px;
+}
+.widget-calendario-ciclo-semana-vacaciones {
+  border-left-color: #f0a14a;
+  background: #fff6ec;
+  color: #8a4b08;
+}
+.widget-calendario-ciclo-semana-actual {
+  border-left-color: #1a56db;
+  background: #e8f0fe;
+  color: #1a56db;
+  font-weight: 600;
+}
+.widget-calendario-ciclo-semana-nombre {
+  font-weight: 500;
+}
+.widget-calendario-ciclo-semana-fechas {
+  color: inherit;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+.widget-calendario-ciclo-asuetos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+}
+.widget-calendario-ciclo-mensaje {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: #888;
+}
+.widget-calendario-ciclo-mensaje p {
+  margin: 0;
+}

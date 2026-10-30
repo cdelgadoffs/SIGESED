@@ -4,15 +4,34 @@ import BotonS from '../base/BotonS.jsx';
 import BotonExpandible from '../base/BotonExpandible.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { filtrarEstudiantes, nombreCompleto } from '../../utils/registros.js';
 import { useAjustesVisuales } from '../../context/AjustesVisualesContext.jsx';
 import { NIVELES_BRILLO } from '../../utils/brillo.js';
 import logo from '../../assets/SIGESED-BLACK-HORIZONTAL.jpg';
 import '../../styles/widgets/Topbar.css';
 
 const PREFIJO_BRILLO = 'brillo:';
+const MAX_SUGERENCIAS = 8;
 
 export default function Topbar({ opcionesConfiguracion = [], onSeleccionarConfiguracion }) {
-  const { toggleSidebar5, terminoBusqueda, setTerminoBusqueda } = useUI();
+  const { toggleSidebar5, terminoBusqueda, setTerminoBusqueda, setVistaActual, setRegistroSeleccionadoId, setRegistrosAbierto, setFiltroEstado } = useUI();
+  const { ESTUDIANTES, GRUPOS } = useRegistros();
+  const sugerencias = filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda).slice(0, MAX_SUGERENCIAS).map((e) => ({
+    id: e.id,
+    texto: nombreCompleto(e),
+    icono: 'ri-user-line',
+    activo: e.activo !== false,
+    insignia: e.activo === false ? { texto: 'Inactivo', tono: 'rojo' } : { texto: 'Activo', tono: 'verde' },
+  }));
+
+  function abrirEstudiante(sugerencia) {
+    setVistaActual('estudiantes');
+    setRegistrosAbierto(true);
+    setRegistroSeleccionadoId(sugerencia.id);
+    setFiltroEstado(sugerencia.activo ? 'activos' : 'inactivos');
+    setTerminoBusqueda('');
+  }
   const { cerrarSesion } = useAuth();
   const { brilloPantalla, cambiarAjuste } = useAjustesVisuales();
   const opcionesBrillo = NIVELES_BRILLO.map((nivel) => ({
@@ -34,7 +53,13 @@ export default function Topbar({ opcionesConfiguracion = [], onSeleccionarConfig
         <img className="widget-topbar-logo" src={logo} alt="SIGESED" />
       </div>
       <div className="widget-topbar-right">
-        <BuscadorGlobal value={terminoBusqueda} onChange={setTerminoBusqueda} placeholder="Buscar..." />
+        <BuscadorGlobal
+          value={terminoBusqueda}
+          onChange={setTerminoBusqueda}
+          placeholder="Buscar..."
+          sugerencias={sugerencias}
+          onElegir={abrirEstudiante}
+        />
         <FechaDia />
         <BotonS onClick={cerrarSesion}>Salir</BotonS>
         <BotonExpandible

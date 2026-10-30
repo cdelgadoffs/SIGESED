@@ -8,6 +8,10 @@ import Estudiantes from './pages/Estudiantes.jsx';
 import Evaluaciones from './pages/Evaluaciones.jsx';
 import PlanEstudios from './pages/PlanEstudios.jsx';
 import Kardex from './pages/Kardex.jsx';
+import ControlHorarios from './pages/ControlHorarios.jsx';
+import AsistenciaGeneral from './pages/AsistenciaGeneral.jsx';
+import PlanTrabajo from './pages/PlanTrabajo.jsx';
+import CursosExtracurriculares from './pages/CursosExtracurriculares.jsx';
 import BitacoraEstudiantil from './pages/BitacoraEstudiantil.jsx';
 import { useUI } from './context/UIContext.jsx';
 
@@ -19,6 +23,10 @@ const PAGES = {
   evaluaciones: Evaluaciones,
   planEstudios: PlanEstudios,
   kardex: Kardex,
+  horarios: ControlHorarios,
+  asistencia: AsistenciaGeneral,
+  planTrabajo: PlanTrabajo,
+  cursos: CursosExtracurriculares,
   bitacora: BitacoraEstudiantil,
 };
 

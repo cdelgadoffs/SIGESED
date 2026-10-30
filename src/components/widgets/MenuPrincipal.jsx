@@ -6,7 +6,10 @@ import '../../styles/widgets/MenuPrincipal.css';
 
 const ITEMS_MENU_PRINCIPAL = [
   { id: 'inicio', label: 'Inicio', icono: 'ri-home-4-line', destacado: true },
+  { id: 'asistencia', label: 'Asistencia general', icono: 'ri-calendar-check-line' },
   { id: 'bitacora', label: 'Bitácora estudiantil', icono: 'ri-draft-line' },
+  { id: 'horarios', label: 'Control de horarios', icono: 'ri-time-line' },
+  { id: 'cursos', label: 'Cursos extracurriculares', icono: 'ri-award-line' },
   { id: 'kardex', label: 'Kárdex académico', icono: 'ri-file-user-line' },
   {
     id: 'registros',
@@ -19,6 +22,7 @@ const ITEMS_MENU_PRINCIPAL = [
     ],
   },
   { id: 'planEstudios', label: 'Plan de estudios', icono: 'ri-book-open-line' },
+  { id: 'planTrabajo', label: 'Plan de trabajo', icono: 'ri-task-line' },
   { id: 'evaluaciones', label: 'Registro de evaluaciones', icono: 'ri-file-edit-line' },
 ];
 

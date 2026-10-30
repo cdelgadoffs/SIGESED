@@ -24,8 +24,7 @@
   border: 1px solid transparent;
 }
 .base-badge-fecha:hover {
-  transform: scale(1.03);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transform: scale(1.08);
 }
 .base-badge-fecha-celebrada {
   background: #c8e6c9;
@@ -53,8 +52,10 @@
   font-weight: 700;
   padding: 4px 11px;
   margin: 0 4px;
+  border-width: 2px;
+  border-color: currentColor;
   transform: scale(1.03);
 }
 .base-badge-fecha-activa:hover {
-  transform: scale(1.06);
+  transform: scale(1.1);
 }

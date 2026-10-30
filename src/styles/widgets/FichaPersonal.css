@@ -44,6 +44,8 @@
 .widget-ficha-personal-acciones {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
   padding: 8px 12px;
   border-top: 1px solid #e0e0e0;
 }
@@ -56,4 +58,15 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+.widget-ficha-personal-activo .base-card {
+  border-color: #a8dab5;
+  background: #f6fbf7;
+}
+.widget-ficha-personal-activo .widget-ficha-personal-encabezado {
+  background: #e6f4ea;
+  border-bottom-color: #c3e6cb;
+}
+.widget-ficha-personal-activo .widget-ficha-personal-acciones {
+  border-top-color: #c3e6cb;
 }

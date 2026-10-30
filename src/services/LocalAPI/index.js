@@ -5,9 +5,10 @@ import {
 } from './db.js';
 import {
   usuarioActual, exigirEscritura, prepararRegistro, exigirVersion,
-  exigirPlantel, generarMatricula, ordenarPersonas, validarRolesDisponibles, ciclosDelAnio, ordenarCiclos,
+  exigirPlantel, generarMatricula, ordenarPersonas, validarRolesDisponibles, validarRolesAsignables, ciclosDelAnio, ordenarCiclos,
   prepararEvaluacion, idEvaluacion, conPromedio,
   gruposSegunRol, validarNombreGrupoUnico, ordenarGrupos,
+  prepararConfiguracionCiclo, validarCicloSinEncimar, cicloConDerivados, hoyServidor,
 } from './reglas.js';
 
 const CLAVE_PLANTEL = 'plantel';
@@ -72,6 +73,7 @@ async function validarPersona(tipo, datos, idPropio = null) {
   exigirPlantel(await obtenerPlantel());
   if (tipo === 'personal') {
     const otros = (await obtenerTodos(STORE_PERSONAL)).filter((p) => p.id !== idPropio);
+    validarRolesAsignables(limpio.roles, catalogos);
     validarRolesDisponibles(limpio.roles, otros, catalogos);
     return gruposSegunRol(limpio);
   }
@@ -79,7 +81,7 @@ async function validarPersona(tipo, datos, idPropio = null) {
 }
 
 export async function listarGrupos() {
-  return ordenarGrupos(await obtenerTodos(STORE_GRUPOS));
+  return ordenarGrupos((await obtenerTodos(STORE_GRUPOS)).map((g) => ({ ...g, activo: g.activo ?? true })));
 }
 
 async function validarGrupo(datos, idPropio = null) {
@@ -100,7 +102,7 @@ export async function editarGrupo(id, version, cambios) {
   exigirEscritura();
   const actual = await exigirExistente(STORE_GRUPOS, id, 'El grupo no existe.');
   exigirVersion(actual, version);
-  const registro = registroEditado(actual, await validarGrupo({ ...actual, ...cambios }, id));
+  const registro = registroEditado(actual, await validarGrupo({ activo: true, ...actual, ...cambios }, id));
   await guardar(STORE_GRUPOS, registro);
   return registro;
 }
@@ -115,7 +117,7 @@ export async function eliminarGrupo(id) {
 }
 
 export async function listarPersonal() {
-  return ordenarPersonas((await obtenerTodos(STORE_PERSONAL)).map((p) => ({ ...p, roles: p.roles ?? [], grupos: p.grupos ?? [] })));
+  return ordenarPersonas((await obtenerTodos(STORE_PERSONAL)).map((p) => ({ ...p, roles: p.roles ?? [], grupos: p.grupos ?? [], activo: p.activo ?? true })));
 }
 
 export async function crearPersonal(datos) {
@@ -129,7 +131,7 @@ export async function editarPersonal(id, version, cambios) {
   exigirEscritura();
   const actual = await exigirExistente(STORE_PERSONAL, id, 'El registro no existe.');
   exigirVersion(actual, version);
-  const registro = registroEditado(actual, await validarPersona('personal', { ...actual, ...cambios }, id));
+  const registro = registroEditado(actual, await validarPersona('personal', { activo: true, ...actual, ...cambios }, id));
   await guardar(STORE_PERSONAL, registro);
   return registro;
 }
@@ -139,7 +141,7 @@ export function eliminarPersonal(id) {
 }
 
 export async function listarEstudiantes() {
-  return ordenarPersonas((await obtenerTodos(STORE_ESTUDIANTES)).map((e) => ({ ...e, genero: e.genero ?? '' })));
+  return ordenarPersonas((await obtenerTodos(STORE_ESTUDIANTES)).map((e) => ({ ...e, genero: e.genero ?? '', activo: e.activo ?? true })));
 }
 
 export async function crearEstudiante(datos) {
@@ -156,7 +158,7 @@ export async function editarEstudiante(id, version, cambios) {
   if (cambios && 'matricula' in cambios) throw new ApiError('VALIDACION', 'La matrícula no se puede cambiar.');
   const actual = await exigirExistente(STORE_ESTUDIANTES, id, 'El registro no existe.');
   exigirVersion(actual, version);
-  const registro = registroEditado(actual, await validarPersona('estudiante', { ...actual, ...cambios }));
+  const registro = registroEditado(actual, await validarPersona('estudiante', { activo: true, ...actual, ...cambios }));
   await guardar(STORE_ESTUDIANTES, registro);
   return registro;
 }
@@ -170,7 +172,21 @@ export async function eliminarEstudiante(id) {
 }
 
 export async function listarCiclos() {
-  return ordenarCiclos(await obtenerTodos(STORE_CICLOS));
+  const { semanasCiclo = [] } = await listarCatalogos();
+  const hoy = hoyServidor();
+  return ordenarCiclos(await obtenerTodos(STORE_CICLOS)).map((c) => cicloConDerivados(c, semanasCiclo, hoy));
+}
+
+export async function configurarCiclo(id, version, datos) {
+  exigirEscritura();
+  const actual = await exigirExistente(STORE_CICLOS, id, 'El ciclo escolar no existe.');
+  exigirVersion({ version: actual.version ?? 1 }, version);
+  const { semanasCiclo = [] } = await listarCatalogos();
+  const { fechaFin, ...limpio } = prepararConfiguracionCiclo(datos, semanasCiclo);
+  validarCicloSinEncimar(id, limpio.fechaInicio, fechaFin, await listarCiclos());
+  const registro = { ...actual, ...limpio, version: (actual.version ?? 1) + 1, modificadoEn: new Date().toISOString() };
+  await guardar(STORE_CICLOS, registro);
+  return cicloConDerivados(registro, semanasCiclo, hoyServidor());
 }
 
 export async function crearCiclosAnuales(anio) {

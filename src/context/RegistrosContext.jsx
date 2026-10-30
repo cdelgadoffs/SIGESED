@@ -98,6 +98,20 @@ export function RegistrosProvider({ children }) {
     return ciclos;
   }
 
+  async function configurarCiclo(id, valores) {
+    const actual = datosRef.current.ciclos.find((c) => c.id === id);
+    try {
+      const [ciclo] = conSincronizacion('ciclos', [await api.configurarCiclo(id, actual?.version ?? 1, valores)]);
+      const valor = datosRef.current.ciclos.map((c) => (c.id === ciclo.id ? ciclo : c));
+      fijar('ciclos', valor);
+      guardarCache('ciclos', valor).catch(() => {});
+      return ciclo;
+    } catch (e) {
+      if (e?.codigo === 'CONFLICTO') recargar('ciclos');
+      throw e;
+    }
+  }
+
   async function guardarEvaluacion(estudianteId, cicloId, valores) {
     const actual = datosRef.current.evaluaciones.find((e) => e.estudianteId === estudianteId && e.cicloId === cicloId);
     try {
@@ -123,6 +137,7 @@ export function RegistrosProvider({ children }) {
   const { catalogos, ciclos } = datos;
   const anioEnCurso = new Date().getFullYear();
   const cicloActivo = ciclos.find((c) => c.id === cicloElegidoId)
+    ?? ciclos.find((c) => c.estado === 'en-curso')
     ?? ciclos.find((c) => c.anio === anioEnCurso)
     ?? ciclos[0]
     ?? null;
@@ -146,6 +161,8 @@ export function RegistrosProvider({ children }) {
     cicloActivoId: cicloActivo?.id ?? null,
     seleccionarCiclo: setCicloElegidoId,
     crearCiclosAnuales,
+    configurarCiclo,
+    SEMANAS_CICLO: catalogos.semanasCiclo || [],
     CARGA: carga,
     cargando: CLAVES.some((c) => carga[c].cargando),
     error: errores[0] ?? null,

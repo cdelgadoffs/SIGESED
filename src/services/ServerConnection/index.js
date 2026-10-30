@@ -23,3 +23,4 @@ export const listarGrupos = () => noImplementado();
 export const crearGrupo = () => noImplementado();
 export const editarGrupo = () => noImplementado();
 export const eliminarGrupo = () => noImplementado();
+export const configurarCiclo = () => noImplementado();

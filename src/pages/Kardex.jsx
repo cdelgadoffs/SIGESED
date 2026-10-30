@@ -4,6 +4,7 @@ import Sidebar5 from '../components/base/Sidebar5.jsx';
 import PanelPrincipal from '../components/base/PanelPrincipal.jsx';
 import MenuPrincipal from '../components/widgets/MenuPrincipal.jsx';
 import MenuPanelControl from '../components/widgets/MenuPanelControl.jsx';
+import RolesSesion from '../components/widgets/RolesSesion.jsx';
 import { useRegistros } from '../context/RegistrosContext.jsx';
 import { useUI, ANCHO_SIDEBAR1, ALTO_TOPBAR } from '../context/UIContext.jsx';
 
@@ -17,7 +18,7 @@ export default function Kardex() {
       <Sidebar1 izquierda={izquierdaSidebar1} arriba={ALTO_TOPBAR} titulo={PLANTEL?.nombre ?? 'SIGESED'} subtitulo={PLANTEL ? `CCT ${PLANTEL.cct}` : 'Sistema Integral de Gestión Educativa'}>
         <MenuPrincipal />
       </Sidebar1>
-      <Sidebar5 abierto={sidebar5Abierto} ancho={sidebar5Ancho} arriba={ALTO_TOPBAR} onCerrar={cerrarSidebar5}>
+      <Sidebar5 debajoTitulo={<RolesSesion />} abierto={sidebar5Abierto} ancho={sidebar5Ancho} arriba={ALTO_TOPBAR} onCerrar={cerrarSidebar5}>
         <MenuPanelControl />
       </Sidebar5>
       <PanelPrincipal izquierda={izquierdaSidebar1 + ANCHO_SIDEBAR1} arriba={ALTO_TOPBAR}>

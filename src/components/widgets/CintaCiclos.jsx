@@ -4,6 +4,7 @@ import ListaExpandible from '../base/ListaExpandible.jsx';
 import BotonIcono from '../base/BotonIcono.jsx';
 import OpcionesNavegacion from './OpcionesNavegacion.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { ESTADOS_CICLO } from '../../utils/fechas.js';
 import '../../styles/widgets/CintaCiclos.css';
 
 export default function CintaCiclos() {
@@ -15,7 +16,7 @@ export default function CintaCiclos() {
   const anios = Array.from(new Set([...CICLOS.map((c) => c.anio), anio])).sort((a, b) => a - b);
   const ciclos = CICLOS
     .filter((c) => c.anio === anio)
-    .map((c) => ({ id: c.id, label: c.id, estado: c.id === cicloActivoId ? 'proxima' : 'pendiente' }));
+    .map((c) => ({ id: c.id, label: c.id, estado: (ESTADOS_CICLO[c.estado] ?? ESTADOS_CICLO['sin-configurar']).cinta }));
   const mostrarVolver = anioActivo !== null && anioActivo !== anio;
 
   let textoVacio = `No hay ciclos en ${anio}.`;

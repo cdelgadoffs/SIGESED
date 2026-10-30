@@ -1,7 +1,7 @@
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import '../../styles/base/Sidebar5.css';
 
-export default function Sidebar5({ abierto = false, ancho = false, arriba = 52, accionesHeader, onCerrar, mostrarCerrar = true, children }) {
+export default function Sidebar5({ abierto = false, ancho = false, arriba = 52, accionesHeader, debajoTitulo, onCerrar, mostrarCerrar = true, children }) {
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   return (
     <aside
@@ -18,6 +18,7 @@ export default function Sidebar5({ abierto = false, ancho = false, arriba = 52, 
             )}
           </div>
         </div>
+        {debajoTitulo}
       </div>
       <div className="base-sidebar5-nav-wrap">
         <nav className="base-sidebar5-nav" ref={contenedorRef} onScroll={onScroll}>{children}</nav>

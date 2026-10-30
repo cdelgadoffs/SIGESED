@@ -10,7 +10,7 @@ import { useUI } from '../../context/UIContext.jsx';
 import { useFormularioRegistro } from '../../hooks/useFormularioRegistro.js';
 import { estiloGenero, nombreDeCatalogo, opcionesDeCatalogo } from '../../utils/registros.js';
 import { capitalizarPalabras } from '../../utils/texto.js';
-import { esCorreo, esTelefono, MENSAJES_FORMATO } from '../../utils/validaciones.js';
+import { DOMINIO_CORREO, correoCompleto, esTelefono, esUsuarioGmail, usuarioDeCorreo, MENSAJES_FORMATO } from '../../utils/validaciones.js';
 import '../../styles/widgets/FormularioEstudiante.css';
 
 const VACIO = {
@@ -57,16 +57,16 @@ export default function FormularioEstudiante() {
 
   const errores = {
     telefono: form.telefono && !esTelefono(form.telefono) ? MENSAJES_FORMATO.telefono : null,
-    correo: form.correo && !esCorreo(form.correo) ? MENSAJES_FORMATO.correo : null,
+    correo: usuarioDeCorreo(form.correo) && !esUsuarioGmail(form.correo) ? MENSAJES_FORMATO.correo : null,
   };
-  const completo = form.nombre.trim() && form.primerApellido.trim() && generoActual
+  const completo = form.nombre.trim() && form.primerApellido.trim() && usuarioDeCorreo(form.correo).trim() && generoActual
     && form.grupo && form.tiempo && PLANTEL;
   const puedeConfirmar = !!completo && !Object.values(errores).some(Boolean) && !ocupado;
 
   async function confirmar() {
     setOcupado(true);
     setFallo(null);
-    const datos = { ...form, genero: generoActual.id };
+    const datos = { ...form, genero: generoActual.id, correo: correoCompleto(form.correo) };
     try {
       if (registro) {
         await editarEstudiante(registro.id, datos);
@@ -152,8 +152,16 @@ export default function FormularioEstudiante() {
           enfocar={sidebar3Abierto && cambiosGenero ? `${apertura}:${cambiosGenero}` : null}
         />
       </CampoFormulario>
-      <CampoFormulario etiqueta="Correo" medio error={errores.correo}>
-        <CampoTexto tipo="email" value={form.correo} onChange={(v) => cambiar('correo', v)} />
+      <CampoFormulario etiqueta="Correo" requerido medio error={errores.correo}>
+        <div className="widget-formulario-estudiante-correo">
+          <CampoTexto
+            value={usuarioDeCorreo(form.correo)}
+            onChange={(v) => cambiar('correo', v.replace(/\s/g, '').toLowerCase())}
+            placeholder="usuario"
+            ariaLabel="Usuario de Gmail"
+          />
+          <span className="widget-formulario-estudiante-dominio">{DOMINIO_CORREO}</span>
+        </div>
       </CampoFormulario>
       <CampoFormulario etiqueta="Grupo" requerido medio error={GRUPOS.length === 0 ? 'Primero registra un grupo.' : null}>
         {selector('grupo', GRUPOS.map((g) => ({ id: g.id, nombre: g.nombre })))}

@@ -7,7 +7,7 @@ import BotonS from '../base/BotonS.jsx';
 import MarcoFormulario from './MarcoFormulario.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { filtrarPersonas, nombreCompleto, registroActivo } from '../../utils/registros.js';
+import { filtrarEstudiantes, nombreCompleto, registroActivo, segunEstado } from '../../utils/registros.js';
 import { ajustarCalificacion, evaluacionDe, materiasDelPrograma } from '../../utils/evaluaciones.js';
 import '../../styles/widgets/FormularioEvaluacion.css';
 
@@ -133,8 +133,8 @@ function Captura({ alumno, cicloId, evaluacion, materias }) {
 
 export default function FormularioEvaluacion() {
   const { ESTUDIANTES, GRUPOS, EVALUACIONES, MATERIAS, cicloActivoId, CARGA } = useRegistros();
-  const { terminoBusqueda, registroSeleccionadoId, abrirPanelControl } = useUI();
-  const alumno = registroActivo(filtrarPersonas(ESTUDIANTES, terminoBusqueda), registroSeleccionadoId);
+  const { terminoBusqueda, registroSeleccionadoId, abrirPanelControl, filtroEstado } = useUI();
+  const alumno = registroActivo(segunEstado(filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda), filtroEstado), registroSeleccionadoId);
 
   let mensaje = null;
   if (!cicloActivoId) mensaje = 'Crea la calendarización anual de ciclos escolares para poder capturar evaluaciones.';

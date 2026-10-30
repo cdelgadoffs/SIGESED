@@ -10,3 +10,17 @@
   align-items: center;
   flex-shrink: 0;
 }
+.widget-formulario-estudiante-correo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.widget-formulario-estudiante-correo .base-campo-texto {
+  flex: 1;
+  min-width: 0;
+}
+.widget-formulario-estudiante-dominio {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #555;
+}

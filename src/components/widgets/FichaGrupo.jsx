@@ -4,18 +4,18 @@ import IndicadorSync from '../base/IndicadorSync.jsx';
 import OpcionesRegistro from './OpcionesRegistro.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { nombreCompleto, nombreDeCatalogo, registroActivo } from '../../utils/registros.js';
+import { nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
 import { coincideBusqueda } from '../../utils/texto.js';
 import '../../styles/widgets/FichaGrupo.css';
 
 export default function FichaGrupo() {
   const { GRUPOS, ESTUDIANTES, PERSONAL, PROGRAMAS_EDUCATIVOS, MODALIDADES, CARGA, eliminarGrupo } = useRegistros();
-  const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro } = useUI();
-  const grupo = registroActivo(GRUPOS.filter((g) => coincideBusqueda(terminoBusqueda, [g.nombre])), registroSeleccionadoId);
+  const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro, filtroEstado } = useUI();
+  const grupo = registroActivo(segunEstado(GRUPOS.filter((g) => coincideBusqueda(terminoBusqueda, [g.nombre])), filtroEstado), registroSeleccionadoId);
 
   if (!grupo) {
     let mensaje = 'Registra los grupos con el botón «+» de la lista.';
-    if (GRUPOS.length > 0) mensaje = 'Sin coincidencias.';
+    if (GRUPOS.length > 0) mensaje = 'Elige un grupo de la lista.';
     else if (CARGA.grupos.cargando) mensaje = 'Cargando…';
     return <p className="widget-ficha-grupo-mensaje">{mensaje}</p>;
   }

@@ -1,0 +1,9 @@
+.widget-roles-sesion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.widget-roles-sesion .base-badge-dinamico {
+  font-size: 10px;
+}

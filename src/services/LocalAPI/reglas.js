@@ -3,7 +3,7 @@ import { ApiError } from '../ApiError.js';
 const USUARIO = { id: 'usuario-local', nombre: 'Administrador local', rol: 'administrador' };
 
 const RE_CCT = /^\d{2}[A-Z]{3}\d{4}[A-Z]$/;
-const RE_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RE_GMAIL = /^(?=[a-z0-9.]{6,30}@)[a-z0-9]+(\.[a-z0-9]+)*@gmail\.com$/;
 const RE_TELEFONO = /^\d{10}$/;
 
 const CAMPOS_PERSONA = {
@@ -11,7 +11,7 @@ const CAMPOS_PERSONA = {
   primerApellido: { etiqueta: 'Apellido paterno', requerido: true, max: 100, capitalizar: true },
   segundoApellido: { etiqueta: 'Apellido materno', max: 100, capitalizar: true },
   telefono: { etiqueta: 'Teléfono', formato: RE_TELEFONO, mensajeFormato: 'El teléfono debe tener 10 dígitos.' },
-  correo: { etiqueta: 'Correo', max: 150, formato: RE_CORREO, mensajeFormato: 'El correo no es válido.' },
+  correo: { etiqueta: 'Correo', requerido: true, minusculas: true, max: 150, formato: RE_GMAIL, mensajeFormato: 'El correo debe ser una cuenta @gmail.com válida (6 a 30 letras, números o puntos antes del @).' },
 };
 
 const ESPECIFICACIONES = {
@@ -28,18 +28,21 @@ const ESPECIFICACIONES = {
     nombre: { etiqueta: 'Nombre del grupo', requerido: true, max: 100, colapsar: true },
     programaEducativo: { etiqueta: 'Programa educativo', requerido: true, catalogo: 'programasEducativos' },
     modalidad: { etiqueta: 'Modalidad', requerido: true, catalogo: 'modalidades' },
+    activo: { etiqueta: 'Activo', tipo: 'booleano', omision: true },
   },
   personal: {
     ...CAMPOS_PERSONA,
     genero: { etiqueta: 'Género', requerido: true, catalogo: 'generos' },
     roles: { etiqueta: 'Roles', requerido: true, catalogo: 'roles', tipo: 'lista' },
     grupos: { etiqueta: 'Grupos', catalogo: 'grupos', tipo: 'lista' },
+    activo: { etiqueta: 'Activo', tipo: 'booleano', omision: true },
   },
   estudiante: {
     ...CAMPOS_PERSONA,
     genero: { etiqueta: 'Género', requerido: true, catalogo: 'generos' },
     grupo: { etiqueta: 'Grupo', requerido: true, catalogo: 'grupos' },
     tiempo: { etiqueta: 'Tiempo', requerido: true, catalogo: 'tiempos' },
+    activo: { etiqueta: 'Activo', tipo: 'booleano', omision: true },
   },
 };
 
@@ -72,6 +75,11 @@ function validarLista(def, valor, catalogos) {
     throw falla(`Algún valor de «${def.etiqueta}» no existe en el catálogo.`);
   }
   return (catalogos[def.catalogo] || []).map((e) => e.id).filter((id) => unicos.includes(id));
+}
+
+export function validarRolesAsignables(roles, catalogos) {
+  const externo = (catalogos.roles || []).find((r) => roles.includes(r.id) && r.asignacion === 'entra-id');
+  if (externo) throw falla(`El rol «${externo.nombre}» no se asigna en el registro: lo otorga Microsoft Entra ID al iniciar sesión.`);
 }
 
 export function validarRolesDisponibles(roles, otros, catalogos) {
@@ -108,6 +116,12 @@ export function prepararRegistro(tipo, datos, catalogos) {
   const limpio = {};
   Object.entries(ESPECIFICACIONES[tipo]).forEach(([campo, def]) => {
     let valor = datos[campo];
+    if (def.tipo === 'booleano') {
+      if (valor === undefined || valor === null) valor = def.omision;
+      if (typeof valor !== 'boolean') throw falla(`El campo «${def.etiqueta}» debe ser verdadero o falso.`);
+      limpio[campo] = valor;
+      return;
+    }
     if (def.tipo === 'lista') {
       limpio[campo] = validarLista(def, valor, catalogos);
       return;
@@ -116,6 +130,7 @@ export function prepararRegistro(tipo, datos, catalogos) {
     if (typeof valor !== 'string') throw falla(`El campo «${def.etiqueta}» debe ser texto.`);
     valor = valor.trim();
     if (def.mayusculas) valor = valor.toUpperCase();
+    if (def.minusculas) valor = valor.toLowerCase();
     if (def.capitalizar) valor = capitalizarPalabras(valor.replace(/\s+/g, ' '));
     else if (def.colapsar) valor = valor.replace(/\s+/g, ' ');
     if (!valor) {
@@ -179,6 +194,111 @@ export function ciclosDelAnio(anio) {
   return Array.from({ length: CICLOS_POR_ANIO }, (_, i) => ({
     id: `${anio}-${i + 1}`, anio, numero: i + 1, duracionMeses: MESES_POR_CICLO,
   }));
+}
+
+const DIA_MS = 86400000;
+const RE_FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+function aTiempo(iso) {
+  if (typeof iso !== 'string' || !RE_FECHA.test(iso)) return null;
+  const [a, m, d] = iso.split('-').map(Number);
+  const t = Date.UTC(a, m - 1, d);
+  const f = new Date(t);
+  return f.getUTCFullYear() === a && f.getUTCMonth() === m - 1 && f.getUTCDate() === d ? t : null;
+}
+
+function aIso(t) {
+  return new Date(t).toISOString().slice(0, 10);
+}
+
+export function hoyServidor() {
+  const h = new Date();
+  return aIso(Date.UTC(h.getFullYear(), h.getMonth(), h.getDate()));
+}
+
+function exigirFecha(iso, etiqueta) {
+  const t = aTiempo(iso);
+  if (t === null) throw falla(`${etiqueta} no es una fecha válida (AAAA-MM-DD).`);
+  return t;
+}
+
+export function calendarioCiclo(ciclo, semanasCatalogo) {
+  if (!ciclo.fechaInicio) return { semanas: [], periodosVacacionales: [], fechaFin: null };
+  const pendientes = [...(ciclo.vacaciones || [])].sort((a, b) => a.inicio.localeCompare(b.inicio));
+  const catalogo = [...semanasCatalogo].sort((a, b) => a.numero - b.numero);
+  const semanas = [];
+  const periodosVacacionales = [];
+  let cursor = aTiempo(ciclo.fechaInicio);
+  catalogo.forEach((semana) => {
+    while (pendientes.length > 0 && aTiempo(pendientes[0].inicio) === cursor) {
+      const v = pendientes.shift();
+      const fin = cursor + (v.semanas * 7 - 1) * DIA_MS;
+      periodosVacacionales.push({ inicio: v.inicio, fin: aIso(fin), semanas: v.semanas });
+      cursor = fin + DIA_MS;
+    }
+    semanas.push({ numero: semana.numero, nombre: semana.nombre, inicio: aIso(cursor), fin: aIso(cursor + 6 * DIA_MS) });
+    cursor += 7 * DIA_MS;
+  });
+  if (pendientes.length > 0) {
+    throw falla(`El periodo vacacional del ${pendientes[0].inicio} debe empezar al inicio de una semana del ciclo, antes del cierre.`);
+  }
+  return { semanas, periodosVacacionales, fechaFin: semanas.length ? semanas[semanas.length - 1].fin : null };
+}
+
+export function prepararConfiguracionCiclo(datos, semanasCatalogo) {
+  if (!datos || typeof datos !== 'object') throw falla('Faltan los datos del ciclo.');
+  const inicio = exigirFecha(datos.fechaInicio, 'La fecha de inicio');
+  const dia = datos.diaInicioSemana;
+  if (!Number.isInteger(dia) || dia < 0 || dia > 6) throw falla('El día de inicio de semana debe ser un entero de 0 (domingo) a 6 (sábado).');
+  if (new Date(inicio).getUTCDay() !== dia) throw falla('La fecha de inicio debe caer en el día en que empieza la semana.');
+  const listaVacaciones = datos.vacaciones ?? [];
+  if (!Array.isArray(listaVacaciones)) throw falla('Las vacaciones deben ser una lista.');
+  const vacaciones = listaVacaciones.map((v) => {
+    const t = exigirFecha(v?.inicio, 'El inicio de un periodo vacacional');
+    if (!Number.isInteger(v.semanas) || v.semanas < 1 || v.semanas > 52) throw falla('Cada periodo vacacional debe durar de 1 a 52 semanas completas.');
+    if (t <= inicio) throw falla('Los periodos vacacionales deben empezar después de la Semana 1.');
+    return { inicio: aIso(t), semanas: v.semanas };
+  }).sort((a, b) => a.inicio.localeCompare(b.inicio));
+  if (new Set(vacaciones.map((v) => v.inicio)).size !== vacaciones.length) throw falla('Hay periodos vacacionales repetidos.');
+  const limpio = { fechaInicio: aIso(inicio), diaInicioSemana: dia, vacaciones, asuetos: [] };
+  const { fechaFin, periodosVacacionales } = calendarioCiclo(limpio, semanasCatalogo);
+  const listaAsuetos = datos.asuetos ?? [];
+  if (!Array.isArray(listaAsuetos)) throw falla('Los asuetos deben ser una lista.');
+  const asuetos = [...new Set(listaAsuetos.map((a) => aIso(exigirFecha(a, 'Un día de asueto'))))].sort();
+  asuetos.forEach((a) => {
+    if (a < limpio.fechaInicio || a > fechaFin) throw falla(`El asueto del ${a} está fuera del ciclo (${limpio.fechaInicio} a ${fechaFin}).`);
+    if (periodosVacacionales.some((v) => a >= v.inicio && a <= v.fin)) throw falla(`El asueto del ${a} cae en un periodo vacacional.`);
+  });
+  return { ...limpio, asuetos, fechaFin };
+}
+
+export function validarCicloSinEncimar(id, inicio, fin, otros) {
+  const encimado = otros.find((c) => c.id !== id && c.fechaInicio && c.fechaFin && inicio <= c.fechaFin && fin >= c.fechaInicio);
+  if (encimado) throw falla(`Las fechas se enciman con el ciclo ${encimado.id} (${encimado.fechaInicio} a ${encimado.fechaFin}).`);
+}
+
+export function cicloConDerivados(guardado, semanasCatalogo, hoy) {
+  const ciclo = {
+    ...guardado,
+    fechaInicio: guardado.fechaInicio ?? null,
+    diaInicioSemana: guardado.diaInicioSemana ?? null,
+    vacaciones: guardado.vacaciones ?? [],
+    asuetos: guardado.asuetos ?? [],
+    version: guardado.version ?? 1,
+  };
+  const { semanas, periodosVacacionales, fechaFin } = calendarioCiclo(ciclo, semanasCatalogo);
+  let estado = 'sin-configurar';
+  let semanaActual = null;
+  if (fechaFin) {
+    if (hoy < ciclo.fechaInicio) estado = 'proximo';
+    else if (hoy > fechaFin) estado = 'concluido';
+    else {
+      estado = 'en-curso';
+      const semana = semanas.find((s) => hoy >= s.inicio && hoy <= s.fin);
+      semanaActual = semana ? { numero: semana.numero, nombre: semana.nombre } : { numero: null, nombre: 'Vacaciones' };
+    }
+  }
+  return { ...ciclo, semanas, periodosVacacionales, fechaFin, estado, semanaActual, asuetoHoy: ciclo.asuetos.includes(hoy) };
 }
 
 export function ordenarCiclos(ciclos) {

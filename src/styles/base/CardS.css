@@ -80,3 +80,19 @@
   color: #555;
   cursor: default;
 }
+.base-card-s-editar {
+  margin-left: auto;
+  padding: 2px 6px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: transparent;
+  color: #bbb;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.base-card-s-editar:hover {
+  color: #fff;
+  border-color: #888;
+}

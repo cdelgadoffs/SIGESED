@@ -20,6 +20,7 @@ export const {
   eliminarEstudiante,
   listarCiclos,
   crearCiclosAnuales,
+  configurarCiclo,
   listarEvaluaciones,
   guardarEvaluacion,
 } = implementacion;

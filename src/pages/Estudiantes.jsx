@@ -4,9 +4,10 @@ import Sidebar2 from '../components/base/Sidebar2.jsx';
 import Sidebar3 from '../components/base/Sidebar3.jsx';
 import Sidebar5 from '../components/base/Sidebar5.jsx';
 import PanelPrincipal from '../components/base/PanelPrincipal.jsx';
-import BotonIcono from '../components/base/BotonIcono.jsx';
 import MenuPrincipal from '../components/widgets/MenuPrincipal.jsx';
 import MenuPanelControl from '../components/widgets/MenuPanelControl.jsx';
+import RolesSesion from '../components/widgets/RolesSesion.jsx';
+import FiltroEstado from '../components/widgets/FiltroEstado.jsx';
 import ListaEstudiantesSidebar from '../components/widgets/ListaEstudiantesSidebar.jsx';
 import FichaEstudiante from '../components/widgets/FichaEstudiante.jsx';
 import FormularioEstudiante from '../components/widgets/FormularioEstudiante.jsx';
@@ -16,7 +17,7 @@ import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR2, ANCHO_SIDEBAR3, ALTO_TOPBAR } fr
 export default function Estudiantes() {
   const {
     izquierdaSidebar1,
-    sidebar3Abierto, cerrarSidebar3, registroEnEdicionId, abrirNuevoRegistro,
+    sidebar3Abierto, cerrarSidebar3, registroEnEdicionId,
     sidebar5Abierto, cerrarSidebar5, sidebar5Ancho,
   } = useUI();
   const { PLANTEL, ESTUDIANTES } = useRegistros();
@@ -36,7 +37,7 @@ export default function Estudiantes() {
         mostrarCerrar={false}
         badge="Estudiantes"
         subtitulo={`${ESTUDIANTES.length} ${ESTUDIANTES.length === 1 ? 'estudiante' : 'estudiantes'}`}
-        accionesHeader={<BotonIcono icono="ri-add-line" ariaLabel="Nuevo estudiante" onClick={abrirNuevoRegistro} />}
+        accionesHeader={<FiltroEstado />}
       >
         <ListaEstudiantesSidebar />
       </Sidebar2>
@@ -49,7 +50,7 @@ export default function Estudiantes() {
       >
         <FormularioEstudiante />
       </Sidebar3>
-      <Sidebar5 abierto={sidebar5Abierto} ancho={sidebar5Ancho} arriba={ALTO_TOPBAR} onCerrar={cerrarSidebar5}>
+      <Sidebar5 debajoTitulo={<RolesSesion />} abierto={sidebar5Abierto} ancho={sidebar5Ancho} arriba={ALTO_TOPBAR} onCerrar={cerrarSidebar5}>
         <MenuPanelControl />
       </Sidebar5>
       <PanelPrincipal izquierda={panelIzquierda} arriba={ALTO_TOPBAR}>

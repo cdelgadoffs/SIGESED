@@ -1,20 +1,20 @@
 import Card from '../base/Card.jsx';
 import BadgeDinamico from '../base/BadgeDinamico.jsx';
-import IndicadorSync from '../base/IndicadorSync.jsx';
 import OpcionesRegistro from './OpcionesRegistro.jsx';
+import EstadoConfirmado from './EstadoConfirmado.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { estiloGenero, filtrarPersonas, nombreCompleto, nombreDeCatalogo, registroActivo } from '../../utils/registros.js';
+import { estiloGenero, filtrarEstudiantes, nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
 import '../../styles/widgets/FichaEstudiante.css';
 
 export default function FichaEstudiante() {
-  const { ESTUDIANTES, GRUPOS, GENEROS, PROGRAMAS_EDUCATIVOS, TIEMPOS, MODALIDADES, CARGA, eliminarEstudiante } = useRegistros();
-  const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro } = useUI();
-  const alumno = registroActivo(filtrarPersonas(ESTUDIANTES, terminoBusqueda), registroSeleccionadoId);
+  const { ESTUDIANTES, GRUPOS, GENEROS, PROGRAMAS_EDUCATIVOS, TIEMPOS, MODALIDADES, CARGA, eliminarEstudiante, editarEstudiante } = useRegistros();
+  const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro, filtroEstado } = useUI();
+  const alumno = registroActivo(segunEstado(filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda), filtroEstado), registroSeleccionadoId);
 
   if (!alumno) {
     let mensaje = 'Registra a los estudiantes con el botón «+» de la lista.';
-    if (ESTUDIANTES.length > 0) mensaje = 'Sin coincidencias.';
+    if (ESTUDIANTES.length > 0) mensaje = 'Elige un estudiante de la lista.';
     else if (CARGA.estudiantes.cargando) mensaje = 'Cargando…';
     return <p className="widget-ficha-estudiante-mensaje">{mensaje}</p>;
   }
@@ -22,7 +22,7 @@ export default function FichaEstudiante() {
   const grupo = GRUPOS.find((g) => g.id === alumno.grupo);
 
   return (
-    <div className="widget-ficha-estudiante">
+    <div className={'widget-ficha-estudiante' + (alumno.activo !== false ? ' widget-ficha-estudiante-activo' : '')}>
       <Card>
         <div className="widget-ficha-estudiante-encabezado">
           <span className="widget-ficha-estudiante-nombre">{nombreCompleto(alumno)}</span>
@@ -30,7 +30,6 @@ export default function FichaEstudiante() {
             <BadgeDinamico texto={nombreDeCatalogo(GENEROS, alumno.genero)} icono={estiloGenero(alumno.genero).icono} tono={estiloGenero(alumno.genero).tono} />
           )}
           <BadgeDinamico texto={alumno.matricula} icono="ri-id-card-line" tono="gris" title="Matrícula" />
-          <IndicadorSync estado={alumno.sincronizacion} />
         </div>
         <dl className="widget-ficha-estudiante-datos">
           <dt>Grupo</dt>
@@ -47,6 +46,7 @@ export default function FichaEstudiante() {
           <dd>{alumno.correo || 'Sin registrar'}</dd>
         </dl>
         <div className="widget-ficha-estudiante-acciones">
+          <EstadoConfirmado tamano="grande" encendido={alumno.activo !== false} descripcion={`a ${nombreCompleto(alumno)}`} onCambiar={(activo) => editarEstudiante(alumno.id, { activo })} />
           <OpcionesRegistro
             descripcion={`a ${nombreCompleto(alumno)} (matrícula ${alumno.matricula})`}
             onEditar={() => abrirEdicionRegistro(alumno.id)}

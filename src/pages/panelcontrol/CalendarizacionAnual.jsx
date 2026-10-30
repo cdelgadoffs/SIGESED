@@ -4,13 +4,14 @@ import CardS from '../../components/base/CardS.jsx';
 import OpcionesNavegacion from '../../components/widgets/OpcionesNavegacion.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
+import { ESTADOS_CICLO } from '../../utils/fechas.js';
 import '../../styles/pages/panelcontrol/CalendarizacionAnual.css';
 
 const CICLOS_POR_ANIO = 6;
 
 export default function CalendarizacionAnual() {
   const { CICLOS, cicloActivoId, seleccionarCiclo, crearCiclosAnuales, CARGA } = useRegistros();
-  const { setPanelControlActivo, setSidebar5Ancho } = useUI();
+  const { setPanelControlActivo, setSidebar5Ancho, setVistaActual, setCicloEnEdicionId, cerrarSidebar5 } = useUI();
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
@@ -26,6 +27,13 @@ export default function CalendarizacionAnual() {
   function cambiarAnio(delta) {
     setAnio((a) => a + delta);
     setMensaje(null);
+  }
+
+  function editar(id) {
+    seleccionarCiclo(id);
+    setVistaActual('inicio');
+    setCicloEnEdicionId(id);
+    cerrarSidebar5();
   }
 
   async function crear() {
@@ -71,16 +79,20 @@ export default function CalendarizacionAnual() {
         </p>
       )}
       <div className="panelcontrol-calendarizacion-anual-lista">
-        {delAnio.map((c) => (
-          <CardS
-            key={c.id}
-            estado={c.id === cicloActivoId ? 'proxima' : 'pendiente'}
-            titulo={`Ciclo ${c.id}`}
-            subtitulo={`${c.duracionMeses} meses`}
-            estadoLabel={c.id === cicloActivoId ? 'Activo' : undefined}
-            onClick={() => seleccionarCiclo(c.id)}
-          />
-        ))}
+        {delAnio.map((c) => {
+          const estado = ESTADOS_CICLO[c.estado] ?? ESTADOS_CICLO['sin-configurar'];
+          return (
+            <CardS
+              key={c.id}
+              estado={estado.cinta}
+              titulo={`Ciclo ${c.id}${c.id === cicloActivoId ? ' · activo' : ''}`}
+              subtitulo={c.fechaInicio ? `${c.fechaInicio} a ${c.fechaFin}` : `${c.duracionMeses} meses`}
+              estadoLabel={estado.texto}
+              onClick={() => seleccionarCiclo(c.id)}
+              onEditar={() => editar(c.id)}
+            />
+          );
+        })}
       </div>
     </div>
   );

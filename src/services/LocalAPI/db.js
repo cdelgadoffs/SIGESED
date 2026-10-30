@@ -2,7 +2,7 @@ import { ApiError } from '../ApiError.js';
 import { CATALOGOS_SEMILLA } from './semilla.js';
 
 const DB_NAME = 'LocalAPI';
-const DB_VERSION = 9;
+const DB_VERSION = 11;
 
 export const STORE_CATALOGOS = 'catalogos';
 export const STORE_UNICOS = 'unicos';
@@ -85,7 +85,7 @@ function conectar() {
           if (db.objectStoreNames.contains(nombre)) db.deleteObjectStore(nombre);
         });
       }
-      if (anterior >= 5 && anterior < 7) db.deleteObjectStore(STORE_CATALOGOS);
+      if (anterior >= 5 && anterior < 11) db.deleteObjectStore(STORE_CATALOGOS);
       if (anterior >= 4 && anterior < 8) agregarGeneroVacio(req.transaction.objectStore(STORE_ESTUDIANTES));
       if (anterior >= 4 && anterior < 9) pasarEstudiantesAGrupo(req.transaction.objectStore(STORE_ESTUDIANTES));
       [STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS].forEach((nombre) => {
