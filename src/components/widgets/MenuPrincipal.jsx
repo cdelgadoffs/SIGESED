@@ -5,20 +5,40 @@ import { useUI } from '../../context/UIContext.jsx';
 import '../../styles/widgets/MenuPrincipal.css';
 
 const ITEMS_MENU_PRINCIPAL = [
-  { id: 'inicio', label: 'Inicio' },
+  { id: 'inicio', label: 'Inicio', icono: 'ri-home-4-line', destacado: true },
+  { id: 'bitacora', label: 'Bitácora estudiantil', icono: 'ri-draft-line' },
+  { id: 'kardex', label: 'Kárdex académico', icono: 'ri-file-user-line' },
   {
     id: 'registros',
-    label: 'Registros',
+    label: 'Matrícula',
+    icono: 'ri-team-line',
     hijos: [
+      { id: 'grupos', nombre: 'Grupos', lista: 'GRUPOS' },
       { id: 'personal', nombre: 'Personal administrativo', lista: 'PERSONAL' },
       { id: 'estudiantes', nombre: 'Estudiantes', lista: 'ESTUDIANTES' },
     ],
   },
+  { id: 'planEstudios', label: 'Plan de estudios', icono: 'ri-book-open-line' },
+  { id: 'evaluaciones', label: 'Registro de evaluaciones', icono: 'ri-file-edit-line' },
 ];
 
 export default function MenuPrincipal() {
   const registros = useRegistros();
   const { vistaActual, setVistaActual, abrirNuevoRegistro, registrosAbierto, setRegistrosAbierto } = useUI();
+
+  function irA(vista) {
+    setVistaActual(vista);
+    setRegistrosAbierto(false);
+  }
+
+  function alternarGrupo(item, activo) {
+    if (!activo) {
+      setVistaActual(item.hijos[0].id);
+      setRegistrosAbierto(true);
+      return;
+    }
+    setRegistrosAbierto((a) => !a);
+  }
 
   function agregar(vista) {
     setVistaActual(vista);
@@ -30,19 +50,22 @@ export default function MenuPrincipal() {
       {ITEMS_MENU_PRINCIPAL.map((item) => {
         if (!item.hijos) {
           return (
-            <BotonSeleccionableMenu key={item.id} activo={vistaActual === item.id} onClick={() => setVistaActual(item.id)}>
-              {item.label}
-            </BotonSeleccionableMenu>
+            <div key={item.id} className={item.destacado ? 'widget-menu-principal-destacado' : undefined}>
+              <BotonSeleccionableMenu icono={item.icono} activo={vistaActual === item.id} onClick={() => irA(item.id)}>
+                {item.label}
+              </BotonSeleccionableMenu>
+            </div>
           );
         }
         const activo = item.hijos.some((h) => h.id === vistaActual);
         return (
           <div key={item.id}>
             <BotonSeleccionableMenu
+              icono={item.icono}
               activo={activo}
               expandible
               expandido={registrosAbierto}
-              onClick={() => setRegistrosAbierto((a) => !a)}
+              onClick={() => alternarGrupo(item, activo)}
             >
               {item.label}
             </BotonSeleccionableMenu>

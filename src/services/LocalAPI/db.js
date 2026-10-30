@@ -2,13 +2,15 @@ import { ApiError } from '../ApiError.js';
 import { CATALOGOS_SEMILLA } from './semilla.js';
 
 const DB_NAME = 'LocalAPI';
-const DB_VERSION = 6;
+const DB_VERSION = 9;
 
 export const STORE_CATALOGOS = 'catalogos';
 export const STORE_UNICOS = 'unicos';
 export const STORE_PERSONAL = 'personal';
 export const STORE_ESTUDIANTES = 'estudiantes';
 export const STORE_CICLOS = 'ciclos';
+export const STORE_EVALUACIONES = 'evaluaciones';
+export const STORE_GRUPOS = 'grupos';
 
 function quitarCamposPersonal(store) {
   store.getAll().onsuccess = (evento) => {
@@ -25,6 +27,23 @@ function quitarCamposPersonal(store) {
 function agregarRolesVacios(store) {
   store.getAll().onsuccess = (evento) => {
     evento.target.result.forEach((persona) => store.put({ ...persona, roles: persona.roles ?? [] }));
+  };
+}
+
+function agregarGeneroVacio(store) {
+  store.getAll().onsuccess = (evento) => {
+    evento.target.result.forEach((estudiante) => store.put({ ...estudiante, genero: estudiante.genero ?? '' }));
+  };
+}
+
+function pasarEstudiantesAGrupo(store) {
+  store.getAll().onsuccess = (evento) => {
+    evento.target.result.forEach((estudiante) => {
+      const limpio = { ...estudiante, grupo: estudiante.grupo ?? '' };
+      delete limpio.programaEducativo;
+      delete limpio.modalidad;
+      store.put(limpio);
+    });
   };
 }
 
@@ -66,7 +85,10 @@ function conectar() {
           if (db.objectStoreNames.contains(nombre)) db.deleteObjectStore(nombre);
         });
       }
-      [STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS].forEach((nombre) => {
+      if (anterior >= 5 && anterior < 7) db.deleteObjectStore(STORE_CATALOGOS);
+      if (anterior >= 4 && anterior < 8) agregarGeneroVacio(req.transaction.objectStore(STORE_ESTUDIANTES));
+      if (anterior >= 4 && anterior < 9) pasarEstudiantesAGrupo(req.transaction.objectStore(STORE_ESTUDIANTES));
+      [STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS].forEach((nombre) => {
         if (!db.objectStoreNames.contains(nombre)) db.createObjectStore(nombre, { keyPath: 'id' });
       });
       if (!db.objectStoreNames.contains(STORE_UNICOS)) db.createObjectStore(STORE_UNICOS, { keyPath: 'clave' });

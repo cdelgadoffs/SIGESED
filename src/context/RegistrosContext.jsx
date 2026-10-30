@@ -5,12 +5,14 @@ import { guardarCache, obtenerCache, guardarBorrador, obtenerBorrador, eliminarB
 const RECURSOS = {
   catalogos: { listar: api.listarCatalogos },
   plantel: { listar: api.obtenerPlantel },
+  grupos: { listar: api.listarGrupos, crear: api.crearGrupo, editar: api.editarGrupo, eliminar: api.eliminarGrupo },
   personal: { listar: api.listarPersonal, crear: api.crearPersonal, editar: api.editarPersonal, eliminar: api.eliminarPersonal },
   estudiantes: { listar: api.listarEstudiantes, crear: api.crearEstudiante, editar: api.editarEstudiante, eliminar: api.eliminarEstudiante },
   ciclos: { listar: api.listarCiclos },
+  evaluaciones: { listar: api.listarEvaluaciones },
 };
 const CLAVES = Object.keys(RECURSOS);
-const VACIOS = { catalogos: {}, plantel: null, personal: [], estudiantes: [], ciclos: [] };
+const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [] };
 
 const RegistrosContext = createContext(null);
 
@@ -96,6 +98,20 @@ export function RegistrosProvider({ children }) {
     return ciclos;
   }
 
+  async function guardarEvaluacion(estudianteId, cicloId, valores) {
+    const actual = datosRef.current.evaluaciones.find((e) => e.estudianteId === estudianteId && e.cicloId === cicloId);
+    try {
+      const [evaluacion] = conSincronizacion('evaluaciones', [await api.guardarEvaluacion(estudianteId, cicloId, actual?.version ?? null, valores)]);
+      const valor = [...datosRef.current.evaluaciones.filter((e) => e.id !== evaluacion.id), evaluacion];
+      fijar('evaluaciones', valor);
+      guardarCache('evaluaciones', valor).catch(() => {});
+      return evaluacion;
+    } catch (e) {
+      if (e?.codigo === 'CONFLICTO' || e?.codigo === 'NO_ENCONTRADO') recargar('evaluaciones');
+      throw e;
+    }
+  }
+
   async function eliminar(recurso, id) {
     await RECURSOS[recurso].eliminar(id);
     const valor = datosRef.current[recurso].filter((r) => r.id !== id);
@@ -119,10 +135,14 @@ export function RegistrosProvider({ children }) {
     PROGRAMAS_EDUCATIVOS: catalogos.programasEducativos || [],
     TIEMPOS: catalogos.tiempos || [],
     MODALIDADES: catalogos.modalidades || [],
+    MATERIAS: catalogos.materias || [],
     PLANTEL: datos.plantel,
+    GRUPOS: datos.grupos,
     PERSONAL: datos.personal,
     ESTUDIANTES: datos.estudiantes,
     CICLOS: ciclos,
+    EVALUACIONES: datos.evaluaciones,
+    guardarEvaluacion,
     cicloActivoId: cicloActivo?.id ?? null,
     seleccionarCiclo: setCicloElegidoId,
     crearCiclosAnuales,
@@ -130,6 +150,9 @@ export function RegistrosProvider({ children }) {
     cargando: CLAVES.some((c) => carga[c].cargando),
     error: errores[0] ?? null,
     guardarPlantel,
+    crearGrupo: (v) => crear('grupos', v),
+    editarGrupo: (id, c) => editar('grupos', id, c),
+    eliminarGrupo: (id) => eliminar('grupos', id),
     crearPersonal: (v) => crear('personal', v),
     editarPersonal: (id, c) => editar('personal', id, c),
     eliminarPersonal: (id) => eliminar('personal', id),

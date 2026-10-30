@@ -8,7 +8,7 @@ import { estiloGenero, filtrarPersonas, nombreCompleto, nombreDeCatalogo, regist
 import '../../styles/widgets/FichaPersonal.css';
 
 export default function FichaPersonal() {
-  const { PERSONAL, GENEROS, ROLES, CARGA, eliminarPersonal } = useRegistros();
+  const { PERSONAL, GENEROS, ROLES, GRUPOS, CARGA, eliminarPersonal } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro } = useUI();
   const persona = registroActivo(filtrarPersonas(PERSONAL, terminoBusqueda), registroSeleccionadoId);
 
@@ -40,6 +40,14 @@ export default function FichaPersonal() {
               ? persona.roles.map((id) => <BadgeDinamico key={id} texto={nombreDeCatalogo(ROLES, id)} tono="azul" />)
               : 'Sin asignar'}
           </dd>
+          {persona.grupos.length > 0 && (
+            <>
+              <dt>Grupos</dt>
+              <dd className="widget-ficha-personal-roles">
+                {persona.grupos.map((id) => <BadgeDinamico key={id} texto={GRUPOS.find((g) => g.id === id)?.nombre ?? id} tono="gris" />)}
+              </dd>
+            </>
+          )}
         </dl>
         <div className="widget-ficha-personal-acciones">
           <OpcionesRegistro

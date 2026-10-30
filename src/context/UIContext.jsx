@@ -19,7 +19,7 @@ export function UIProvider({ children }) {
   const [vistaActual, setVistaActualEstado] = useState('inicio');
   const [registroEnEdicionId, setRegistroEnEdicionId] = useState(null);
   const [registroSeleccionadoId, setRegistroSeleccionadoId] = useState(null);
-  const [registrosAbierto, setRegistrosAbierto] = useState(true);
+  const [registrosAbierto, setRegistrosAbierto] = useState(false);
   const izquierdaSidebar1 = 0;
   const izquierdaSidebar3 = izquierdaSidebar1 + ANCHO_SIDEBAR1;
 

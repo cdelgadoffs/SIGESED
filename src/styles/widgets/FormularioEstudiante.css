@@ -1,0 +1,12 @@
+.widget-formulario-estudiante-fila {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.widget-formulario-estudiante-genero {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}

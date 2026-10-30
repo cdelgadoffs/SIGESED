@@ -1,0 +1,37 @@
+.widget-formulario-evaluacion-materias {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.widget-formulario-evaluacion-materia {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+}
+.widget-formulario-evaluacion-materia .base-checkbox {
+  flex: 1;
+  min-width: 0;
+}
+.widget-formulario-evaluacion-calificacion {
+  width: 64px;
+  flex-shrink: 0;
+}
+.widget-formulario-evaluacion-calificacion .base-campo-texto {
+  text-align: center;
+  font-weight: 600;
+}
+.widget-formulario-evaluacion-mensaje {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 20px;
+  font-size: 13.5px;
+  color: #888;
+}
+.widget-formulario-evaluacion-mensaje p {
+  margin: 0;
+}

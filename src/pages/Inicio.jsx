@@ -26,7 +26,7 @@ export default function Inicio() {
       <PanelPrincipal izquierda={izquierdaSidebar1 + ANCHO_SIDEBAR1} arriba={arriba}>
         <div style={{ textAlign: 'center', color: '#555' }}>
           <h1 style={{ margin: '0 0 8px', fontSize: 24, fontWeight: 600, color: '#1a1a1a' }}>Sistema Integral de Gestión Educativa</h1>
-          <p style={{ margin: 0, fontSize: 14 }}>Elige una opción de «Registros» en el menú para empezar.</p>
+          <p style={{ margin: 0, fontSize: 14 }}>Elige una opción de «Matrícula» en el menú para empezar.</p>
         </div>
       </PanelPrincipal>
     </>

@@ -24,16 +24,22 @@ const ESPECIFICACIONES = {
     domicilio: { etiqueta: 'Domicilio', max: 250 },
     telefono: { etiqueta: 'Teléfono', formato: RE_TELEFONO, mensajeFormato: 'El teléfono debe tener 10 dígitos.' },
   },
+  grupo: {
+    nombre: { etiqueta: 'Nombre del grupo', requerido: true, max: 100, colapsar: true },
+    programaEducativo: { etiqueta: 'Programa educativo', requerido: true, catalogo: 'programasEducativos' },
+    modalidad: { etiqueta: 'Modalidad', requerido: true, catalogo: 'modalidades' },
+  },
   personal: {
     ...CAMPOS_PERSONA,
     genero: { etiqueta: 'Género', requerido: true, catalogo: 'generos' },
     roles: { etiqueta: 'Roles', requerido: true, catalogo: 'roles', tipo: 'lista' },
+    grupos: { etiqueta: 'Grupos', catalogo: 'grupos', tipo: 'lista' },
   },
   estudiante: {
     ...CAMPOS_PERSONA,
-    programaEducativo: { etiqueta: 'Programa educativo', requerido: true, catalogo: 'programasEducativos' },
+    genero: { etiqueta: 'Género', requerido: true, catalogo: 'generos' },
+    grupo: { etiqueta: 'Grupo', requerido: true, catalogo: 'grupos' },
     tiempo: { etiqueta: 'Tiempo', requerido: true, catalogo: 'tiempos' },
-    modalidad: { etiqueta: 'Modalidad', requerido: true, catalogo: 'modalidades' },
   },
 };
 
@@ -79,6 +85,24 @@ export function validarRolesDisponibles(roles, otros, catalogos) {
   });
 }
 
+const ROL_CON_GRUPOS = 'docente';
+
+export function gruposSegunRol(limpio) {
+  return limpio.roles.includes(ROL_CON_GRUPOS) ? limpio : { ...limpio, grupos: [] };
+}
+
+const claveNombre = (texto) => texto.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es-MX');
+
+export function validarNombreGrupoUnico(nombre, otros) {
+  if (otros.some((g) => claveNombre(g.nombre) === claveNombre(nombre))) {
+    throw falla(`Ya existe un grupo llamado «${nombre}».`);
+  }
+}
+
+export function ordenarGrupos(grupos) {
+  return [...grupos].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base', numeric: true }));
+}
+
 export function prepararRegistro(tipo, datos, catalogos) {
   if (!datos || typeof datos !== 'object') throw falla('Faltan los datos del registro.');
   const limpio = {};
@@ -93,6 +117,7 @@ export function prepararRegistro(tipo, datos, catalogos) {
     valor = valor.trim();
     if (def.mayusculas) valor = valor.toUpperCase();
     if (def.capitalizar) valor = capitalizarPalabras(valor.replace(/\s+/g, ' '));
+    else if (def.colapsar) valor = valor.replace(/\s+/g, ' ');
     if (!valor) {
       if (def.requerido) throw falla(`El campo «${def.etiqueta}» es obligatorio.`);
       limpio[campo] = '';
@@ -158,6 +183,43 @@ export function ciclosDelAnio(anio) {
 
 export function ordenarCiclos(ciclos) {
   return [...ciclos].sort((a, b) => a.anio - b.anio || a.numero - b.numero);
+}
+
+const CALIFICACION_MINIMA = 1;
+const CALIFICACION_MAXIMA = 10;
+const MAX_OBSERVACIONES = 1000;
+
+export function prepararEvaluacion(datos, programaEducativo, catalogos) {
+  if (!datos || typeof datos !== 'object') throw falla('Faltan los datos de la evaluación.');
+  const { calificaciones, observaciones = '' } = datos;
+  if (!Array.isArray(calificaciones) || calificaciones.length === 0) throw falla('Asigna al menos una materia con su calificación.');
+  const delPrograma = (catalogos.materias || []).filter((m) => m.programaEducativo === programaEducativo);
+  const porMateria = new Map();
+  calificaciones.forEach((c) => {
+    if (!c || typeof c.materia !== 'string') throw falla('Cada calificación debe indicar su materia.');
+    if (!delPrograma.some((m) => m.id === c.materia)) throw falla('Alguna materia no pertenece al programa educativo del estudiante.');
+    if (porMateria.has(c.materia)) throw falla('Hay materias repetidas.');
+    if (!Number.isInteger(c.calificacion) || c.calificacion < CALIFICACION_MINIMA || c.calificacion > CALIFICACION_MAXIMA) {
+      throw falla(`Las calificaciones deben ser enteros del ${CALIFICACION_MINIMA} al ${CALIFICACION_MAXIMA}.`);
+    }
+    porMateria.set(c.materia, c.calificacion);
+  });
+  if (typeof observaciones !== 'string') throw falla('Las observaciones deben ser texto.');
+  const texto = observaciones.trim();
+  if (texto.length > MAX_OBSERVACIONES) throw falla(`Las observaciones admiten máximo ${MAX_OBSERVACIONES} caracteres.`);
+  return {
+    calificaciones: delPrograma.filter((m) => porMateria.has(m.id)).map((m) => ({ materia: m.id, calificacion: porMateria.get(m.id) })),
+    observaciones: texto,
+  };
+}
+
+export function idEvaluacion(cicloId, estudianteId) {
+  return `${cicloId}:${estudianteId}`;
+}
+
+export function conPromedio(evaluacion) {
+  const suma = evaluacion.calificaciones.reduce((total, c) => total + c.calificacion, 0);
+  return { ...evaluacion, promedio: suma / evaluacion.calificaciones.length };
 }
 
 const comparar = (a = '', b = '') => a.localeCompare(b, 'es', { sensitivity: 'base' });

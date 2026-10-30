@@ -37,6 +37,17 @@
 .base-boton-seleccionable-menu-activo .base-boton-seleccionable-menu-punto {
   opacity: 1;
 }
+.base-boton-seleccionable-menu-icono {
+  width: 14px;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.base-boton-seleccionable-menu-activo .base-boton-seleccionable-menu-icono {
+  opacity: 1;
+}
 .base-boton-seleccionable-menu-badge {
   background: #e0e0e0;
   border: 1px solid #c4c4c4;

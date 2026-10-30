@@ -38,4 +38,15 @@ export const CATALOGOS_SEMILLA = {
     { id: 'semanal', nombre: 'Semanal' },
     { id: 'online', nombre: 'Online' },
   ],
+  materias: [
+    { id: 'desarrollo-habilidades-docentes', nombre: 'Desarrollo de Habilidades Docentes', programaEducativo: 'licenciatura-pedagogia' },
+    { id: 'educacion-america-latina', nombre: 'Educación en América Latina', programaEducativo: 'licenciatura-pedagogia' },
+    { id: 'historia-general-educacion-1', nombre: 'Historia General de la Educación 1', programaEducativo: 'licenciatura-pedagogia' },
+    { id: 'psicotecnica-pedagogica', nombre: 'Psicotécnica Pedagógica', programaEducativo: 'licenciatura-pedagogia' },
+    { id: 'antropologia-filosofica', nombre: 'Antropología Filosófica', programaEducativo: 'licenciatura-pedagogia' },
+    { id: 'teoria-pedagogica-1', nombre: 'Teoría Pedagógica 1', programaEducativo: 'licenciatura-pedagogia' },
+    { id: 'metodologia-investigacion-1', nombre: 'Metodología de la Investigación 1', programaEducativo: 'licenciatura-pedagogia' },
+    { id: 'introduccion-psicologia', nombre: 'Introducción a la Psicología', programaEducativo: 'licenciatura-pedagogia' },
+    { id: 'seminario-titulacion-2', nombre: 'Seminario de Titulación 2', programaEducativo: 'licenciatura-pedagogia' },
+  ],
 };

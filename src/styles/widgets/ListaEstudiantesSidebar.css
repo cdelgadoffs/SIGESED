@@ -35,3 +35,9 @@
   background: rgba(0, 0, 0, 0.15);
   cursor: pointer;
 }
+.widget-lista-estudiantes-sidebar-mujer .base-boton-seleccionable-menu:hover,
+.widget-lista-estudiantes-sidebar-mujer .base-boton-seleccionable-menu-activo {
+  background: #f1eafd;
+  border-left-color: #6a3fc1;
+  color: #6a3fc1;
+}

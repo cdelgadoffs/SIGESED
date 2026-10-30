@@ -22,9 +22,11 @@ export default function ListaEstudiantesSidebar() {
       <div className="widget-lista-estudiantes-sidebar" ref={contenedorRef} onScroll={onScroll}>
         {mensaje && <p className="widget-lista-estudiantes-sidebar-mensaje">{mensaje}</p>}
         {visibles.map((e) => (
-          <BotonSeleccionableMenu key={e.id} activo={e.id === activo?.id} onClick={() => setRegistroSeleccionadoId(e.id)}>
-            <span className="widget-lista-estudiantes-sidebar-nombre">{nombreCompleto(e)}</span>
-          </BotonSeleccionableMenu>
+          <div key={e.id} className={e.genero === 'mujer' ? 'widget-lista-estudiantes-sidebar-mujer' : undefined}>
+            <BotonSeleccionableMenu activo={e.id === activo?.id} onClick={() => setRegistroSeleccionadoId(e.id)}>
+              <span className="widget-lista-estudiantes-sidebar-nombre">{nombreCompleto(e)}</span>
+            </BotonSeleccionableMenu>
+          </div>
         ))}
       </div>
       {thumb.visible && (

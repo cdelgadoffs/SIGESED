@@ -22,11 +22,12 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 |---|---|---|
 | `nivelesEducativos` | | Nivel del plantel. |
 | `turnos` | | Turno del plantel. |
-| `generos` | | Personal. |
+| `generos` | | Personal y estudiantes. |
 | `roles` | `maximo` (int | null) | Roles del personal. `maximo`: cuántas personas pueden tenerlo a la vez (`null` = sin límite). Hoy: Administrador TI y Director, 1. |
-| `programasEducativos` | | Programa educativo del estudiante. |
+| `programasEducativos` | | Programa educativo del grupo. |
 | `tiempos` | | Duración del programa que cursa el estudiante. |
-| `modalidades` | | Modalidad del estudiante. |
+| `modalidades` | | Modalidad del grupo. |
+| `materias` | `programaEducativo` (id de `programasEducativos`) | Materias que se evalúan; cada una pertenece a un programa. A futuro, el ciclo escolar decidirá cuáles se imparten. |
 
 ## Modelo
 
@@ -43,6 +44,17 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 | `telefono` | string | Opcional, 10 dígitos. |
 | `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
 
+### Grupo
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | string | UUID del servidor. |
+| `nombre` | string | 1–100. **Único** (sin distinguir mayúsculas ni espacios sobrantes). |
+| `programaEducativo` | string | `id` de `programasEducativos`. |
+| `modalidad` | string | `id` de `modalidades`. |
+| `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
+
+El grupo **no pertenece a un ciclo escolar** (decisión del usuario): son independientes. La relación vendrá de las materias que cursa cada grupo en cada ciclo (tabla transitiva en la base de datos real). Los estudiantes toman del grupo su programa y su modalidad.
+
 ### Personal (administrativo)
 | Campo | Tipo | Notas |
 |---|---|---|
@@ -53,6 +65,7 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 | `telefono` | string | Opcional, 10 dígitos. |
 | `correo` | string | Opcional, correo válido, máx. 150. |
 | `genero` | string | `id` de `generos`. |
+| `grupos` | string[] | `id`s de grupos existentes, sin repetidos; opcional. Solo el personal con el rol `docente` tiene grupos: sin ese rol se guarda `[]`. Registros anteriores al campo se leen como `[]`. |
 | `roles` | string[] | `id`s de `roles`, sin repetidos; **al menos uno**. Un rol con `maximo` no puede tenerlo más personas de las indicadas (`ROL_OCUPADO`). Registros anteriores al campo se leen como `[]` (se exige al guardarlos). |
 | `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
 
@@ -63,9 +76,9 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 | `matricula` | string | **La asigna el servidor** al crear y **nunca cambia** (ni al corregir el nombre). Ver "Matrícula". |
 | `nombre`, `primerApellido`, `segundoApellido` | string | Igual que en Personal. |
 | `telefono`, `correo` | string | Igual que en Personal. |
-| `programaEducativo` | string | `id` de `programasEducativos`. |
+| `genero` | string | `id` de `generos`. Registros anteriores al campo se leen como `""` (se exige al guardarlos). |
+| `grupo` | string | `id` de un grupo existente. El programa educativo y la modalidad del estudiante son los de su grupo. |
 | `tiempo` | string | `id` de `tiempos`. |
-| `modalidad` | string | `id` de `modalidades`. |
 | `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
 
 **Normalización de nombres** (personal y estudiantes): el servidor normaliza `nombre`, `primerApellido` y `segundoApellido`: espacios simples, todo en minúscula y mayúscula inicial en cada palabra (también después de un guion), p. ej. `maría  JOSÉ` → `María José`.
@@ -83,6 +96,19 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 
 **Calendarización anual:** cada año tiene 3 cuatrimestres divididos en 2 módulos de 2 meses: **6 ciclos** (`2026-1` … `2026-6`). La regla (6 ciclos, 2 meses) es del servidor.
 
+### Evaluación
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | string | `<cicloId>:<estudianteId>`: hay **una evaluación por estudiante y ciclo**. |
+| `estudianteId` | string | Estudiante existente. |
+| `cicloId` | string | Ciclo existente. |
+| `calificaciones` | `{ materia, calificacion }[]` | `materia`: `id` de `materias` **del programa del grupo del estudiante**, sin repetidos, en el orden del catálogo. `calificacion`: entero 1–10. **Al menos una.** |
+| `observaciones` | string | Opcional, máx. 1000. |
+| `promedio` | number | **Derivado al leer** (suma ÷ número de materias, sin redondear); nunca se guarda. |
+| `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
+
+La boleta de calificaciones se arma en el cliente con estos datos (el tratamiento «Alumna»/«Alumno» sale del `genero` del estudiante; sin género, «Alumno(a)») (`utils/boleta.js`); si llega a ser un documento que se guarde o envíe, la armará el servidor.
+
 ## Operaciones
 
 | Operación | Devuelve | Notas |
@@ -90,6 +116,10 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 | `listarCatalogos()` | `{ [nombre]: Elemento[] }` | |
 | `obtenerPlantel()` | `Plantel \| null` | `null` mientras no se haya configurado. |
 | `guardarPlantel(version, datos)` | `Plantel` | Si no existe lo crea (`version` = `null`); si existe lo reemplaza con los `datos` completos y exige su `version` (`CONFLICTO`). |
+| `listarGrupos()` | `Grupo[]` | Ordenados por nombre. |
+| `crearGrupo(datos)` | `Grupo` | `PLANTEL_NO_CONFIGURADO` si aún no hay plantel. |
+| `editarGrupo(id, version, cambios)` | `Grupo` | |
+| `eliminarGrupo(id)` | `{ id }` | `EN_USO` si tiene estudiantes o personal asignado. |
 | `listarPersonal()` | `Personal[]` | Ordenados por apellidos y nombre. |
 | `crearPersonal(datos)` | `Personal` | `PLANTEL_NO_CONFIGURADO` si aún no hay plantel. |
 | `editarPersonal(id, version, cambios)` | `Personal` | Solo los campos enviados. Valida `roles` igual que al crear (sin contarse a sí misma). |
@@ -97,9 +127,11 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 | `listarEstudiantes()` | `Estudiante[]` | Ordenados por apellidos y nombre. |
 | `crearEstudiante(datos)` | `Estudiante` | Asigna `matricula`. `PLANTEL_NO_CONFIGURADO` si aún no hay plantel. |
 | `editarEstudiante(id, version, cambios)` | `Estudiante` | `matricula` no se puede enviar (`VALIDACION`). |
-| `eliminarEstudiante(id)` | `{ id }` | |
+| `eliminarEstudiante(id)` | `{ id }` | `CON_EVALUACIONES` si tiene evaluaciones registradas. |
 | `listarCiclos()` | `Ciclo[]` | Ordenados por año y número. |
 | `crearCiclosAnuales(anio)` | `Ciclo[]` | Crea los 6 ciclos de `anio` (entero, 2000–2100; si no, `VALIDACION`). Idempotente: solo crea los que falten. Devuelve **todos** los ciclos. |
+| `listarEvaluaciones()` | `Evaluacion[]` | Con `promedio`. |
+| `guardarEvaluacion(estudianteId, cicloId, version, datos)` | `Evaluacion` | `datos`: `{ calificaciones, observaciones }`. Si no existe la crea (`version` = `null`); si existe la reemplaza y exige su `version` (`CONFLICTO`). `NO_ENCONTRADO` si el estudiante o el ciclo no existen. |
 
 Al editar se valida el registro completo resultante.
 
@@ -107,11 +139,13 @@ Al editar se valida el registro completo resultante.
 
 | Código | Cuándo |
 |---|---|
-| `VALIDACION` | Campo faltante, con formato inválido o con un `id` que no existe en su catálogo. |
+| `VALIDACION` | Campo faltante, con formato inválido, con un `id` que no existe en su catálogo o un nombre de grupo repetido. |
 | `NO_ENCONTRADO` | El registro no existe. |
 | `CONFLICTO` | `version` distinta de la actual: alguien más lo cambió. El cliente recarga. |
 | `PLANTEL_NO_CONFIGURADO` | Se intenta dar de alta personal o estudiantes sin plantel configurado. |
 | `ROL_OCUPADO` | Se asigna un rol que ya alcanzó su `maximo` en otras personas. El mensaje dice quién lo tiene. |
+| `EN_USO` | Se intenta eliminar un grupo con estudiantes o personal asignado. |
+| `CON_EVALUACIONES` | Se intenta eliminar un estudiante que tiene evaluaciones. |
 | `NO_AUTORIZADO` | El rol no permite escribir. |
 | `NO_DISPONIBLE` | El almacenamiento no está disponible (en `LocalAPI`: otra pestaña con una versión anterior). |
 | `NO_IMPLEMENTADO` | `ServerConnection` mientras no haya backend. |

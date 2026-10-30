@@ -1,0 +1,59 @@
+.widget-ficha-grupo {
+  align-self: flex-start;
+  width: 100%;
+  padding: 24px 32px;
+  box-sizing: border-box;
+}
+.widget-ficha-grupo-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f3f3f3;
+  border-bottom: 1px solid #e0e0e0;
+}
+.widget-ficha-grupo-nombre {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  overflow-wrap: anywhere;
+}
+.widget-ficha-grupo-datos {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 16px;
+  font-size: 13px;
+}
+.widget-ficha-grupo-datos dt {
+  font-size: 11px;
+  font-weight: 600;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  align-self: center;
+}
+.widget-ficha-grupo-datos dd {
+  margin: 0;
+  color: #1a1a1a;
+  overflow-wrap: anywhere;
+}
+.widget-ficha-grupo-acciones {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 12px;
+  border-top: 1px solid #e0e0e0;
+}
+.widget-ficha-grupo-mensaje {
+  margin: 0;
+  font-size: 13.5px;
+  color: #888;
+}
+.widget-ficha-grupo-datos .widget-ficha-grupo-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

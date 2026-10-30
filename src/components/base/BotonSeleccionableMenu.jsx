@@ -1,6 +1,6 @@
 import '../../styles/base/BotonSeleccionableMenu.css';
 
-export default function BotonSeleccionableMenu({ activo = false, deshabilitado = false, completado = false, variante, badge, expandible = false, expandido = false, accion, onClick, children }) {
+export default function BotonSeleccionableMenu({ icono, activo = false, deshabilitado = false, completado = false, variante, badge, expandible = false, expandido = false, accion, onClick, children }) {
   return (
     <div
       className={
@@ -12,7 +12,9 @@ export default function BotonSeleccionableMenu({ activo = false, deshabilitado =
       }
       onClick={deshabilitado ? undefined : onClick}
     >
-      <span className="base-boton-seleccionable-menu-punto"></span>
+      {icono
+        ? <i className={`${icono} base-boton-seleccionable-menu-icono`} aria-hidden="true"></i>
+        : <span className="base-boton-seleccionable-menu-punto"></span>}
       <span>{children}</span>
       {badge !== undefined && (
         <span className="base-boton-seleccionable-menu-badge">{badge}</span>

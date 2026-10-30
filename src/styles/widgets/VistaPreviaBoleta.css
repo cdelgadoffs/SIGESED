@@ -1,0 +1,42 @@
+.widget-vista-previa-boleta {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 16px 24px 24px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #e9ebee;
+}
+.widget-vista-previa-boleta-acciones {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.widget-vista-previa-boleta-marco {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.widget-vista-previa-boleta-hoja {
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.widget-vista-previa-boleta-documento {
+  display: block;
+  border: none;
+  transform-origin: top left;
+}
+.widget-vista-previa-boleta-mensaje {
+  margin: 0;
+  max-width: 420px;
+  text-align: center;
+  font-size: 13.5px;
+  color: #888;
+}

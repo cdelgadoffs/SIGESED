@@ -6,6 +6,10 @@ export const {
   listarCatalogos,
   obtenerPlantel,
   guardarPlantel,
+  listarGrupos,
+  crearGrupo,
+  editarGrupo,
+  eliminarGrupo,
   listarPersonal,
   crearPersonal,
   editarPersonal,
@@ -16,4 +20,6 @@ export const {
   eliminarEstudiante,
   listarCiclos,
   crearCiclosAnuales,
+  listarEvaluaciones,
+  guardarEvaluacion,
 } = implementacion;
