@@ -6,6 +6,7 @@ import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { horasDeModalidad, inscripcionDe, textoHorario, tipoHorario } from '../../utils/inscripciones.js';
 import { documentoHorarios, tieneDisenoHorario } from '../../utils/horarioEscolar.js';
+import { imprimirDocumento } from '../../utils/impresion.js';
 import { nombreCompleto, nombreDeCatalogo } from '../../utils/registros.js';
 import logoIcom from '../../assets/Icom.jpg';
 import logo55 from '../../assets/55.jpg';
@@ -75,7 +76,7 @@ export default function HorarioCiclo() {
   function alCargar() {
     const ventana = iframeRef.current?.contentWindow;
     if (!documento || !ventana) return;
-    Promise.all(FUENTES_COMFORTAA.map((f) => ventana.document.fonts.load(f))).catch(() => null).then(() => ventana.print());
+    Promise.all(FUENTES_COMFORTAA.map((f) => ventana.document.fonts.load(f))).catch(() => null).then(() => imprimirDocumento(ventana));
   }
 
   return (
@@ -87,7 +88,7 @@ export default function HorarioCiclo() {
           : <BadgeDinamico texto="En preparación" icono="ri-time-line" tono="naranja" />}
         {!ciclo.iniciado && !ciclo.cerrado && <BotonS variant="claro" onClick={() => setVistaActual('inicio')}>Configurar en Inicio</BotonS>}
         {imprimibles.length > 1 && (
-          <BotonS variant="claro" onClick={() => imprimir(imprimibles, `Horarios_${ciclo.id}`)}>Imprimir todos</BotonS>
+          <BotonS variant="claro" onClick={() => imprimir(imprimibles, `Control de horarios_${ciclo.id}`)}>Imprimir todos</BotonS>
         )}
       </div>
       {grupos.length === 0 && <p className="widget-horario-ciclo-mensaje">Ningún grupo está inscrito en este ciclo.</p>}

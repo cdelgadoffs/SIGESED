@@ -6,6 +6,7 @@ import { useUI } from '../../context/UIContext.jsx';
 import { filtrarEstudiantes, nombreCompleto, registroActivo, segunEstado } from '../../utils/registros.js';
 import { CALIFICACION_MINIMA, evaluacionDe, filasDeBoleta, materiasInscritas } from '../../utils/evaluaciones.js';
 import { ALTO_HOJA, ANCHO_HOJA, documentoBoleta } from '../../utils/boleta.js';
+import { imprimirDocumento } from '../../utils/impresion.js';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import logoIcom from '../../assets/Icom.jpg';
 import logo55 from '../../assets/55.jpg';
@@ -66,7 +67,7 @@ export default function VistaPreviaBoleta() {
     <div className="widget-vista-previa-boleta">
       <div className="widget-vista-previa-boleta-acciones">
         <IndicadorSync estado={evaluacion.sincronizacion} />
-        <BotonS variant="claro" onClick={() => iframeRef.current?.contentWindow?.print()}>Imprimir / PDF</BotonS>
+        <BotonS variant="claro" onClick={() => imprimirDocumento(iframeRef.current?.contentWindow)}>Imprimir / PDF</BotonS>
       </div>
       <div className="widget-vista-previa-boleta-zona">
         <div ref={marcoRef} className="widget-vista-previa-boleta-marco" onScroll={onScroll}>

@@ -10,7 +10,6 @@ const reglasHoja = (p) => `
   ${p}#boleta .promedio { border: 1px solid #000 !important; background: #f4f4f4 !important; }
   ${p}#boleta .firma-sello { margin-top: 120px !important; border-top: none !important; }
   ${p}#boleta .firma-sello .col .linea-firma { border-bottom: 1px solid #000 !important; }
-  ${p}#boleta .obs .linea { border-bottom: 1px solid #000 !important; }
 `;
 
 export const ANCHO_HOJA = 816;
@@ -111,8 +110,8 @@ body {
 #boleta .promedio .valor { color: #0b1a3a; font-size: 22px; background: white; padding: 2px 20px; border-radius: 4px; border: 1px solid #a0aaba; }
 #boleta .obs { margin-top: 52px; padding-top: 14px; border-top: 1px solid #b0b8c4; }
 #boleta .obs label { font-weight: 700; font-size: 15px; color: #1a1a1a; }
-#boleta .obs .linea { border-bottom: 1px solid #000000; width: 100%; height: 32px; margin-top: 2px; }
-#boleta .obs .obs-texto { white-space: pre-wrap; font-size: 15px; line-height: 1.6; margin-top: 6px; padding-bottom: 6px; border-bottom: 1px solid #000000; }
+#boleta .obs .linea { width: 100%; height: 32px; margin-top: 2px; }
+#boleta .obs .obs-texto { white-space: pre-wrap; font-size: 15px; line-height: 1.6; margin-top: 6px; padding-bottom: 6px; }
 #boleta .firma-sello { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 120px; padding-top: 0px; }
 #boleta .firma-sello .col { text-align: center; width: 45%; }
 #boleta .firma-sello .col .linea-firma { border-bottom: 1px solid #000000; height: 32px; margin-bottom: 2px; }

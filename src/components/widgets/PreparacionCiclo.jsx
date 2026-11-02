@@ -5,7 +5,7 @@ import BotonS from '../base/BotonS.jsx';
 import Modal from '../base/Modal.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { ESTADOS_CICLO, fechaCorta } from '../../utils/fechas.js';
+import { ESTADOS_CICLO } from '../../utils/fechas.js';
 import { MATERIAS_POR_GRUPO, inscripcionDe, textoHorario, tipoHorario } from '../../utils/inscripciones.js';
 import { nombreCompleto, nombreDeCatalogo } from '../../utils/registros.js';
 import '../../styles/widgets/PreparacionCiclo.css';
@@ -30,7 +30,7 @@ function Pendientes({ lista }) {
 
 export default function PreparacionCiclo() {
   const { CICLOS, cicloActivoId, GRUPOS, MODALIDADES, MATERIAS, HORAS_CLASE, PERSONAL, INSCRIPCIONES, iniciarCiclo } = useRegistros();
-  const { cicloEnEdicionId, setCicloEnEdicionId, grupoEnInscripcionId, setGrupoEnInscripcionId } = useUI();
+  const { setCicloEnEdicionId, grupoEnInscripcionId, setGrupoEnInscripcionId } = useUI();
   const [confirmando, setConfirmando] = useState(false);
   const [error, setError] = useState(null);
   const [ocupado, setOcupado] = useState(false);
@@ -41,12 +41,6 @@ export default function PreparacionCiclo() {
   const delPaso = (paso, grupoId = null) => pendientes.filter((p) => p.paso === paso && (p.grupoId ?? null) === grupoId);
   const activos = GRUPOS.filter((g) => g.activo !== false);
   const estado = ESTADOS_CICLO[ciclo.estado] ?? ESTADOS_CICLO['sin-configurar'];
-  const semanas = ciclo.semanas ?? [];
-
-  function editarCalendario() {
-    setGrupoEnInscripcionId(null);
-    setCicloEnEdicionId(ciclo.id);
-  }
 
   function inscribir(grupoId) {
     setCicloEnEdicionId(null);
@@ -85,22 +79,12 @@ export default function PreparacionCiclo() {
         </div>
 
         <div className="widget-preparacion-ciclo-cuerpo">
-          <section className={'widget-preparacion-ciclo-paso' + (cicloEnEdicionId === ciclo.id ? ' widget-preparacion-ciclo-paso-activo' : '')}>
-            <div className="widget-preparacion-ciclo-paso-encabezado">
-              <Marca completo={delPaso('calendario').length === 0} />
-              <span className="widget-preparacion-ciclo-paso-titulo">Calendario</span>
-              {ciclo.fechaInicio && <BotonS variant="claro" onClick={editarCalendario}>Editar</BotonS>}
-            </div>
-            {semanas.length > 0 && (
-              <p className="widget-preparacion-ciclo-detalle">
-                {`Semana 1: ${fechaCorta(semanas[0].inicio)} · Cierre: ${fechaCorta(ciclo.fechaFin)}`}
-                {ciclo.periodosVacacionales.length > 0 && ` · ${ciclo.periodosVacacionales.length} ${ciclo.periodosVacacionales.length === 1 ? 'periodo vacacional' : 'periodos vacacionales'}`}
-                {ciclo.asuetos.length > 0 && ` · ${ciclo.asuetos.length} ${ciclo.asuetos.length === 1 ? 'asueto' : 'asuetos'}`}
-              </p>
-            )}
-            <Pendientes lista={delPaso('calendario')} />
-          </section>
-
+          {delPaso('calendario').length > 0 && (
+            <p className="widget-preparacion-ciclo-aviso">
+              <i className="ri-calendar-todo-line" />
+              {' El calendario tiene pendientes: revísalo en el panel de la derecha.'}
+            </p>
+          )}
           <div className="widget-preparacion-ciclo-seccion">{`Grupos activos (${MATERIAS_POR_GRUPO} materias cada uno)`}</div>
           <Pendientes lista={delPaso('grupos')} />
           {activos.map((g) => {

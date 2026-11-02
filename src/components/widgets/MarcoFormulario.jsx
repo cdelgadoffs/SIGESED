@@ -11,7 +11,7 @@ export default function MarcoFormulario({ error, textoConfirmar, puedeConfirmar,
         <div className="widget-marco-formulario-campos">{children}</div>
         {error && <div className="widget-marco-formulario-error">{error}</div>}
         <div className="widget-marco-formulario-acciones">
-          <BotonS variant={variante} onClick={onCancelar}>Cancelar</BotonS>
+          {onCancelar && <BotonS variant={variante} onClick={onCancelar}>Cancelar</BotonS>}
           <BotonS variant={variante} onClick={onConfirmar} disabled={!puedeConfirmar}>{textoConfirmar}</BotonS>
         </div>
       </div>

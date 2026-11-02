@@ -489,9 +489,10 @@ export function idEvaluacion(cicloId, estudianteId) {
   return `${cicloId}:${estudianteId}`;
 }
 
-export function conPromedio(evaluacion) {
+export function conPromedio(evaluacion, materiasInscritas) {
   const suma = evaluacion.calificaciones.reduce((total, c) => total + c.calificacion, 0);
-  return { ...evaluacion, promedio: suma / evaluacion.calificaciones.length };
+  const materias = Math.max(materiasInscritas, evaluacion.calificaciones.length);
+  return { ...evaluacion, promedio: suma / materias };
 }
 
 const comparar = (a = '', b = '') => a.localeCompare(b, 'es', { sensitivity: 'base' });

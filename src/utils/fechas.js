@@ -33,3 +33,27 @@ export function hoyLocal() {
   const h = new Date();
   return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}-${String(h.getDate()).padStart(2, '0')}`;
 }
+
+const FORMATO_DIA = new Intl.DateTimeFormat('es-MX', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+const FORMATO_DIA_MES = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+export function fechaDia(iso) {
+  return iso ? FORMATO_DIA.format(aFecha(iso)) : '';
+}
+
+export function fechaDiaMes(iso) {
+  return iso ? FORMATO_DIA_MES.format(aFecha(iso)) : '';
+}
+
+export function diasEntre(desde, hasta) {
+  return Math.round((aFecha(hasta) - aFecha(desde)) / 86400000);
+}
+
+export function diasDeSemana(semana, asuetos, hoy) {
+  const inicio = aFecha(semana.inicio);
+  return Array.from({ length: 7 }, (_, i) => {
+    const fecha = new Date(inicio.getTime() + i * 86400000);
+    const iso = fecha.toISOString().slice(0, 10);
+    return { fecha: iso, dia: fecha.getUTCDate(), diaSemana: fecha.getUTCDay(), asueto: asuetos.includes(iso), hoy: iso === hoy };
+  });
+}

@@ -7,6 +7,7 @@ import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { nombreDeCatalogo } from '../../utils/registros.js';
 import { cuatrimestresDe, documentoPlanEstudios, filtrarMaterias, nombreCuatrimestre } from '../../utils/planEstudios.js';
+import { imprimirDocumento } from '../../utils/impresion.js';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import '../../styles/widgets/ResumenPlanEstudios.css';
 
@@ -46,7 +47,7 @@ export default function ResumenPlanEstudios() {
   }
 
   function imprimir() {
-    if (documento) iframeRef.current?.contentWindow?.print();
+    if (documento) imprimirDocumento(iframeRef.current?.contentWindow);
   }
 
   return (

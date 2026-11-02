@@ -70,12 +70,6 @@ function Captura({ alumno, cicloId, evaluacion, materias }) {
   const completas = marcadas.length > 0 && marcadas.every((m) => calificacionValida(form.calificaciones[m.id]));
   const puedeConfirmar = restaurado && completas && !igual(form, base) && !ocupado;
 
-  function descartar() {
-    setForm(base);
-    setError(null);
-    eliminarBorrador(clave).catch(() => {});
-  }
-
   async function confirmar() {
     setOcupado(true);
     setError(null);
@@ -97,7 +91,6 @@ function Captura({ alumno, cicloId, evaluacion, materias }) {
       error={error}
       textoConfirmar="Guardar"
       puedeConfirmar={puedeConfirmar}
-      onCancelar={descartar}
       onConfirmar={confirmar}
     >
       <CampoFormulario etiqueta="Alumno(a)">

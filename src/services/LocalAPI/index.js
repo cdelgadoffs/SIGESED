@@ -286,8 +286,15 @@ export async function guardarInscripcion(cicloId, grupoId, version, datos) {
   return inscripcion;
 }
 
+async function materiasInscritasDe(estudianteId, cicloId) {
+  const estudiante = await obtener(STORE_ESTUDIANTES, estudianteId);
+  const inscripcion = estudiante ? await obtener(STORE_INSCRIPCIONES, idInscripcion(cicloId, estudiante.grupo)) : null;
+  return inscripcion?.materias.length ?? 0;
+}
+
 export async function listarEvaluaciones() {
-  return (await obtenerTodos(STORE_EVALUACIONES)).map(conPromedio);
+  const evaluaciones = await obtenerTodos(STORE_EVALUACIONES);
+  return Promise.all(evaluaciones.map(async (e) => conPromedio(e, await materiasInscritasDe(e.estudianteId, e.cicloId))));
 }
 
 export async function guardarEvaluacion(estudianteId, cicloId, version, datos) {
@@ -311,7 +318,7 @@ export async function guardarEvaluacion(estudianteId, cicloId, version, datos) {
     evaluacion = { id, estudianteId, cicloId, ...limpio, version: 1, creadoEn: ahora, creadoPor: usuarioActual().id, modificadoEn: ahora };
   }
   await guardar(STORE_EVALUACIONES, evaluacion);
-  return conPromedio(evaluacion);
+  return conPromedio(evaluacion, inscritas.size);
 }
 
 export async function listarReportes() {

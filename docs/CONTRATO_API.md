@@ -139,10 +139,10 @@ Se puede guardar incompleta (menos de 3 materias, sin docente o sin horario): lo
 | `cicloId` | string | Ciclo existente. |
 | `calificaciones` | `{ materia, calificacion }[]` | `materia`: `id` de una materia **inscrita por el grupo del estudiante en ese ciclo**, sin repetidos, en el orden del catálogo. `calificacion`: entero 5–10. **Al menos una.** |
 | `observaciones` | string | Opcional, máx. 1000. |
-| `promedio` | number | **Derivado al leer** (suma ÷ número de materias, sin redondear); nunca se guarda. |
+| `promedio` | number | **Derivado al leer**, sin redondear; nunca se guarda. Se divide entre **todas las materias inscritas** por el grupo del estudiante en el ciclo, y cada materia inscrita sin calificación (NP) **cuenta como 0** (decisión del usuario). |
 | `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
 
-La boleta de calificaciones se arma en el cliente con estos datos (el tratamiento «Alumna»/«Alumno» sale del `genero` del estudiante; sin género, «Alumno(a)»; lista las materias **inscritas** por el grupo del estudiante en el ciclo y las no capturadas salen como **NP**, que no cuenta en el promedio; el 5 se imprime en rojo) (`utils/boleta.js`); si llega a ser un documento que se guarde o envíe, la armará el servidor.
+La boleta de calificaciones se arma en el cliente con estos datos (el tratamiento «Alumna»/«Alumno» sale del `genero` del estudiante; sin género, «Alumno(a)»; lista las materias **inscritas** por el grupo del estudiante en el ciclo y las no capturadas salen como **NP**, que cuenta como 0 en el promedio; el 5 se imprime en rojo) (`utils/boleta.js`); si llega a ser un documento que se guarde o envíe, la armará el servidor.
 
 ### Reporte disciplinario (bitácora estudiantil)
 | Campo | Tipo | Notas |

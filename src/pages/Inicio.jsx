@@ -6,13 +6,15 @@ import PanelPrincipal from '../components/base/PanelPrincipal.jsx';
 import MenuPrincipal from '../components/widgets/MenuPrincipal.jsx';
 import MenuPanelControl from '../components/widgets/MenuPanelControl.jsx';
 import RolesSesion from '../components/widgets/RolesSesion.jsx';
-import CalendarioCiclo from '../components/widgets/CalendarioCiclo.jsx';
+import CalendarioSemanal from '../components/widgets/CalendarioSemanal.jsx';
+import ResumenCiclo from '../components/widgets/ResumenCiclo.jsx';
+import Sidebar4 from '../components/base/Sidebar4.jsx';
 import FormularioCiclo from '../components/widgets/FormularioCiclo.jsx';
 import PreparacionCiclo from '../components/widgets/PreparacionCiclo.jsx';
 import FormularioInscripcion from '../components/widgets/FormularioInscripcion.jsx';
 import Sidebar3 from '../components/base/Sidebar3.jsx';
 import { useRegistros } from '../context/RegistrosContext.jsx';
-import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR3, ALTO_TOPBAR, ALTO_CINTA } from '../context/UIContext.jsx';
+import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR3, ANCHO_SIDEBAR4, ALTO_TOPBAR, ALTO_CINTA } from '../context/UIContext.jsx';
 
 export default function Inicio() {
   const {
@@ -51,8 +53,11 @@ export default function Inicio() {
       >
         {grupoInscrito ? <FormularioInscripcion /> : <FormularioCiclo />}
       </Sidebar3>
-      <PanelPrincipal izquierda={izquierdaSidebar3 + (formularioAbierto ? ANCHO_SIDEBAR3 : 0)} arriba={arriba}>
-        {enPreparacion ? <PreparacionCiclo /> : <CalendarioCiclo />}
+      <Sidebar4 abierto={!!ciclo} mostrarCerrar={false} titulo={`Calendario ${cicloActivoId ?? ''}`} arriba={arriba}>
+        <CalendarioSemanal />
+      </Sidebar4>
+      <PanelPrincipal izquierda={izquierdaSidebar3 + (formularioAbierto ? ANCHO_SIDEBAR3 : 0)} derecha={ciclo ? ANCHO_SIDEBAR4 : 0} arriba={arriba}>
+        {enPreparacion ? <PreparacionCiclo /> : <ResumenCiclo />}
       </PanelPrincipal>
     </>
   );
