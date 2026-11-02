@@ -6,10 +6,11 @@ import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
 import { coincideBusqueda } from '../../utils/texto.js';
+import { inscripcionDe } from '../../utils/inscripciones.js';
 import '../../styles/widgets/FichaGrupo.css';
 
 export default function FichaGrupo() {
-  const { GRUPOS, ESTUDIANTES, PERSONAL, PROGRAMAS_EDUCATIVOS, MODALIDADES, CARGA, eliminarGrupo } = useRegistros();
+  const { GRUPOS, ESTUDIANTES, PERSONAL, MATERIAS, INSCRIPCIONES, PROGRAMAS_EDUCATIVOS, MODALIDADES, cicloActivoId, CARGA, eliminarGrupo } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro, filtroEstado } = useUI();
   const grupo = registroActivo(segunEstado(GRUPOS.filter((g) => coincideBusqueda(terminoBusqueda, [g.nombre])), filtroEstado), registroSeleccionadoId);
 
@@ -21,7 +22,7 @@ export default function FichaGrupo() {
   }
 
   const alumnos = ESTUDIANTES.filter((e) => e.grupo === grupo.id);
-  const docentes = PERSONAL.filter((p) => (p.grupos || []).includes(grupo.id));
+  const materias = inscripcionDe(INSCRIPCIONES, cicloActivoId, grupo.id)?.materias ?? [];
 
   return (
     <div className="widget-ficha-grupo">
@@ -36,11 +37,15 @@ export default function FichaGrupo() {
           <dd>{nombreDeCatalogo(PROGRAMAS_EDUCATIVOS, grupo.programaEducativo)}</dd>
           <dt>Modalidad</dt>
           <dd>{nombreDeCatalogo(MODALIDADES, grupo.modalidad)}</dd>
-          <dt>Docentes</dt>
+          <dt>{`Materias y docentes${cicloActivoId ? ` (${cicloActivoId})` : ''}`}</dt>
           <dd className="widget-ficha-grupo-lista">
-            {docentes.length > 0
-              ? docentes.map((p) => <BadgeDinamico key={p.id} texto={nombreCompleto(p)} tono="azul" />)
-              : 'Sin asignar'}
+            {materias.length > 0
+              ? materias.map((m) => {
+                const docente = PERSONAL.find((p) => p.id === m.docenteId);
+                const materia = MATERIAS.find((x) => x.id === m.materia)?.nombre ?? m.materia;
+                return <BadgeDinamico key={m.materia} texto={`${materia} · ${docente ? nombreCompleto(docente) : 'Sin docente'}`} tono="azul" />;
+              })
+              : 'Sin inscribir en este ciclo'}
           </dd>
         </dl>
         <div className="widget-ficha-grupo-acciones">

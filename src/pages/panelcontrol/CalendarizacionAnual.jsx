@@ -114,7 +114,7 @@ export default function CalendarizacionAnual() {
                 ? <BotonS variant="claro" onClick={() => setPorConcluir(c.id)}>Concluir ciclo escolar</BotonS>
                 : undefined}
               onClick={() => seleccionarCiclo(c.id)}
-              onEditar={c.cerrado ? undefined : () => editar(c.id)}
+              onEditar={c.cerrado || c.iniciado ? undefined : () => editar(c.id)}
             />
           );
         })}

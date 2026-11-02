@@ -24,6 +24,7 @@ export function UIProvider({ children }) {
   const [registrosAbierto, setRegistrosAbierto] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState('activos');
   const [cicloEnEdicionId, setCicloEnEdicionId] = useState(null);
+  const [grupoEnInscripcionId, setGrupoEnInscripcionId] = useState(null);
   const izquierdaSidebar1 = 0;
   const izquierdaSidebar3 = izquierdaSidebar1 + ANCHO_SIDEBAR1;
 
@@ -57,6 +58,7 @@ export function UIProvider({ children }) {
     setRegistroSeleccionadoId(null);
     setFiltroEstado('activos');
     setCicloEnEdicionId(null);
+    setGrupoEnInscripcionId(null);
   }
 
   const value = {
@@ -66,6 +68,7 @@ export function UIProvider({ children }) {
     registrosAbierto, setRegistrosAbierto,
     filtroEstado, setFiltroEstado,
     cicloEnEdicionId, setCicloEnEdicionId,
+    grupoEnInscripcionId, setGrupoEnInscripcionId,
     sidebar4Abierto, setSidebar4Abierto,
     sidebar5Abierto, toggleSidebar5, cerrarSidebar5,
     sidebar5Ancho, setSidebar5Ancho,

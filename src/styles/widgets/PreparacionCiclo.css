@@ -1,0 +1,126 @@
+.widget-preparacion-ciclo {
+  align-self: flex-start;
+  width: 100%;
+  max-width: 1100px;
+  padding: 24px 32px;
+  box-sizing: border-box;
+}
+.widget-preparacion-ciclo-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f3f3f3;
+  border-bottom: 1px solid #e0e0e0;
+}
+.widget-preparacion-ciclo-titulo {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-preparacion-ciclo-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+.widget-preparacion-ciclo-seccion {
+  margin-top: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #888;
+}
+.widget-preparacion-ciclo-paso {
+  padding: 10px 12px;
+  border: 1px solid #e3e3e3;
+  border-left: 3px solid #d0d0d0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+.widget-preparacion-ciclo-paso-activo {
+  border-left-color: #1a56db;
+  background: #f3f7ff;
+}
+.widget-preparacion-ciclo-paso-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.widget-preparacion-ciclo-paso-titulo {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-preparacion-ciclo-marca {
+  font-size: 17px;
+  color: #b0b0b0;
+}
+.widget-preparacion-ciclo-marca-completa {
+  color: #2e7d32;
+}
+.widget-preparacion-ciclo-detalle {
+  margin: 6px 0 0 25px;
+  font-size: 12.5px;
+  color: #555;
+}
+.widget-preparacion-ciclo-materias {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 0 25px;
+}
+.widget-preparacion-ciclo-materia {
+  display: grid;
+  grid-template-columns: 2fr 1.4fr 1.6fr;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12.5px;
+  color: #444;
+}
+.widget-preparacion-ciclo-materia-nombre {
+  font-weight: 500;
+  color: #1a1a1a;
+}
+.widget-preparacion-ciclo-materia-horario {
+  color: #666;
+}
+.widget-preparacion-ciclo-pendientes {
+  margin: 6px 0 0 25px;
+  padding-left: 16px;
+  font-size: 12px;
+  color: #8a4b08;
+}
+.widget-preparacion-ciclo-pie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid #e0e0e0;
+}
+.widget-preparacion-ciclo-nota {
+  flex: 1;
+  font-size: 12.5px;
+  color: #666;
+}
+.widget-preparacion-ciclo-modal-texto {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: #333;
+}
+.widget-preparacion-ciclo-modal-error {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: #c62828;
+}
+.widget-preparacion-ciclo-modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

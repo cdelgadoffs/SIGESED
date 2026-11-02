@@ -4,11 +4,12 @@ import OpcionesRegistro from './OpcionesRegistro.jsx';
 import EstadoConfirmado from './EstadoConfirmado.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
+import { materiasDeDocente } from '../../utils/inscripciones.js';
 import { estiloGenero, filtrarPersonas, nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
 import '../../styles/widgets/FichaPersonal.css';
 
 export default function FichaPersonal() {
-  const { PERSONAL, GENEROS, ROLES, GRUPOS, CARGA, eliminarPersonal, editarPersonal } = useRegistros();
+  const { PERSONAL, GENEROS, ROLES, GRUPOS, MATERIAS, INSCRIPCIONES, cicloActivoId, CARGA, eliminarPersonal, editarPersonal } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro, filtroEstado } = useUI();
   const persona = registroActivo(segunEstado(filtrarPersonas(PERSONAL, terminoBusqueda), filtroEstado), registroSeleccionadoId);
 
@@ -20,6 +21,7 @@ export default function FichaPersonal() {
   }
 
   const estilo = estiloGenero(persona.genero);
+  const asignadas = materiasDeDocente(INSCRIPCIONES, cicloActivoId, persona.id);
 
   return (
     <div className={'widget-ficha-personal' + (persona.activo !== false ? ' widget-ficha-personal-activo' : '')}>
@@ -39,11 +41,17 @@ export default function FichaPersonal() {
               ? persona.roles.map((id) => <BadgeDinamico key={id} texto={nombreDeCatalogo(ROLES, id)} tono="azul" />)
               : 'Sin asignar'}
           </dd>
-          {persona.grupos.length > 0 && (
+          {asignadas.length > 0 && (
             <>
-              <dt>Grupos</dt>
+              <dt>{`Materias (${cicloActivoId})`}</dt>
               <dd className="widget-ficha-personal-roles">
-                {persona.grupos.map((id) => <BadgeDinamico key={id} texto={GRUPOS.find((g) => g.id === id)?.nombre ?? id} tono="gris" />)}
+                {asignadas.map((m) => (
+                  <BadgeDinamico
+                    key={`${m.grupoId}:${m.materia}`}
+                    texto={`${GRUPOS.find((g) => g.id === m.grupoId)?.nombre ?? m.grupoId} · ${MATERIAS.find((x) => x.id === m.materia)?.nombre ?? m.materia}`}
+                    tono="gris"
+                  />
+                ))}
               </dd>
             </>
           )}

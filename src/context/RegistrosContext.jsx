@@ -11,9 +11,11 @@ const RECURSOS = {
   ciclos: { listar: api.listarCiclos },
   evaluaciones: { listar: api.listarEvaluaciones },
   reportes: { listar: api.listarReportes, crear: api.crearReporte },
+  inscripciones: { listar: api.listarInscripciones },
 };
+const AFECTAN_CICLOS = ['grupos', 'personal'];
 const CLAVES = Object.keys(RECURSOS);
-const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [], reportes: [] };
+const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [], reportes: [], inscripciones: [] };
 
 const RegistrosContext = createContext(null);
 
@@ -62,9 +64,14 @@ export function RegistrosProvider({ children }) {
     });
   }, []);
 
+  function recargarCiclosSi(recurso) {
+    if (AFECTAN_CICLOS.includes(recurso)) recargar('ciclos');
+  }
+
   async function crear(recurso, valores) {
     const registro = await RECURSOS[recurso].crear(valores);
     await recargar(recurso);
+    recargarCiclosSi(recurso);
     return registro;
   }
 
@@ -73,6 +80,7 @@ export function RegistrosProvider({ children }) {
     try {
       const registro = await RECURSOS[recurso].editar(id, actual?.version, cambios);
       await recargar(recurso);
+      recargarCiclosSi(recurso);
       return registro;
     } catch (e) {
       if (e?.codigo === 'CONFLICTO' || e?.codigo === 'NO_ENCONTRADO') recargar(recurso);
@@ -105,6 +113,25 @@ export function RegistrosProvider({ children }) {
 
   async function concluirCiclo(id) {
     return actualizarCiclo(id, (version) => api.concluirCiclo(id, version));
+  }
+
+  async function iniciarCiclo(id) {
+    return actualizarCiclo(id, (version) => api.iniciarCiclo(id, version));
+  }
+
+  async function guardarInscripcion(cicloId, grupoId, valores) {
+    const actual = datosRef.current.inscripciones.find((i) => i.cicloId === cicloId && i.grupoId === grupoId);
+    try {
+      const [inscripcion] = conSincronizacion('inscripciones', [await api.guardarInscripcion(cicloId, grupoId, actual?.version ?? null, valores)]);
+      const valor = [...datosRef.current.inscripciones.filter((i) => i.id !== inscripcion.id), inscripcion];
+      fijar('inscripciones', valor);
+      guardarCache('inscripciones', valor).catch(() => {});
+      await recargar('ciclos');
+      return inscripcion;
+    } catch (e) {
+      if (e?.codigo === 'CONFLICTO' || e?.codigo === 'NO_ENCONTRADO') recargar('inscripciones');
+      throw e;
+    }
   }
 
   async function actualizarCiclo(id, operacion) {
@@ -140,6 +167,7 @@ export function RegistrosProvider({ children }) {
     const valor = datosRef.current[recurso].filter((r) => r.id !== id);
     fijar(recurso, valor);
     guardarCache(recurso, valor).catch(() => {});
+    recargarCiclosSi(recurso);
   }
 
   const errores = CLAVES.map((c) => carga[c].error).filter(Boolean);
@@ -158,6 +186,7 @@ export function RegistrosProvider({ children }) {
     TIEMPOS: catalogos.tiempos || [],
     MODALIDADES: catalogos.modalidades || [],
     MATERIAS: catalogos.materias || [],
+    HORAS_CLASE: catalogos.horasClase || [],
     TIPOS_REPORTE: catalogos.tiposReporte || [],
     PLANTEL: datos.plantel,
     GRUPOS: datos.grupos,
@@ -166,6 +195,9 @@ export function RegistrosProvider({ children }) {
     CICLOS: ciclos,
     EVALUACIONES: datos.evaluaciones,
     REPORTES: datos.reportes,
+    INSCRIPCIONES: datos.inscripciones,
+    guardarInscripcion,
+    iniciarCiclo,
     crearReporte: (v) => crear('reportes', v),
     guardarEvaluacion,
     cicloActivoId: cicloActivo?.id ?? null,

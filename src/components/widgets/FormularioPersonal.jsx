@@ -13,12 +13,11 @@ import { capitalizarPalabras } from '../../utils/texto.js';
 import { DOMINIO_CORREO, correoCompleto, esTelefono, esUsuarioGmail, usuarioDeCorreo, MENSAJES_FORMATO } from '../../utils/validaciones.js';
 import '../../styles/widgets/FormularioPersonal.css';
 
-const VACIO = { nombre: '', primerApellido: '', segundoApellido: '', telefono: '', correo: '', genero: '', roles: [], grupos: [] };
-const ROL_CON_GRUPOS = 'docente';
+const VACIO = { nombre: '', primerApellido: '', segundoApellido: '', telefono: '', correo: '', genero: '', roles: [] };
 
 export default function FormularioPersonal() {
   const {
-    PERSONAL, PLANTEL, GENEROS, ROLES, GRUPOS,
+    PERSONAL, PLANTEL, GENEROS, ROLES,
     crearPersonal, editarPersonal, guardarBorrador, obtenerBorrador, eliminarBorrador,
   } = useRegistros();
   const { sidebar3Abierto, registroEnEdicionId, cerrarSidebar3, abrirPanelControl, setRegistroSeleccionadoId } = useUI();
@@ -58,19 +57,9 @@ export default function FormularioPersonal() {
 
   function alternarRol(rolId, marcado) {
     const roles = marcado ? [...form.roles, rolId] : form.roles.filter((r) => r !== rolId);
-    setCampos({
-      roles: ROLES.map((r) => r.id).filter((id) => roles.includes(id)),
-      ...(roles.includes(ROL_CON_GRUPOS) ? {} : { grupos: [] }),
-    });
-    setFallo(null);
+    cambiar('roles', ROLES.map((r) => r.id).filter((id) => roles.includes(id)));
   }
 
-  function alternarGrupo(grupoId, marcado) {
-    const grupos = marcado ? [...form.grupos, grupoId] : form.grupos.filter((g) => g !== grupoId);
-    cambiar('grupos', GRUPOS.map((g) => g.id).filter((id) => grupos.includes(id)));
-  }
-
-  const esDocente = form.roles.includes(ROL_CON_GRUPOS);
   const rolesAsignables = ROLES.filter((r) => r.asignacion !== 'entra-id');
 
   const errores = {
@@ -185,19 +174,6 @@ export default function FormularioPersonal() {
           ))}
         </div>
       </CampoFormulario>
-      {esDocente && (
-        <CampoFormulario etiqueta="Grupos">
-          {GRUPOS.length === 0 ? (
-            <span className="widget-formulario-personal-vacio">Aún no hay grupos registrados.</span>
-          ) : (
-            <div className="widget-formulario-personal-roles">
-              {GRUPOS.map((g) => (
-                <Checkbox key={g.id} checked={form.grupos.includes(g.id)} label={g.nombre} onChange={(v) => alternarGrupo(g.id, v)} />
-              ))}
-            </div>
-          )}
-        </CampoFormulario>
-      )}
     </MarcoFormulario>
   );
 }

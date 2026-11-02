@@ -36,7 +36,6 @@ const ESPECIFICACIONES = {
     ...CAMPOS_PERSONA,
     genero: { etiqueta: 'Género', requerido: true, catalogo: 'generos' },
     roles: { etiqueta: 'Roles', requerido: true, catalogo: 'roles', tipo: 'lista' },
-    grupos: { etiqueta: 'Grupos', catalogo: 'grupos', tipo: 'lista' },
     activo: { etiqueta: 'Activo', tipo: 'booleano', omision: true },
   },
   estudiante: {
@@ -93,12 +92,6 @@ export function validarRolesDisponibles(roles, otros, catalogos) {
       throw new ApiError('ROL_OCUPADO', `El rol «${rol.nombre}» ya está asignado a ${nombres}.`);
     }
   });
-}
-
-const ROL_CON_GRUPOS = 'docente';
-
-export function gruposSegunRol(limpio) {
-  return limpio.roles.includes(ROL_CON_GRUPOS) ? limpio : { ...limpio, grupos: [] };
 }
 
 const claveNombre = (texto) => texto.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es-MX');
@@ -310,6 +303,7 @@ export function cicloConDerivados(guardado, semanasCatalogo, hoy) {
     asuetos: guardado.asuetos ?? [],
     version: guardado.version ?? 1,
     cerrado: guardado.cerrado ?? false,
+    iniciado: guardado.iniciado ?? false,
   };
   const { semanas, periodosVacacionales, fechaFin } = calendarioCiclo(ciclo, semanasCatalogo);
   let estado = 'sin-configurar';
@@ -326,6 +320,139 @@ export function cicloConDerivados(guardado, semanasCatalogo, hoy) {
   return { ...ciclo, semanas, periodosVacacionales, fechaFin, estado, semanaActual, asuetoHoy: ciclo.asuetos.includes(hoy) };
 }
 
+export function exigirCicloPreparable(ciclo, todos) {
+  if (ciclo.iniciado) throw falla(`El ciclo ${ciclo.id} ya se inició: su configuración quedó fija.`);
+  exigirCiclosAnterioresCerrados(ciclo, todos);
+}
+
+const ROL_DOCENTE = 'docente';
+export const MATERIAS_POR_GRUPO = 3;
+const HORAS_POR_MATERIA = 2;
+const DIAS_ENTRE_SEMANA = [1, 2, 3, 4, 5];
+const DIA_SABADO = 6;
+
+const nombrePersona = (p) => [p.nombre, p.primerApellido, p.segundoApellido].filter(Boolean).join(' ');
+
+function tipoHorario(grupo, catalogos) {
+  return (catalogos.modalidades || []).find((m) => m.id === grupo.modalidad)?.horario ?? null;
+}
+
+function puedeImpartir(persona) {
+  return !!persona && persona.activo !== false && (persona.roles || []).includes(ROL_DOCENTE);
+}
+
+function horasDeClase(grupo, catalogos) {
+  return (catalogos.horasClase || []).filter((h) => h.modalidad === grupo.modalidad && !h.descanso);
+}
+
+function bloqueValido(b, tipo, horas) {
+  const dia = tipo === 'sabado' ? b.dia === DIA_SABADO : DIAS_ENTRE_SEMANA.includes(b.dia);
+  return dia && horas.some((h) => h.id === b.hora);
+}
+
+function conTiempo(b, catalogos) {
+  const hora = (catalogos.horasClase || []).find((h) => h.id === b.hora);
+  return { ...b, inicio: hora?.inicio ?? '', fin: hora?.fin ?? '' };
+}
+
+function seEnciman(a, b) {
+  return a.dia === b.dia && a.inicio < b.fin && b.inicio < a.fin;
+}
+
+function prepararHorario(horario, tipo, horas, nombreMateria) {
+  if (tipo === null) return [];
+  const lista = horario ?? [];
+  if (!Array.isArray(lista)) throw falla(`El horario de «${nombreMateria}» debe ser una lista.`);
+  if (lista.length > HORAS_POR_MATERIA) throw falla(`«${nombreMateria}» admite máximo ${HORAS_POR_MATERIA} horas de clase.`);
+  const vistos = new Set();
+  const bloques = lista.map((b) => {
+    if (!b || typeof b !== 'object') throw falla(`Hay un bloque inválido en el horario de «${nombreMateria}».`);
+    const dia = tipo === 'sabado' ? DIA_SABADO : b.dia;
+    if (tipo === 'entre-semana' && !DIAS_ENTRE_SEMANA.includes(dia)) throw falla(`En «${nombreMateria}» el día debe ser de lunes a viernes.`);
+    if (!horas.some((h) => h.id === b.hora)) throw falla(`Alguna hora de «${nombreMateria}» no es una hora de clase de la modalidad del grupo.`);
+    const clave = `${dia}:${b.hora}`;
+    if (vistos.has(clave)) throw falla(`«${nombreMateria}» tiene una hora repetida.`);
+    vistos.add(clave);
+    return { dia, hora: b.hora };
+  });
+  const orden = (id) => horas.findIndex((h) => h.id === id);
+  return bloques.sort((a, b) => a.dia - b.dia || orden(a.hora) - orden(b.hora));
+}
+
+export function prepararInscripcion(datos, grupo, catalogos, personal) {
+  if (!datos || typeof datos !== 'object' || !Array.isArray(datos.materias)) throw falla('Faltan las materias de la inscripción.');
+  if (datos.materias.length > MATERIAS_POR_GRUPO) throw falla(`Un grupo se inscribe en máximo ${MATERIAS_POR_GRUPO} materias por ciclo.`);
+  const delPrograma = (catalogos.materias || []).filter((m) => m.programaEducativo === grupo.programaEducativo);
+  const tipo = tipoHorario(grupo, catalogos);
+  const horas = horasDeClase(grupo, catalogos);
+  const vistas = new Set();
+  const materias = datos.materias.map((m) => {
+    const materia = delPrograma.find((x) => x.id === m?.materia);
+    if (!materia) throw falla('Alguna materia no pertenece al programa educativo del grupo.');
+    if (vistas.has(materia.id)) throw falla(`La materia «${materia.nombre}» está repetida.`);
+    vistas.add(materia.id);
+    const docenteId = m.docenteId || null;
+    if (docenteId && !puedeImpartir(personal.find((p) => p.id === docenteId))) {
+      throw falla(`El docente de «${materia.nombre}» debe estar activo y tener el rol Docente.`);
+    }
+    return { materia: materia.id, docenteId, horario: prepararHorario(m.horario, tipo, horas, materia.nombre) };
+  });
+  const nombre = (id) => delPrograma.find((x) => x.id === id).nombre;
+  const bloques = materias.flatMap((m) => m.horario.map((b) => ({ ...conTiempo(b, catalogos), materia: m.materia })));
+  bloques.forEach((a, i) => bloques.slice(i + 1).forEach((b) => {
+    if (seEnciman(a, b)) throw falla(`El grupo tendría «${nombre(a.materia)}» y «${nombre(b.materia)}» a la misma hora.`);
+  }));
+  return { materias };
+}
+
+export function validarDocentesSinChoque(materias, otras, grupos, personal, catalogos) {
+  materias.forEach((m) => {
+    if (!m.docenteId) return;
+    otras.forEach((ins) => ins.materias.forEach((o) => {
+      if (o.docenteId !== m.docenteId) return;
+      if (m.horario.some((a) => o.horario.some((b) => seEnciman(conTiempo(a, catalogos), conTiempo(b, catalogos))))) {
+        const docente = nombrePersona(personal.find((p) => p.id === m.docenteId));
+        const grupo = grupos.find((g) => g.id === ins.grupoId)?.nombre ?? ins.grupoId;
+        const materia = (catalogos.materias || []).find((x) => x.id === o.materia)?.nombre ?? o.materia;
+        throw falla(`${docente} ya da «${materia}» al grupo ${grupo} a esa hora.`);
+      }
+    }));
+  });
+}
+
+export function pendientesDeInicio(ciclo, { grupos, inscripciones, personal, catalogos }, hoy) {
+  if (ciclo.iniciado || ciclo.cerrado) return [];
+  const pendientes = [];
+  const delCiclo = (paso, texto) => pendientes.push({ paso, grupoId: null, mensaje: texto });
+  if (!ciclo.fechaInicio) delCiclo('calendario', 'Configura el calendario del ciclo.');
+  else if (hoy >= ciclo.fechaInicio) delCiclo('calendario', 'La fecha de inicio ya llegó y el ciclo solo se inicia antes: recorre la fecha de inicio del calendario.');
+  const activos = ordenarGrupos(grupos.filter((g) => g.activo !== false));
+  if (activos.length === 0) delCiclo('grupos', 'Registra al menos un grupo activo.');
+  activos.forEach((g) => {
+    const agregar = (texto) => pendientes.push({ paso: 'grupo', grupoId: g.id, mensaje: texto });
+    const materias = inscripciones.find((i) => i.cicloId === ciclo.id && i.grupoId === g.id)?.materias ?? [];
+    if (materias.length < MATERIAS_POR_GRUPO) agregar(`Inscribe ${MATERIAS_POR_GRUPO} materias (lleva ${materias.length}).`);
+    const tipo = tipoHorario(g, catalogos);
+    const horas = horasDeClase(g, catalogos);
+    materias.forEach((m) => {
+      const materia = (catalogos.materias || []).find((x) => x.id === m.materia);
+      if (!materia || materia.programaEducativo !== g.programaEducativo) {
+        agregar(`«${materia?.nombre ?? m.materia}» no pertenece al programa educativo del grupo.`);
+        return;
+      }
+      if (!m.docenteId) agregar(`Asigna el docente de «${materia.nombre}».`);
+      else if (!puedeImpartir(personal.find((p) => p.id === m.docenteId))) agregar(`El docente de «${materia.nombre}» está inactivo o ya no tiene el rol Docente.`);
+      if (tipo !== null && m.horario.length < HORAS_POR_MATERIA) agregar(`«${materia.nombre}» lleva ${m.horario.length} de ${HORAS_POR_MATERIA} horas de clase.`);
+      else if (tipo !== null && m.horario.some((b) => !bloqueValido(b, tipo, horas))) agregar(`El horario de «${materia.nombre}» no corresponde a la modalidad del grupo.`);
+    });
+  });
+  return pendientes;
+}
+
+export function idInscripcion(cicloId, grupoId) {
+  return `${cicloId}:${grupoId}`;
+}
+
 export function ordenarCiclos(ciclos) {
   return [...ciclos].sort((a, b) => a.anio - b.anio || a.numero - b.numero);
 }
@@ -334,15 +461,15 @@ const CALIFICACION_MINIMA = 5;
 const CALIFICACION_MAXIMA = 10;
 const MAX_OBSERVACIONES = 1000;
 
-export function prepararEvaluacion(datos, programaEducativo, catalogos) {
+export function prepararEvaluacion(datos, permitidas) {
   if (!datos || typeof datos !== 'object') throw falla('Faltan los datos de la evaluación.');
   const { calificaciones, observaciones = '' } = datos;
   if (!Array.isArray(calificaciones) || calificaciones.length === 0) throw falla('Asigna al menos una materia con su calificación.');
-  const delPrograma = (catalogos.materias || []).filter((m) => m.programaEducativo === programaEducativo);
+  const delPrograma = permitidas;
   const porMateria = new Map();
   calificaciones.forEach((c) => {
     if (!c || typeof c.materia !== 'string') throw falla('Cada calificación debe indicar su materia.');
-    if (!delPrograma.some((m) => m.id === c.materia)) throw falla('Alguna materia no pertenece al programa educativo del estudiante.');
+    if (!delPrograma.some((m) => m.id === c.materia)) throw falla('Alguna materia no está inscrita por el grupo del estudiante en este ciclo.');
     if (porMateria.has(c.materia)) throw falla('Hay materias repetidas.');
     if (!Number.isInteger(c.calificacion) || c.calificacion < CALIFICACION_MINIMA || c.calificacion > CALIFICACION_MAXIMA) {
       throw falla(`Las calificaciones deben ser enteros del ${CALIFICACION_MINIMA} al ${CALIFICACION_MAXIMA}.`);

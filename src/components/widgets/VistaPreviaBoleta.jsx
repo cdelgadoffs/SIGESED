@@ -4,7 +4,7 @@ import IndicadorSync from '../base/IndicadorSync.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { filtrarEstudiantes, nombreCompleto, registroActivo, segunEstado } from '../../utils/registros.js';
-import { CALIFICACION_MINIMA, evaluacionDe, filasDeBoleta, materiasDelPrograma } from '../../utils/evaluaciones.js';
+import { CALIFICACION_MINIMA, evaluacionDe, filasDeBoleta, materiasInscritas } from '../../utils/evaluaciones.js';
 import { ALTO_HOJA, ANCHO_HOJA, documentoBoleta } from '../../utils/boleta.js';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import logoIcom from '../../assets/Icom.jpg';
@@ -14,7 +14,7 @@ import '../../styles/widgets/VistaPreviaBoleta.css';
 const ESPACIO_LEMA = 90;
 
 export default function VistaPreviaBoleta() {
-  const { ESTUDIANTES, GRUPOS, EVALUACIONES, MATERIAS, PLANTEL, cicloActivoId } = useRegistros();
+  const { ESTUDIANTES, GRUPOS, EVALUACIONES, MATERIAS, INSCRIPCIONES, PLANTEL, cicloActivoId } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, filtroEstado } = useUI();
   const iframeRef = useRef(null);
   const { contenedorRef: marcoRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
@@ -44,7 +44,7 @@ export default function VistaPreviaBoleta() {
     ciclo: cicloActivoId,
     alumno: nombreCompleto(alumno),
     genero: alumno.genero,
-    filas: filasDeBoleta(materiasDelPrograma(MATERIAS, GRUPOS.find((g) => g.id === alumno.grupo)?.programaEducativo), evaluacion.calificaciones)
+    filas: filasDeBoleta(materiasInscritas(MATERIAS, INSCRIPCIONES, cicloActivoId, alumno.grupo), evaluacion.calificaciones)
       .map((f) => ({ ...f, reprobada: f.calificacion === CALIFICACION_MINIMA })),
     promedio: evaluacion.promedio,
     observaciones: evaluacion.observaciones,

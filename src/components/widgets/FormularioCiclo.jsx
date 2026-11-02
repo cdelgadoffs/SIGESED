@@ -181,11 +181,13 @@ export default function FormularioCiclo() {
   if (!ciclo) return null;
   const abierto = CICLOS.find((c) => c.id !== ciclo.id && c.fechaInicio && !c.cerrado
     && (c.anio < ciclo.anio || (c.anio === ciclo.anio && c.numero < ciclo.numero)));
-  if (ciclo.cerrado || abierto) {
+  if (ciclo.cerrado || ciclo.iniciado || abierto) {
+    let aviso = `El ciclo ${ciclo.id} ya se concluyó y no se puede modificar.`;
+    if (!ciclo.cerrado && ciclo.iniciado) aviso = `El ciclo ${ciclo.id} ya se inició: su calendario quedó fijo.`;
     return (
       <p className="widget-formulario-ciclo-aviso">
-        {ciclo.cerrado
-          ? `El ciclo ${ciclo.id} ya se concluyó y no se puede modificar.`
+        {ciclo.cerrado || ciclo.iniciado
+          ? aviso
           : `Primero concluye el ciclo ${abierto.id} (Panel de control › Calendarización anual) para poder configurar el ${ciclo.id}.`}
       </p>
     );

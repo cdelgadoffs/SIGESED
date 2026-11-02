@@ -2,7 +2,7 @@ import { ApiError } from '../ApiError.js';
 import { CATALOGOS_SEMILLA } from './semilla.js';
 
 const DB_NAME = 'LocalAPI';
-const DB_VERSION = 14;
+const DB_VERSION = 16;
 
 export const STORE_CATALOGOS = 'catalogos';
 export const STORE_UNICOS = 'unicos';
@@ -12,6 +12,7 @@ export const STORE_CICLOS = 'ciclos';
 export const STORE_EVALUACIONES = 'evaluaciones';
 export const STORE_GRUPOS = 'grupos';
 export const STORE_REPORTES = 'reportes';
+export const STORE_INSCRIPCIONES = 'inscripciones';
 
 function quitarCamposPersonal(store) {
   store.getAll().onsuccess = (evento) => {
@@ -44,6 +45,25 @@ function pasarEstudiantesAGrupo(store) {
       delete limpio.programaEducativo;
       delete limpio.modalidad;
       store.put(limpio);
+    });
+  };
+}
+
+function quitarGruposPersonal(store) {
+  store.getAll().onsuccess = (evento) => {
+    evento.target.result.forEach((persona) => {
+      if (!('grupos' in persona)) return;
+      const limpio = { ...persona };
+      delete limpio.grupos;
+      store.put(limpio);
+    });
+  };
+}
+
+function vaciarHorarios(store) {
+  store.getAll().onsuccess = (evento) => {
+    evento.target.result.forEach((inscripcion) => {
+      store.put({ ...inscripcion, materias: inscripcion.materias.map((m) => ({ ...m, horario: [] })) });
     });
   };
 }
@@ -86,11 +106,13 @@ function conectar() {
           if (db.objectStoreNames.contains(nombre)) db.deleteObjectStore(nombre);
         });
       }
-      if (anterior >= 5 && anterior < 14) db.deleteObjectStore(STORE_CATALOGOS);
+      if (anterior >= 5 && anterior < 16) db.deleteObjectStore(STORE_CATALOGOS);
+      if (anterior === 15) vaciarHorarios(req.transaction.objectStore(STORE_INSCRIPCIONES));
+      if (anterior >= 3 && anterior < 15) quitarGruposPersonal(req.transaction.objectStore(STORE_PERSONAL));
       if (anterior > 0 && anterior < 14 && db.objectStoreNames.contains(STORE_EVALUACIONES)) db.deleteObjectStore(STORE_EVALUACIONES);
       if (anterior >= 4 && anterior < 8) agregarGeneroVacio(req.transaction.objectStore(STORE_ESTUDIANTES));
       if (anterior >= 4 && anterior < 9) pasarEstudiantesAGrupo(req.transaction.objectStore(STORE_ESTUDIANTES));
-      [STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES].forEach((nombre) => {
+      [STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES].forEach((nombre) => {
         if (!db.objectStoreNames.contains(nombre)) db.createObjectStore(nombre, { keyPath: 'id' });
       });
       if (!db.objectStoreNames.contains(STORE_UNICOS)) db.createObjectStore(STORE_UNICOS, { keyPath: 'clave' });

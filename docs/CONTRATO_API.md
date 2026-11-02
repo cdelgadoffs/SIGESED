@@ -24,10 +24,11 @@ Todas las operaciones son asíncronas. Los datos viajan como JSON. Los errores t
 | `roles` | `maximo` (int | null), `asignacion` (`registro` \| `entra-id`) | Roles del personal. `maximo`: cuántas personas pueden tenerlo a la vez (`null` = sin límite); hoy Director, 1. `asignacion`: `registro` se asigna en Personal; `entra-id` **no** se asigna a personas registradas: lo trae el token de Microsoft Entra ID al iniciar sesión (hoy Administrador TI, decisión del usuario). |
 | `programasEducativos` | | Programa educativo del grupo. |
 | `tiempos` | | Duración del programa que cursa el estudiante. |
-| `modalidades` | | Modalidad del grupo. |
+| `modalidades` | `horario` (`entre-semana` \| `sabado` \| `null`) | Modalidad del grupo. `horario` dice cómo se arma el horario de sus materias en la inscripción del ciclo: `entre-semana` (Semanal: día de lunes a viernes y horas), `sabado` (Sabatino: solo horas; el día es sábado) y `null` (Online: sin horario, solo materias y docentes). |
+| `horasClase` | `modalidad` (id de `modalidades`), `numero` (1… o `null` en el receso), `inicio`, `fin` (`HH:MM`), `descanso` (boolean) | Horas de clase de cada modalidad, en orden (decisión del usuario). Semanal: 1ª 8:00–9:00, 2ª 9:00–9:50, Receso 9:50–10:10, 3ª 10:10–11:00, 4ª 11:00–12:00, 5ª 12:00–13:00. Sabatino: las mismas y 6ª 13:00–14:00. Online no tiene. El receso no se asigna a materias. |
 | `semanasCiclo` | `numero` (1–8) | Semanas de trabajo de cada ciclo, en orden: Semana 1 … Semana 6, Periodo de exámenes (7), Cierre de ciclo (8). |
 | `tiposReporte` | | Tipos de reporte disciplinario de la bitácora estudiantil. |
-| `materias` | `programaEducativo` (id de `programasEducativos`), `clave` (ej. `P101`), `cuatrimestre` (1–9), `objetivo`, `temas` (`{ titulo, items[] }[]`), `actividadesDocente[]`, `actividadesIndependiente[]`, `evaluacion` (`{ concepto, porcentaje }[]`, porcentaje como texto) | Plan de estudios. El `id` es la clave en minúsculas (`p101`). La semilla es un archivo JSON del API (`planEstudios.json`; Licenciatura en Pedagogía, 52 materias en 9 cuatrimestres). Por ahora se evalúan todas las del programa; a futuro, cada grupo se inscribirá en 3 materias por ciclo y solo esas se mostrarán a sus estudiantes. |
+| `materias` | `programaEducativo` (id de `programasEducativos`), `clave` (ej. `P101`), `cuatrimestre` (1–9), `objetivo`, `temas` (`{ titulo, items[] }[]`), `actividadesDocente[]`, `actividadesIndependiente[]`, `evaluacion` (`{ concepto, porcentaje }[]`, porcentaje como texto) | Plan de estudios. El `id` es la clave en minúsculas (`p101`). La semilla es un archivo JSON del API (`planEstudios.json`; Licenciatura en Pedagogía, 52 materias en 9 cuatrimestres). Cada grupo se inscribe en 3 materias por ciclo (ver «Inscripción») y solo esas se evalúan y salen en la boleta de sus estudiantes. |
 
 ## Modelo
 
@@ -67,7 +68,6 @@ El grupo **no pertenece a un ciclo escolar** (decisión del usuario): son indepe
 | `correo` | string | **Obligatorio y solo `@gmail.com`** (decisión del usuario: será la cuenta para iniciar sesión con Google). El usuario (lo que va antes del @) tiene de 6 a 30 caracteres: letras, números y puntos, sin empezar ni terminar en punto ni dos puntos seguidos. Se guarda en minúsculas y completo (`usuario@gmail.com`). Los registros anteriores sin correo de Gmail lo exigen al editarlos. |
 | `genero` | string | `id` de `generos`. |
 | `activo` | boolean | Estado de la persona. Por omisión `true` al registrarla; los anteriores al campo se leen como `true`. |
-| `grupos` | string[] | `id`s de grupos existentes, sin repetidos; opcional. Solo el personal con el rol `docente` tiene grupos: sin ese rol se guarda `[]`. Registros anteriores al campo se leen como `[]`. |
 | `roles` | string[] | `id`s de `roles` con `asignacion: 'registro'` (un rol `entra-id` da `VALIDACION`), sin repetidos; **al menos uno**. Un rol con `maximo` no puede tenerlo más personas de las indicadas (`ROL_OCUPADO`). Registros anteriores al campo se leen como `[]` (se exige al guardarlos). |
 | `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
 
@@ -104,6 +104,9 @@ El grupo **no pertenece a un ciclo escolar** (decisión del usuario): son indepe
 | `version` | int | Empieza en 1; los ciclos anteriores al campo se leen con 1. |
 | `creadoEn`, `creadoPor`, `modificadoEn` | | |
 
+| `iniciado` | boolean | `true` cuando se **inició voluntariamente** con `iniciarCiclo`. Desde entonces el calendario y las inscripciones del ciclo quedan **fijos** (a futuro solo el Administrador TI podrá corregir). Por omisión `false`. |
+| `iniciadoEn`, `iniciadoPor` | string | Timestamp y usuario del inicio (servidor). |
+
 **Derivados al leer** (con el reloj del servidor; nunca se guardan):
 | Campo | Notas |
 |---|---|
@@ -113,8 +116,20 @@ El grupo **no pertenece a un ciclo escolar** (decisión del usuario): son indepe
 | `estado` | `sin-configurar`, `proximo` (hoy antes de `fechaInicio`), `en-curso` o `concluido` (hoy después de `fechaFin`). |
 | `semanaActual` | Mientras está en curso: `{ numero, nombre }` de la semana de hoy, o `{ numero: null, nombre: 'Vacaciones' }`. Si no, `null`. |
 | `asuetoHoy` | `true` si hoy es día de asueto. |
+| `pendientesInicio` | `{ paso, grupoId, mensaje }[]`: lo que falta para poder iniciar el ciclo. `paso`: `calendario`, `grupos` (no hay grupos activos) o `grupo` (con su `grupoId`; en los otros, `null`). Vacío si el ciclo está completo, iniciado o cerrado. Pendientes: calendario sin configurar o con la fecha de inicio ya alcanzada, ningún grupo activo, y por cada **grupo activo**: menos de 3 materias inscritas, materia sin docente o con un docente inactivo o sin el rol `docente`, y (si su modalidad lleva horario) materia con menos de 2 horas de clase. |
 
 **Calendarización anual:** cada año tiene 3 cuatrimestres divididos en 2 módulos de 2 meses: **6 ciclos** (`2026-1` … `2026-6`). La regla (6 ciclos, 2 meses) es del servidor. Los ciclos se crean sin configurar; cada uno se configura (fecha de inicio, día de inicio de semana, vacaciones y asuetos) conforme va a comenzar (decisión del usuario, reemplazó a «ciclos sin fechas»). Dos ciclos configurados no pueden encimarse. **Cierre (decisión del usuario):** el `estado` por fecha es automático, pero para configurar un ciclo **todos los ciclos configurados anteriores deben estar `cerrado`**; cerrar es una acción voluntaria (`concluirCiclo`). A futuro: el cierre solo se ofrecerá en la semana 8 y solo el Administrador TI (Entra ID) podrá reabrir un ciclo.
+
+### Inscripción (grupo en un ciclo)
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | string | `<cicloId>:<grupoId>`: hay **una inscripción por grupo y ciclo**. |
+| `cicloId` | string | Ciclo existente, ni iniciado ni cerrado. |
+| `grupoId` | string | Grupo existente y **activo**. |
+| `materias` | `{ materia, docenteId, horario }[]` | Máximo **3**, sin repetir materia. `materia`: `id` de `materias` del programa del grupo (cualquiera; puede repetir una que sus estudiantes ya cursaron). `docenteId`: persona activa con el rol `docente`, o `null` mientras no se asigna. `horario`: `{ dia, hora }[]` (`dia` 0 domingo … 6 sábado; `hora`: `id` de `horasClase` de la modalidad del grupo, sin receso), sin repetir día y hora. Una materia ocupa **máximo 2 horas** (seguidas o en distintos días; decisión del usuario). Según `modalidades.horario`: `entre-semana`, `dia` de 1 a 5; `sabado`, el servidor fija `dia` = 6; `null`, se guarda `[]`. |
+| `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
+
+Se puede guardar incompleta (menos de 3 materias, sin docente o sin horario): lo que falta aparece en `pendientesInicio` del ciclo. Reglas del servidor: un grupo no puede tener dos materias a la misma hora y un docente no puede estar en dos grupos a la misma hora en el mismo ciclo, comparando las horas reales de `horasClase` (`VALIDACION`). El docente queda ligado al grupo por la inscripción (ya no por el registro de personal).
 
 ### Evaluación
 | Campo | Tipo | Notas |
@@ -122,12 +137,12 @@ El grupo **no pertenece a un ciclo escolar** (decisión del usuario): son indepe
 | `id` | string | `<cicloId>:<estudianteId>`: hay **una evaluación por estudiante y ciclo**. |
 | `estudianteId` | string | Estudiante existente. |
 | `cicloId` | string | Ciclo existente. |
-| `calificaciones` | `{ materia, calificacion }[]` | `materia`: `id` de `materias` **del programa del grupo del estudiante**, sin repetidos, en el orden del catálogo. `calificacion`: entero 5–10. **Al menos una.** |
+| `calificaciones` | `{ materia, calificacion }[]` | `materia`: `id` de una materia **inscrita por el grupo del estudiante en ese ciclo**, sin repetidos, en el orden del catálogo. `calificacion`: entero 5–10. **Al menos una.** |
 | `observaciones` | string | Opcional, máx. 1000. |
 | `promedio` | number | **Derivado al leer** (suma ÷ número de materias, sin redondear); nunca se guarda. |
 | `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
 
-La boleta de calificaciones se arma en el cliente con estos datos (el tratamiento «Alumna»/«Alumno» sale del `genero` del estudiante; sin género, «Alumno(a)»; lista **todas** las materias del programa del grupo y las no capturadas salen como **NP**, que no cuenta en el promedio; el 5 se imprime en rojo) (`utils/boleta.js`); si llega a ser un documento que se guarde o envíe, la armará el servidor.
+La boleta de calificaciones se arma en el cliente con estos datos (el tratamiento «Alumna»/«Alumno» sale del `genero` del estudiante; sin género, «Alumno(a)»; lista las materias **inscritas** por el grupo del estudiante en el ciclo y las no capturadas salen como **NP**, que no cuenta en el promedio; el 5 se imprime en rojo) (`utils/boleta.js`); si llega a ser un documento que se guarde o envíe, la armará el servidor.
 
 ### Reporte disciplinario (bitácora estudiantil)
 | Campo | Tipo | Notas |
@@ -153,11 +168,11 @@ Decisión del usuario: los reportes **no se editan ni se eliminan**; solo se agr
 | `listarGrupos()` | `Grupo[]` | Ordenados por nombre. |
 | `crearGrupo(datos)` | `Grupo` | `PLANTEL_NO_CONFIGURADO` si aún no hay plantel. |
 | `editarGrupo(id, version, cambios)` | `Grupo` | |
-| `eliminarGrupo(id)` | `{ id }` | `EN_USO` si tiene estudiantes o personal asignado. |
+| `eliminarGrupo(id)` | `{ id }` | `EN_USO` si tiene estudiantes o inscripciones en algún ciclo. |
 | `listarPersonal()` | `Personal[]` | Ordenados por apellidos y nombre. |
 | `crearPersonal(datos)` | `Personal` | `PLANTEL_NO_CONFIGURADO` si aún no hay plantel. |
 | `editarPersonal(id, version, cambios)` | `Personal` | Solo los campos enviados. Valida `roles` igual que al crear (sin contarse a sí misma). |
-| `eliminarPersonal(id)` | `{ id }` | |
+| `eliminarPersonal(id)` | `{ id }` | `EN_USO` si es docente de alguna materia inscrita. |
 | `listarEstudiantes()` | `Estudiante[]` | Ordenados por apellidos y nombre. |
 | `crearEstudiante(datos)` | `Estudiante` | Asigna `matricula`. `PLANTEL_NO_CONFIGURADO` si aún no hay plantel. |
 | `editarEstudiante(id, version, cambios)` | `Estudiante` | `matricula` no se puede enviar (`VALIDACION`). |
@@ -166,10 +181,13 @@ Decisión del usuario: los reportes **no se editan ni se eliminan**; solo se agr
 | `crearCiclosAnuales(anio)` | `Ciclo[]` | Crea los 6 ciclos de `anio` (entero, 2000–2100; si no, `VALIDACION`). Idempotente: solo crea los que falten. Devuelve **todos** los ciclos. |
 | `configurarCiclo(id, version, datos)` | `Ciclo` | `datos`: `{ fechaInicio, diaInicioSemana, vacaciones, asuetos }` completos. Valida fechas, que `fechaInicio` caiga en `diaInicioSemana`, que cada vacación empiece al inicio de una semana del ciclo, que los asuetos estén dentro del ciclo y que no se encime con otro ciclo (`VALIDACION`). Exige `version` (`CONFLICTO`). Un ciclo `cerrado` no se puede configurar, y no se puede configurar uno nuevo mientras haya un ciclo configurado anterior sin cerrar (`VALIDACION`). |
 | `concluirCiclo(id, version)` | `Ciclo` | Marca `cerrado`. Exige que el ciclo esté configurado y no cerrado (`VALIDACION`) y su `version` (`CONFLICTO`). |
+| `iniciarCiclo(id, version)` | `Ciclo` | Marca `iniciado`. Exige `version` (`CONFLICTO`), que el ciclo no esté iniciado ni cerrado, que los anteriores configurados estén cerrados y que hoy sea **antes de `fechaInicio`** (`VALIDACION`), y que no tenga `pendientesInicio` (`CICLO_INCOMPLETO`, con los pendientes en el mensaje). Un ciclo iniciado ya no se configura (`VALIDACION`). |
+| `listarInscripciones()` | `Inscripcion[]` | |
+| `guardarInscripcion(cicloId, grupoId, version, datos)` | `Inscripcion` | `datos`: `{ materias }`. Si no existe la crea (`version` = `null`); si existe la reemplaza y exige su `version` (`CONFLICTO`). `NO_ENCONTRADO` si el ciclo o el grupo no existen; `VALIDACION` si el ciclo está iniciado o cerrado, el grupo inactivo o algún dato no cumple las reglas. |
 | `listarReportes()` | `Reporte[]` | Del más reciente al más antiguo (`fecha`, luego `creadoEn`). |
 | `crearReporte(datos)` | `Reporte` | `datos`: `{ estudianteId, fecha, tipo, descripcion, acciones }`. `NO_ENCONTRADO` si el estudiante no existe; `VALIDACION` si está inactivo. |
 | `listarEvaluaciones()` | `Evaluacion[]` | Con `promedio`. |
-| `guardarEvaluacion(estudianteId, cicloId, version, datos)` | `Evaluacion` | `datos`: `{ calificaciones, observaciones }`. Si no existe la crea (`version` = `null`); si existe la reemplaza y exige su `version` (`CONFLICTO`). `NO_ENCONTRADO` si el estudiante o el ciclo no existen. |
+| `guardarEvaluacion(estudianteId, cicloId, version, datos)` | `Evaluacion` | `datos`: `{ calificaciones, observaciones }`. Si no existe la crea (`version` = `null`); si existe la reemplaza y exige su `version` (`CONFLICTO`). `NO_ENCONTRADO` si el estudiante o el ciclo no existen; `VALIDACION` si el ciclo no está iniciado. |
 
 Al editar se valida el registro completo resultante.
 
@@ -182,7 +200,8 @@ Al editar se valida el registro completo resultante.
 | `CONFLICTO` | `version` distinta de la actual: alguien más lo cambió. El cliente recarga. |
 | `PLANTEL_NO_CONFIGURADO` | Se intenta dar de alta personal o estudiantes sin plantel configurado. |
 | `ROL_OCUPADO` | Se asigna un rol que ya alcanzó su `maximo` en otras personas. El mensaje dice quién lo tiene. |
-| `EN_USO` | Se intenta eliminar un grupo con estudiantes o personal asignado. |
+| `EN_USO` | Se intenta eliminar un grupo con estudiantes o inscripciones, o a un docente con materias inscritas. |
+| `CICLO_INCOMPLETO` | Se intenta iniciar un ciclo con pendientes. |
 | `CON_EVALUACIONES` | Se intenta eliminar un estudiante que tiene evaluaciones. |
 | `NO_AUTORIZADO` | El rol no permite escribir. |
 | `NO_DISPONIBLE` | El almacenamiento no está disponible (en `LocalAPI`: otra pestaña con una versión anterior). |

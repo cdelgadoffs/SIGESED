@@ -5,8 +5,9 @@ export function evaluacionDe(evaluaciones, estudianteId, cicloId) {
   return evaluaciones.find((e) => e.estudianteId === estudianteId && e.cicloId === cicloId) ?? null;
 }
 
-export function materiasDelPrograma(materias, programaEducativo) {
-  return materias.filter((m) => m.programaEducativo === programaEducativo);
+export function materiasInscritas(materias, inscripciones, cicloId, grupoId) {
+  const inscritas = new Set((inscripciones.find((i) => i.cicloId === cicloId && i.grupoId === grupoId)?.materias ?? []).map((m) => m.materia));
+  return materias.filter((m) => inscritas.has(m.id));
 }
 
 export const NO_PRESENTO = 'NP';

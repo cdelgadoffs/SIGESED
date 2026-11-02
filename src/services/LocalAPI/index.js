@@ -1,14 +1,15 @@
 import { ApiError } from '../ApiError.js';
 import {
-  STORE_CATALOGOS, STORE_UNICOS, STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES,
+  STORE_CATALOGOS, STORE_UNICOS, STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES,
   obtenerTodos, obtener, guardar, escribirVarios,
 } from './db.js';
 import {
   usuarioActual, exigirEscritura, prepararRegistro, exigirVersion,
   exigirPlantel, generarMatricula, ordenarPersonas, validarRolesDisponibles, validarRolesAsignables, ciclosDelAnio, ordenarCiclos,
   prepararEvaluacion, idEvaluacion, conPromedio,
-  gruposSegunRol, validarNombreGrupoUnico, ordenarGrupos,
-  prepararConfiguracionCiclo, validarCicloSinEncimar, cicloConDerivados, hoyServidor, exigirCiclosAnterioresCerrados,
+  validarNombreGrupoUnico, ordenarGrupos,
+  prepararConfiguracionCiclo, validarCicloSinEncimar, cicloConDerivados, hoyServidor,
+  exigirCicloPreparable, prepararInscripcion, validarDocentesSinChoque, pendientesDeInicio, idInscripcion,
   validarFechaReporte, cicloDeFecha, ordenarReportes,
 } from './reglas.js';
 
@@ -77,7 +78,6 @@ async function validarPersona(tipo, datos, idPropio = null) {
     const otros = (await obtenerTodos(STORE_PERSONAL)).filter((p) => p.id !== idPropio);
     validarRolesAsignables(limpio.roles, catalogos);
     validarRolesDisponibles(limpio.roles, otros, catalogos);
-    return gruposSegunRol(limpio);
   }
   return limpio;
 }
@@ -111,15 +111,15 @@ export async function editarGrupo(id, version, cambios) {
 
 export async function eliminarGrupo(id) {
   const conAlumnos = (await obtenerTodos(STORE_ESTUDIANTES)).some((e) => e.grupo === id);
-  const conPersonal = (await obtenerTodos(STORE_PERSONAL)).some((p) => (p.grupos || []).includes(id));
-  if (conAlumnos || conPersonal) {
-    throw new ApiError('EN_USO', 'No se puede eliminar: el grupo tiene estudiantes o personal asignado.');
+  const inscrito = (await obtenerTodos(STORE_INSCRIPCIONES)).some((i) => i.grupoId === id);
+  if (conAlumnos || inscrito) {
+    throw new ApiError('EN_USO', 'No se puede eliminar: el grupo tiene estudiantes o está inscrito en algún ciclo escolar.');
   }
   return eliminar(STORE_GRUPOS, id);
 }
 
 export async function listarPersonal() {
-  return ordenarPersonas((await obtenerTodos(STORE_PERSONAL)).map((p) => ({ ...p, roles: p.roles ?? [], grupos: p.grupos ?? [], activo: p.activo ?? true })));
+  return ordenarPersonas((await obtenerTodos(STORE_PERSONAL)).map((p) => ({ ...p, roles: p.roles ?? [], activo: p.activo ?? true })));
 }
 
 export async function crearPersonal(datos) {
@@ -138,7 +138,11 @@ export async function editarPersonal(id, version, cambios) {
   return registro;
 }
 
-export function eliminarPersonal(id) {
+export async function eliminarPersonal(id) {
+  const inscripciones = await obtenerTodos(STORE_INSCRIPCIONES);
+  if (inscripciones.some((i) => i.materias.some((m) => m.docenteId === id))) {
+    throw new ApiError('EN_USO', 'No se puede eliminar: es docente de materias inscritas en algún ciclo escolar.');
+  }
   return eliminar(STORE_PERSONAL, id);
 }
 
@@ -173,10 +177,28 @@ export async function eliminarEstudiante(id) {
   return eliminar(STORE_ESTUDIANTES, id);
 }
 
+async function datosPreparacion() {
+  return {
+    catalogos: await listarCatalogos(),
+    grupos: await obtenerTodos(STORE_GRUPOS),
+    inscripciones: await obtenerTodos(STORE_INSCRIPCIONES),
+    personal: await obtenerTodos(STORE_PERSONAL),
+  };
+}
+
+function cicloParaEntregar(guardado, datos, hoy) {
+  const ciclo = cicloConDerivados(guardado, datos.catalogos.semanasCiclo || [], hoy);
+  return { ...ciclo, pendientesInicio: pendientesDeInicio(ciclo, datos, hoy) };
+}
+
+async function entregarCiclo(guardado) {
+  return cicloParaEntregar(guardado, await datosPreparacion(), hoyServidor());
+}
+
 export async function listarCiclos() {
-  const { semanasCiclo = [] } = await listarCatalogos();
+  const datos = await datosPreparacion();
   const hoy = hoyServidor();
-  return ordenarCiclos(await obtenerTodos(STORE_CICLOS)).map((c) => cicloConDerivados(c, semanasCiclo, hoy));
+  return ordenarCiclos(await obtenerTodos(STORE_CICLOS)).map((c) => cicloParaEntregar(c, datos, hoy));
 }
 
 export async function configurarCiclo(id, version, datos) {
@@ -184,13 +206,13 @@ export async function configurarCiclo(id, version, datos) {
   const actual = await exigirExistente(STORE_CICLOS, id, 'El ciclo escolar no existe.');
   exigirVersion({ version: actual.version ?? 1 }, version);
   const todos = await listarCiclos();
-  exigirCiclosAnterioresCerrados({ ...actual, cerrado: actual.cerrado ?? false }, todos);
+  exigirCicloPreparable({ ...actual, cerrado: actual.cerrado ?? false }, todos);
   const { semanasCiclo = [] } = await listarCatalogos();
   const { fechaFin, ...limpio } = prepararConfiguracionCiclo(datos, semanasCiclo);
   validarCicloSinEncimar(id, limpio.fechaInicio, fechaFin, todos);
   const registro = { ...actual, ...limpio, version: (actual.version ?? 1) + 1, modificadoEn: new Date().toISOString() };
   await guardar(STORE_CICLOS, registro);
-  return cicloConDerivados(registro, semanasCiclo, hoyServidor());
+  return entregarCiclo(registro);
 }
 
 export async function crearCiclosAnuales(anio) {
@@ -214,8 +236,54 @@ export async function concluirCiclo(id, version) {
   const ahora = new Date().toISOString();
   const registro = { ...actual, cerrado: true, cerradoEn: ahora, cerradoPor: usuarioActual().id, version: (actual.version ?? 1) + 1, modificadoEn: ahora };
   await guardar(STORE_CICLOS, registro);
-  const { semanasCiclo = [] } = await listarCatalogos();
-  return cicloConDerivados(registro, semanasCiclo, hoyServidor());
+  return entregarCiclo(registro);
+}
+
+export async function iniciarCiclo(id, version) {
+  exigirEscritura();
+  const actual = await exigirExistente(STORE_CICLOS, id, 'El ciclo escolar no existe.');
+  exigirVersion({ version: actual.version ?? 1 }, version);
+  if (actual.cerrado) throw new ApiError('VALIDACION', `El ciclo ${id} ya está concluido.`);
+  exigirCicloPreparable(actual, await listarCiclos());
+  const { pendientesInicio } = await entregarCiclo(actual);
+  if (pendientesInicio.length > 0) {
+    const grupos = await obtenerTodos(STORE_GRUPOS);
+    const conGrupo = (p) => (p.grupoId ? `${grupos.find((g) => g.id === p.grupoId)?.nombre ?? p.grupoId}: ${p.mensaje}` : p.mensaje);
+    throw new ApiError('CICLO_INCOMPLETO', `Aún no se puede iniciar el ciclo ${id}. ${pendientesInicio.map(conGrupo).join(' ')}`);
+  }
+  const ahora = new Date().toISOString();
+  const registro = { ...actual, iniciado: true, iniciadoEn: ahora, iniciadoPor: usuarioActual().id, version: (actual.version ?? 1) + 1, modificadoEn: ahora };
+  await guardar(STORE_CICLOS, registro);
+  return entregarCiclo(registro);
+}
+
+export async function listarInscripciones() {
+  return obtenerTodos(STORE_INSCRIPCIONES);
+}
+
+export async function guardarInscripcion(cicloId, grupoId, version, datos) {
+  exigirEscritura();
+  const ciclo = await exigirExistente(STORE_CICLOS, cicloId, 'El ciclo escolar no existe.');
+  const grupo = await exigirExistente(STORE_GRUPOS, grupoId, 'El grupo no existe.');
+  if (ciclo.cerrado) throw new ApiError('VALIDACION', `El ciclo ${cicloId} ya se concluyó y no se puede modificar.`);
+  exigirCicloPreparable(ciclo, await listarCiclos());
+  if (grupo.activo === false) throw new ApiError('VALIDACION', `El grupo ${grupo.nombre} está inactivo: solo se inscriben grupos activos.`);
+  const { catalogos, grupos, inscripciones, personal } = await datosPreparacion();
+  const limpio = prepararInscripcion(datos, grupo, catalogos, personal);
+  const id = idInscripcion(cicloId, grupoId);
+  const otras = inscripciones.filter((i) => i.cicloId === cicloId && i.id !== id);
+  validarDocentesSinChoque(limpio.materias, otras, grupos, personal, catalogos);
+  const actual = inscripciones.find((i) => i.id === id);
+  let inscripcion;
+  if (actual) {
+    exigirVersion(actual, version);
+    inscripcion = registroEditado(actual, limpio);
+  } else {
+    const ahora = new Date().toISOString();
+    inscripcion = { id, cicloId, grupoId, ...limpio, version: 1, creadoEn: ahora, creadoPor: usuarioActual().id, modificadoEn: ahora };
+  }
+  await guardar(STORE_INSCRIPCIONES, inscripcion);
+  return inscripcion;
 }
 
 export async function listarEvaluaciones() {
@@ -225,9 +293,13 @@ export async function listarEvaluaciones() {
 export async function guardarEvaluacion(estudianteId, cicloId, version, datos) {
   exigirEscritura();
   const estudiante = await exigirExistente(STORE_ESTUDIANTES, estudianteId, 'El estudiante no existe.');
-  await exigirExistente(STORE_CICLOS, cicloId, 'El ciclo escolar no existe.');
+  const ciclo = await exigirExistente(STORE_CICLOS, cicloId, 'El ciclo escolar no existe.');
+  if (!ciclo.iniciado) throw new ApiError('VALIDACION', `El ciclo ${cicloId} aún no se inicia: las evaluaciones se capturan en un ciclo iniciado.`);
   const grupo = await exigirExistente(STORE_GRUPOS, estudiante.grupo, 'El estudiante no tiene un grupo válido.');
-  const limpio = prepararEvaluacion(datos, grupo.programaEducativo, await listarCatalogos());
+  const inscripcion = await obtener(STORE_INSCRIPCIONES, idInscripcion(cicloId, grupo.id));
+  const inscritas = new Set((inscripcion?.materias ?? []).map((m) => m.materia));
+  const { materias = [] } = await listarCatalogos();
+  const limpio = prepararEvaluacion(datos, materias.filter((m) => inscritas.has(m.id)));
   const id = idEvaluacion(cicloId, estudianteId);
   const actual = await obtener(STORE_EVALUACIONES, id);
   let evaluacion;

@@ -40,3 +40,23 @@
   color: #1a56db;
   font-weight: 600;
 }
+.base-lista-expandible-opciones {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.base-lista-expandible-opciones::-webkit-scrollbar {
+  display: none;
+}
+.base-lista-expandible-thumb {
+  position: absolute;
+  right: 2px;
+  width: 5px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.base-lista-expandible-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+}

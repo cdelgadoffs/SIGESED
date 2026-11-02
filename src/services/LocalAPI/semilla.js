@@ -1,5 +1,21 @@
 import PLAN_ESTUDIOS from './planEstudios.json';
 
+const HORAS_CLASE = [
+  { id: 'semanal-1', modalidad: 'semanal', numero: 1, nombre: '1ª hora', inicio: '08:00', fin: '09:00', descanso: false },
+  { id: 'semanal-2', modalidad: 'semanal', numero: 2, nombre: '2ª hora', inicio: '09:00', fin: '09:50', descanso: false },
+  { id: 'semanal-receso', modalidad: 'semanal', numero: null, nombre: 'Receso', inicio: '09:50', fin: '10:10', descanso: true },
+  { id: 'semanal-3', modalidad: 'semanal', numero: 3, nombre: '3ª hora', inicio: '10:10', fin: '11:00', descanso: false },
+  { id: 'semanal-4', modalidad: 'semanal', numero: 4, nombre: '4ª hora', inicio: '11:00', fin: '12:00', descanso: false },
+  { id: 'semanal-5', modalidad: 'semanal', numero: 5, nombre: '5ª hora', inicio: '12:00', fin: '13:00', descanso: false },
+  { id: 'sabatino-1', modalidad: 'sabatino', numero: 1, nombre: '1ª hora', inicio: '08:00', fin: '09:00', descanso: false },
+  { id: 'sabatino-2', modalidad: 'sabatino', numero: 2, nombre: '2ª hora', inicio: '09:00', fin: '09:50', descanso: false },
+  { id: 'sabatino-receso', modalidad: 'sabatino', numero: null, nombre: 'Receso', inicio: '09:50', fin: '10:10', descanso: true },
+  { id: 'sabatino-3', modalidad: 'sabatino', numero: 3, nombre: '3ª hora', inicio: '10:10', fin: '11:00', descanso: false },
+  { id: 'sabatino-4', modalidad: 'sabatino', numero: 4, nombre: '4ª hora', inicio: '11:00', fin: '12:00', descanso: false },
+  { id: 'sabatino-5', modalidad: 'sabatino', numero: 5, nombre: '5ª hora', inicio: '12:00', fin: '13:00', descanso: false },
+  { id: 'sabatino-6', modalidad: 'sabatino', numero: 6, nombre: '6ª hora', inicio: '13:00', fin: '14:00', descanso: false },
+];
+
 export const CATALOGOS_SEMILLA = {
   generos: [
     { id: 'mujer', nombre: 'Mujer' },
@@ -24,9 +40,9 @@ export const CATALOGOS_SEMILLA = {
     { id: 'expres', nombre: 'Exprés' },
   ],
   modalidades: [
-    { id: 'sabatino', nombre: 'Sabatino' },
-    { id: 'semanal', nombre: 'Semanal' },
-    { id: 'online', nombre: 'Online' },
+    { id: 'sabatino', nombre: 'Sabatino', horario: 'sabado' },
+    { id: 'semanal', nombre: 'Semanal', horario: 'entre-semana' },
+    { id: 'online', nombre: 'Online', horario: null },
   ],
   semanasCiclo: [
     { id: 'semana-1', nombre: 'Semana 1', numero: 1 },
@@ -47,4 +63,5 @@ export const CATALOGOS_SEMILLA = {
     { id: 'otro', nombre: 'Otro' },
   ],
   materias: PLAN_ESTUDIOS,
+  horasClase: HORAS_CLASE,
 };

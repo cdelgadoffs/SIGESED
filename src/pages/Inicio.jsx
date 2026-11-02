@@ -8,16 +8,26 @@ import MenuPanelControl from '../components/widgets/MenuPanelControl.jsx';
 import RolesSesion from '../components/widgets/RolesSesion.jsx';
 import CalendarioCiclo from '../components/widgets/CalendarioCiclo.jsx';
 import FormularioCiclo from '../components/widgets/FormularioCiclo.jsx';
+import PreparacionCiclo from '../components/widgets/PreparacionCiclo.jsx';
+import FormularioInscripcion from '../components/widgets/FormularioInscripcion.jsx';
 import Sidebar3 from '../components/base/Sidebar3.jsx';
 import { useRegistros } from '../context/RegistrosContext.jsx';
 import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR3, ALTO_TOPBAR, ALTO_CINTA } from '../context/UIContext.jsx';
 
 export default function Inicio() {
-  const { izquierdaSidebar1, sidebar5Abierto, cerrarSidebar5, sidebar5Ancho, cicloEnEdicionId, setCicloEnEdicionId } = useUI();
-  const { PLANTEL, CICLOS, cicloActivoId } = useRegistros();
-  const estadoCiclo = CICLOS.find((c) => c.id === cicloActivoId)?.estado;
+  const {
+    izquierdaSidebar1, sidebar5Abierto, cerrarSidebar5, sidebar5Ancho,
+    cicloEnEdicionId, setCicloEnEdicionId, grupoEnInscripcionId, setGrupoEnInscripcionId,
+  } = useUI();
+  const { PLANTEL, CICLOS, GRUPOS, cicloActivoId } = useRegistros();
+  const ciclo = CICLOS.find((c) => c.id === cicloActivoId);
+  const enPreparacion = !!ciclo && !ciclo.iniciado && !ciclo.cerrado;
+  const grupoInscrito = enPreparacion ? GRUPOS.find((g) => g.id === grupoEnInscripcionId) : null;
   const editando = !!cicloActivoId && cicloEnEdicionId === cicloActivoId;
-  const formularioAbierto = estadoCiclo === 'sin-configurar' || editando;
+  const formularioAbierto = !!grupoInscrito || ciclo?.estado === 'sin-configurar' || editando;
+  let badge = `Configurar ciclo ${cicloActivoId ?? ''}`;
+  if (grupoInscrito) badge = `Inscripción de ${grupoInscrito.nombre} · ${cicloActivoId}`;
+  else if (editando) badge = `Editar ciclo ${cicloActivoId}`;
   const izquierdaSidebar3 = izquierdaSidebar1 + ANCHO_SIDEBAR1;
   const arriba = ALTO_TOPBAR + ALTO_CINTA;
 
@@ -35,14 +45,14 @@ export default function Inicio() {
         abierto={formularioAbierto}
         izquierda={izquierdaSidebar3}
         arriba={arriba}
-        badge={editando ? `Editar ciclo ${cicloActivoId}` : `Configurar ciclo ${cicloActivoId ?? ''}`}
-        mostrarCerrar={editando}
-        onCerrar={() => setCicloEnEdicionId(null)}
+        badge={badge}
+        mostrarCerrar={!!grupoInscrito || editando}
+        onCerrar={() => (grupoInscrito ? setGrupoEnInscripcionId(null) : setCicloEnEdicionId(null))}
       >
-        <FormularioCiclo />
+        {grupoInscrito ? <FormularioInscripcion /> : <FormularioCiclo />}
       </Sidebar3>
       <PanelPrincipal izquierda={izquierdaSidebar3 + (formularioAbierto ? ANCHO_SIDEBAR3 : 0)} arriba={arriba}>
-        <CalendarioCiclo />
+        {enPreparacion ? <PreparacionCiclo /> : <CalendarioCiclo />}
       </PanelPrincipal>
     </>
   );

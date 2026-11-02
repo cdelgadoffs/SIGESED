@@ -8,7 +8,7 @@ import MarcoFormulario from './MarcoFormulario.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { filtrarEstudiantes, nombreCompleto, registroActivo, segunEstado } from '../../utils/registros.js';
-import { CALIFICACION_MAXIMA, CALIFICACION_MINIMA, ajustarCalificacion, calificacionValida, evaluacionDe, materiasDelPrograma } from '../../utils/evaluaciones.js';
+import { CALIFICACION_MAXIMA, CALIFICACION_MINIMA, ajustarCalificacion, calificacionValida, evaluacionDe, materiasInscritas } from '../../utils/evaluaciones.js';
 import '../../styles/widgets/FormularioEvaluacion.css';
 
 function desdeEvaluacion(evaluacion) {
@@ -137,7 +137,7 @@ function Captura({ alumno, cicloId, evaluacion, materias }) {
 }
 
 export default function FormularioEvaluacion() {
-  const { ESTUDIANTES, GRUPOS, EVALUACIONES, MATERIAS, cicloActivoId, CARGA } = useRegistros();
+  const { ESTUDIANTES, GRUPOS, EVALUACIONES, MATERIAS, INSCRIPCIONES, CICLOS, cicloActivoId, CARGA } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirPanelControl, filtroEstado } = useUI();
   const alumno = registroActivo(segunEstado(filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda), filtroEstado), registroSeleccionadoId);
 
@@ -158,9 +158,13 @@ export default function FormularioEvaluacion() {
   if (!grupo) {
     return <div className="widget-formulario-evaluacion-mensaje"><p>Asigna un grupo a este estudiante para poder capturar sus calificaciones.</p></div>;
   }
-  const materias = materiasDelPrograma(MATERIAS, grupo.programaEducativo);
+  const ciclo = CICLOS.find((c) => c.id === cicloActivoId);
+  if (!ciclo?.iniciado) {
+    return <div className="widget-formulario-evaluacion-mensaje"><p>{`El ciclo ${cicloActivoId} aún no se inicia. Las evaluaciones se capturan cuando el ciclo está iniciado (en Inicio).`}</p></div>;
+  }
+  const materias = materiasInscritas(MATERIAS, INSCRIPCIONES, cicloActivoId, grupo.id);
   if (materias.length === 0) {
-    return <div className="widget-formulario-evaluacion-mensaje"><p>El programa educativo del grupo de este estudiante aún no tiene materias.</p></div>;
+    return <div className="widget-formulario-evaluacion-mensaje"><p>{`El grupo ${grupo.nombre} no tiene materias inscritas en el ciclo ${cicloActivoId}.`}</p></div>;
   }
 
   const evaluacion = evaluacionDe(EVALUACIONES, alumno.id, cicloActivoId);

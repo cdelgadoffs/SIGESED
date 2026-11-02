@@ -64,6 +64,7 @@ export default function CalendarioCiclo() {
           <span className="widget-calendario-ciclo-titulo">Ciclo escolar {ciclo.id}</span>
           {ciclo.semanaActual && <BadgeDinamico texto={ciclo.semanaActual.nombre} icono="ri-calendar-event-line" tono="azul" />}
           {ciclo.asuetoHoy && <BadgeDinamico texto="Hoy es asueto" icono="ri-calendar-close-line" tono="naranja" />}
+          {ciclo.iniciado && !ciclo.cerrado && <BadgeDinamico texto="Iniciado" icono="ri-play-circle-line" tono="verde" />}
           <BadgeDinamico texto={estado.texto} tono={estado.tono} />
         </div>
         <div className="widget-calendario-ciclo-cuerpo">
