@@ -2,6 +2,7 @@ import Card from '../base/Card.jsx';
 import BadgeDinamico from '../base/BadgeDinamico.jsx';
 import OpcionesRegistro from './OpcionesRegistro.jsx';
 import EstadoConfirmado from './EstadoConfirmado.jsx';
+import CodigoQR from './CodigoQR.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { estiloGenero, filtrarEstudiantes, nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
@@ -31,6 +32,7 @@ export default function FichaEstudiante() {
           )}
           <BadgeDinamico texto={alumno.matricula} icono="ri-id-card-line" tono="gris" title="Matrícula" />
         </div>
+        <div className="widget-ficha-estudiante-cuerpo">
         <dl className="widget-ficha-estudiante-datos">
           <dt>Grupo</dt>
           <dd>{grupo?.nombre ?? 'Sin grupo'}</dd>
@@ -45,6 +47,8 @@ export default function FichaEstudiante() {
           <dt>Correo</dt>
           <dd>{alumno.correo || 'Sin registrar'}</dd>
         </dl>
+        <CodigoQR texto={alumno.matricula} leyenda={alumno.matricula} nombreArchivo={`QR_${alumno.matricula}`} />
+        </div>
         <div className="widget-ficha-estudiante-acciones">
           <EstadoConfirmado tamano="grande" encendido={alumno.activo !== false} descripcion={`a ${nombreCompleto(alumno)}`} onCambiar={(activo) => editarEstudiante(alumno.id, { activo })} />
           <OpcionesRegistro

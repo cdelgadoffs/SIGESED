@@ -1,6 +1,7 @@
 import Card from '../base/Card.jsx';
 import BadgeDinamico from '../base/BadgeDinamico.jsx';
 import OpcionesRegistro from './OpcionesRegistro.jsx';
+import CodigoQR from './CodigoQR.jsx';
 import EstadoConfirmado from './EstadoConfirmado.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
@@ -30,6 +31,7 @@ export default function FichaPersonal() {
           <span className="widget-ficha-personal-nombre">{nombreCompleto(persona)}</span>
           <BadgeDinamico texto={nombreDeCatalogo(GENEROS, persona.genero)} icono={estilo.icono} tono={estilo.tono} />
         </div>
+        <div className="widget-ficha-personal-cuerpo">
         <dl className="widget-ficha-personal-datos">
           <dt>Teléfono</dt>
           <dd>{persona.telefono || 'Sin registrar'}</dd>
@@ -56,6 +58,8 @@ export default function FichaPersonal() {
             </>
           )}
         </dl>
+        <CodigoQR texto={persona.id} leyenda="Personal" nombreArchivo={`QR_${nombreCompleto(persona).replace(/\s+/g, '_')}`} />
+        </div>
         <div className="widget-ficha-personal-acciones">
           <EstadoConfirmado tamano="grande" encendido={persona.activo !== false} descripcion={`a ${nombreCompleto(persona)}`} onCambiar={(activo) => editarPersonal(persona.id, { activo })} />
           <OpcionesRegistro

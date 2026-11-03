@@ -65,3 +65,12 @@
 .widget-ficha-estudiante-activo .widget-ficha-estudiante-acciones {
   border-top-color: #c3e6cb;
 }
+.widget-ficha-estudiante-cuerpo {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.widget-ficha-estudiante-cuerpo > dl {
+  flex: 1;
+  min-width: 0;
+}

@@ -70,3 +70,12 @@
 .widget-ficha-personal-activo .widget-ficha-personal-acciones {
   border-top-color: #c3e6cb;
 }
+.widget-ficha-personal-cuerpo {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.widget-ficha-personal-cuerpo > dl {
+  flex: 1;
+  min-width: 0;
+}
