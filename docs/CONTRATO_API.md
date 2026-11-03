@@ -139,10 +139,10 @@ Se puede guardar incompleta (menos de 3 materias, sin docente o sin horario): lo
 | `cicloId` | string | Ciclo existente. |
 | `calificaciones` | `{ materia, calificacion }[]` | `materia`: `id` de una materia **inscrita por el grupo del estudiante en ese ciclo**, sin repetidos, en el orden del catálogo. `calificacion`: entero 5–10. **Al menos una.** |
 | `observaciones` | string | Opcional, máx. 1000. |
-| `promedio` | number | **Derivado al leer**, sin redondear; nunca se guarda. Se divide entre **todas las materias inscritas** por el grupo del estudiante en el ciclo, y cada materia inscrita sin calificación (NP) **cuenta como 0** (decisión del usuario). |
+| `promedio` | number | **Derivado al leer**, sin redondear; nunca se guarda. Se divide entre **todas las materias inscritas** por el grupo del estudiante en el ciclo, menos las que el estudiante **ya tenía acreditadas** fuera de este ciclo (no se califican aquí; la boleta las muestra como «Registrada en kárdex»), y cada materia inscrita sin calificación (NP) **cuenta como 0** (decisión del usuario). |
 | `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
 
-La boleta de calificaciones se arma en el cliente con estos datos (el tratamiento «Alumna»/«Alumno» sale del `genero` del estudiante; sin género, «Alumno(a)»; lista las materias **inscritas** por el grupo del estudiante en el ciclo y las no capturadas salen como **NP**, que cuenta como 0 en el promedio; el 5 se imprime en rojo) (`utils/boleta.js`); si llega a ser un documento que se guarde o envíe, la armará el servidor.
+La boleta de calificaciones se arma en el cliente con estos datos (el tratamiento «Alumna»/«Alumno» sale del `genero` del estudiante; sin género, «Alumno(a)»; lista las materias **inscritas** por el grupo del estudiante en el ciclo las ya acreditadas fuera del ciclo salen como «Registrada en kárdex» sin contar en el promedio y las no capturadas salen como **NP**, que cuenta como 0 en el promedio; el 5 se imprime en rojo) (`utils/boleta.js`); si llega a ser un documento que se guarde o envíe, la armará el servidor.
 
 ### Reporte disciplinario (bitácora estudiantil)
 | Campo | Tipo | Notas |
@@ -158,6 +158,30 @@ La boleta de calificaciones se arma en el cliente con estos datos (el tratamient
 
 Decisión del usuario: los reportes **no se editan ni se eliminan**; solo se agregan (si hubo un error, se levanta otro aclarándolo). A futuro, el Administrador TI podría anular.
 
+### Calificación de kárdex (captura manual)
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | string | UUID del servidor. |
+| `estudianteId` | string | Estudiante existente. |
+| `materia` | string | `id` de `materias` del programa del grupo del estudiante. **Una por estudiante y materia** (`VALIDACION` si se repite: se edita la existente). |
+| `calificacion` | number | Entero 5–10. |
+| `observaciones` | string | Opcional, máx. 500. |
+| `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | |
+
+**Materia acreditada** (decisión del usuario): una materia con calificación de 7 o más, capturada o de la evaluación de un ciclo iniciado, no se vuelve a registrar para ese estudiante (`MATERIA_ACREDITADA`), sin importar el grupo. Con NP o reprobada (5 o 6) sí: se recursa y el registro nuevo la reemplaza en el kárdex.
+
+Historial académico capturado a mano (decisión del usuario: traslada los datos de SGKardex). El cuatrimestre no se guarda: es el de la materia en el plan de estudios.
+
+### Kárdex (derivado al leer)
+| Campo | Tipo | Notas |
+|---|---|---|
+| `estudianteId` | string | |
+| `cuatrimestres` | `{ numero, materias, promedio }[]` | Del 1 al 9, solo los que tienen calificaciones. `materias`: `{ materia, calificacion, observaciones, origen, registroId, cicloId }` en el orden del catálogo, **una por materia**; `origen` es `captura` (calificación de kárdex, `registroId` su `id`) o `ciclo` (evaluación de un ciclo **iniciado**, `cicloId`). `calificacion` es `null` (**NP**) para una materia inscrita por el grupo en un ciclo con evaluación guardada del estudiante que quedó sin calificar (salvo que ya estuviera acreditada). Si una materia tiene varios registros, queda el más reciente con calificación (capturas primero, luego ciclos en orden); NP solo si no hay ninguno con calificación. |
+| `promedioGeneral` | number \| null | Suma ÷ número de materias (NP cuenta 0; sin redondear); `null` sin materias. |
+| `totalMaterias` | number | |
+
+Nunca se guarda: lo calcula el servidor con las calificaciones de kárdex y las evaluaciones.
+
 ## Operaciones
 
 | Operación | Devuelve | Notas |
@@ -165,6 +189,7 @@ Decisión del usuario: los reportes **no se editan ni se eliminan**; solo se agr
 | `listarCatalogos()` | `{ [nombre]: Elemento[] }` | |
 | `obtenerPlantel()` | `Plantel \| null` | `null` mientras no se haya configurado. |
 | `guardarPlantel(version, datos)` | `Plantel` | Si no existe lo crea (`version` = `null`); si existe lo reemplaza con los `datos` completos y exige su `version` (`CONFLICTO`). |
+| `crearMateria(datos)` | `Materia` | Alta manual en el catálogo `materias` para programas sin plan de estudios completo (decisión del usuario): `{ programaEducativo, cuatrimestre (1–9), nombre }`. El servidor genera `clave` (3 letras del programa + cuatrimestre + consecutivo de 2 dígitos, ej. `BAC101`) e `id` (la clave en minúsculas), marca `manual: true` y deja vacíos objetivo, temas, actividades y evaluación. `VALIDACION` si el nombre se repite en el programa. Las actualizaciones del catálogo semilla deben **conservar** las materias `manual`. |
 | `listarGrupos()` | `Grupo[]` | Ordenados por nombre. |
 | `crearGrupo(datos)` | `Grupo` | `PLANTEL_NO_CONFIGURADO` si aún no hay plantel. |
 | `editarGrupo(id, version, cambios)` | `Grupo` | |
@@ -176,7 +201,7 @@ Decisión del usuario: los reportes **no se editan ni se eliminan**; solo se agr
 | `listarEstudiantes()` | `Estudiante[]` | Ordenados por apellidos y nombre. |
 | `crearEstudiante(datos)` | `Estudiante` | Asigna `matricula`. `PLANTEL_NO_CONFIGURADO` si aún no hay plantel. |
 | `editarEstudiante(id, version, cambios)` | `Estudiante` | `matricula` no se puede enviar (`VALIDACION`). |
-| `eliminarEstudiante(id)` | `{ id }` | `CON_EVALUACIONES` si tiene evaluaciones registradas. |
+| `eliminarEstudiante(id)` | `{ id }` | `CON_EVALUACIONES` si tiene evaluaciones o calificaciones de kárdex registradas. |
 | `listarCiclos()` | `Ciclo[]` | Ordenados por año y número, con sus derivados. |
 | `crearCiclosAnuales(anio)` | `Ciclo[]` | Crea los 6 ciclos de `anio` (entero, 2000–2100; si no, `VALIDACION`). Idempotente: solo crea los que falten. Devuelve **todos** los ciclos. |
 | `configurarCiclo(id, version, datos)` | `Ciclo` | `datos`: `{ fechaInicio, diaInicioSemana, vacaciones, asuetos }` completos. Valida fechas, que `fechaInicio` caiga en `diaInicioSemana`, que cada vacación empiece al inicio de una semana del ciclo, que los asuetos estén dentro del ciclo y que no se encime con otro ciclo (`VALIDACION`). Exige `version` (`CONFLICTO`). Un ciclo `cerrado` no se puede configurar, y no se puede configurar uno nuevo mientras haya un ciclo configurado anterior sin cerrar (`VALIDACION`). |
@@ -184,6 +209,11 @@ Decisión del usuario: los reportes **no se editan ni se eliminan**; solo se agr
 | `iniciarCiclo(id, version)` | `Ciclo` | Marca `iniciado`. Exige `version` (`CONFLICTO`), que el ciclo no esté iniciado ni cerrado, que los anteriores configurados estén cerrados y que hoy sea **antes de `fechaInicio`** (`VALIDACION`), y que no tenga `pendientesInicio` (`CICLO_INCOMPLETO`, con los pendientes en el mensaje). Un ciclo iniciado ya no se configura (`VALIDACION`). |
 | `listarInscripciones()` | `Inscripcion[]` | |
 | `guardarInscripcion(cicloId, grupoId, version, datos)` | `Inscripcion` | `datos`: `{ materias }`. Si no existe la crea (`version` = `null`); si existe la reemplaza y exige su `version` (`CONFLICTO`). `NO_ENCONTRADO` si el ciclo o el grupo no existen; `VALIDACION` si el ciclo está iniciado o cerrado, el grupo inactivo o algún dato no cumple las reglas. |
+| `listarCalificacionesKardex()` | `CalificacionKardex[]` | |
+| `crearCalificacionKardex(datos)` | `CalificacionKardex` | `datos`: `{ estudianteId, materia, calificacion, observaciones }`. |
+| `editarCalificacionKardex(id, version, cambios)` | `CalificacionKardex` | `cambios`: `{ materia, calificacion, observaciones }`. |
+| `eliminarCalificacionKardex(id)` | `{ id }` | |
+| `listarKardex()` | `Kardex[]` | Uno por estudiante con calificaciones. |
 | `listarReportes()` | `Reporte[]` | Del más reciente al más antiguo (`fecha`, luego `creadoEn`). |
 | `crearReporte(datos)` | `Reporte` | `datos`: `{ estudianteId, fecha, tipo, descripcion, acciones }`. `NO_ENCONTRADO` si el estudiante no existe; `VALIDACION` si está inactivo. |
 | `listarEvaluaciones()` | `Evaluacion[]` | Con `promedio`. |
@@ -202,7 +232,8 @@ Al editar se valida el registro completo resultante.
 | `ROL_OCUPADO` | Se asigna un rol que ya alcanzó su `maximo` en otras personas. El mensaje dice quién lo tiene. |
 | `EN_USO` | Se intenta eliminar un grupo con estudiantes o inscripciones, o a un docente con materias inscritas. |
 | `CICLO_INCOMPLETO` | Se intenta iniciar un ciclo con pendientes. |
-| `CON_EVALUACIONES` | Se intenta eliminar un estudiante que tiene evaluaciones. |
+| `MATERIA_ACREDITADA` | Se registra (en kárdex o en una evaluación) una materia que el estudiante ya acreditó con 7 o más. |
+| `CON_EVALUACIONES` | Se intenta eliminar un estudiante que tiene evaluaciones o calificaciones de kárdex. |
 | `NO_AUTORIZADO` | El rol no permite escribir. |
 | `NO_DISPONIBLE` | El almacenamiento no está disponible (en `LocalAPI`: otra pestaña con una versión anterior). |
 | `NO_IMPLEMENTADO` | `ServerConnection` mientras no haya backend. |

@@ -12,10 +12,12 @@ const RECURSOS = {
   evaluaciones: { listar: api.listarEvaluaciones },
   reportes: { listar: api.listarReportes, crear: api.crearReporte },
   inscripciones: { listar: api.listarInscripciones },
+  calificacionesKardex: { listar: api.listarCalificacionesKardex, crear: api.crearCalificacionKardex, editar: api.editarCalificacionKardex, eliminar: api.eliminarCalificacionKardex },
+  kardex: { listar: api.listarKardex },
 };
 const AFECTAN_CICLOS = ['grupos', 'personal'];
 const CLAVES = Object.keys(RECURSOS);
-const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [], reportes: [], inscripciones: [] };
+const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [], reportes: [], inscripciones: [], calificacionesKardex: [], kardex: [] };
 
 const RegistrosContext = createContext(null);
 
@@ -66,6 +68,7 @@ export function RegistrosProvider({ children }) {
 
   function recargarCiclosSi(recurso) {
     if (AFECTAN_CICLOS.includes(recurso)) recargar('ciclos');
+    if (recurso === 'calificacionesKardex') { recargar('kardex'); recargar('evaluaciones'); }
   }
 
   async function crear(recurso, valores) {
@@ -100,6 +103,12 @@ export function RegistrosProvider({ children }) {
     }
   }
 
+  async function crearMateria(datos) {
+    const materia = await api.crearMateria(datos);
+    await recargar('catalogos');
+    return materia;
+  }
+
   async function crearCiclosAnuales(anio) {
     const ciclos = conSincronizacion('ciclos', await api.crearCiclosAnuales(anio));
     fijar('ciclos', ciclos);
@@ -116,7 +125,9 @@ export function RegistrosProvider({ children }) {
   }
 
   async function iniciarCiclo(id) {
-    return actualizarCiclo(id, (version) => api.iniciarCiclo(id, version));
+    const ciclo = await actualizarCiclo(id, (version) => api.iniciarCiclo(id, version));
+    recargar('kardex');
+    return ciclo;
   }
 
   async function guardarInscripcion(cicloId, grupoId, valores) {
@@ -155,6 +166,7 @@ export function RegistrosProvider({ children }) {
       const valor = [...datosRef.current.evaluaciones.filter((e) => e.id !== evaluacion.id), evaluacion];
       fijar('evaluaciones', valor);
       guardarCache('evaluaciones', valor).catch(() => {});
+      recargar('kardex');
       return evaluacion;
     } catch (e) {
       if (e?.codigo === 'CONFLICTO' || e?.codigo === 'NO_ENCONTRADO') recargar('evaluaciones');
@@ -196,6 +208,11 @@ export function RegistrosProvider({ children }) {
     EVALUACIONES: datos.evaluaciones,
     REPORTES: datos.reportes,
     INSCRIPCIONES: datos.inscripciones,
+    CALIFICACIONES_KARDEX: datos.calificacionesKardex,
+    KARDEX: datos.kardex,
+    crearCalificacionKardex: (v) => crear('calificacionesKardex', v),
+    editarCalificacionKardex: (id, c) => editar('calificacionesKardex', id, c),
+    eliminarCalificacionKardex: (id) => eliminar('calificacionesKardex', id),
     guardarInscripcion,
     iniciarCiclo,
     crearReporte: (v) => crear('reportes', v),
@@ -203,6 +220,7 @@ export function RegistrosProvider({ children }) {
     cicloActivoId: cicloActivo?.id ?? null,
     seleccionarCiclo: setCicloElegidoId,
     crearCiclosAnuales,
+    crearMateria,
     configurarCiclo,
     concluirCiclo,
     SEMANAS_CICLO: catalogos.semanasCiclo || [],

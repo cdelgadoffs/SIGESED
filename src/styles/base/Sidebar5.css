@@ -84,8 +84,8 @@
 }
 .base-sidebar5-scrollbar-thumb {
   position: absolute;
-  right: 2px;
-  width: 6px;
+  right: 0;
+  width: 4px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.2);
   cursor: pointer;

@@ -465,7 +465,7 @@
   {
     "id": "p106",
     "clave": "P106",
-    "nombre": "Métodos de Estudio",
+    "nombre": "Métodos de Estudios",
     "programaEducativo": "licenciatura-pedagogia",
     "cuatrimestre": 1,
     "objetivo": "Al término del curso el alumno conocerá y aplicará algunos métodos para orientar el estudio, las técnicas de lectura y redacción, de exposición oral de temas, la administración del tiempo de estudio y los elementos a considerar para la presentación de exámenes.",
@@ -1137,7 +1137,7 @@
   {
     "id": "p313",
     "clave": "P313",
-    "nombre": "Estadística Aplicada a la Educación",
+    "nombre": "Estadística I",
     "programaEducativo": "licenciatura-pedagogia",
     "cuatrimestre": 3,
     "objetivo": "Identificará y aplicará diversas técnicas estadísticas para la recolección, procesamiento e interpretación de datos que faciliten la investigación pedagógica.",
@@ -1213,7 +1213,7 @@
   {
     "id": "p314",
     "clave": "P314",
-    "nombre": "Psicología del Desarrollo Humano",
+    "nombre": "Conocimiento de la Infancia",
     "programaEducativo": "licenciatura-pedagogia",
     "cuatrimestre": 3,
     "objetivo": "No especificado en el documento fuente.",
@@ -1337,7 +1337,7 @@
   {
     "id": "p315",
     "clave": "P315",
-    "nombre": "Epistemología de la Educación",
+    "nombre": "Epistemología",
     "programaEducativo": "licenciatura-pedagogia",
     "cuatrimestre": 3,
     "objetivo": "Analizará y diferenciará los diversos paradigmas en torno al origen, la esencia y construcción del conocimiento y su incidencia en el fenómeno educativo.",
@@ -1624,7 +1624,7 @@
   {
     "id": "p419",
     "clave": "P419",
-    "nombre": "Estadística Inferencial",
+    "nombre": "Estadística II",
     "programaEducativo": "licenciatura-pedagogia",
     "cuatrimestre": 4,
     "objetivo": "Al término del curso el alumno aplicará las técnicas de la estadística que le permitan inferir las características de una población en base a la información contenida en una muestra, aplicando las habilidades adquiridas al contexto pedagógico.",
@@ -1728,7 +1728,7 @@
   {
     "id": "p420",
     "clave": "P420",
-    "nombre": "Didáctica Específica",
+    "nombre": "Didáctica",
     "programaEducativo": "licenciatura-pedagogia",
     "cuatrimestre": 4,
     "objetivo": "Distinguirá las aportaciones teóricas de la planeación didáctica en la aplicación, diseño y elaboración de propuestas didácticas para ser usadas en un curso, así como la evaluación de los diferentes momentos del mismo.",
@@ -2932,7 +2932,7 @@
   {
     "id": "p631",
     "clave": "P631",
-    "nombre": "Psicopatología del Escolar",
+    "nombre": "Psicopatología Escolar",
     "programaEducativo": "licenciatura-pedagogia",
     "cuatrimestre": 6,
     "objetivo": "El alumno identificará las diversas psicopatologías más frecuentes que se pueden presentar en el desarrollo humano a través del proceso educativo así como también comprenderá la importancia de atención y canalización al profesional adecuado.",
@@ -3609,7 +3609,7 @@
   {
     "id": "p739",
     "clave": "P739",
-    "nombre": "Tecnología Educativa",
+    "nombre": "Desarrollo de Entornos Virtuales del Aprendizaje",
     "programaEducativo": "licenciatura-pedagogia",
     "cuatrimestre": 7,
     "objetivo": "Al finalizar el curso el alumno analizará los cambios culturales que están transformando la sociedad y el ámbito educativo, reflexionará acerca del impacto de las nuevas tecnologías de la información y la comunicación en los nuevos ambientes de aprendizaje, desarrollando habilidades en el diseño y evaluación de recursos pedagógicos con nuevas Tecnologías de Información y Comunicación.",
@@ -3949,7 +3949,7 @@
   {
     "id": "p844",
     "clave": "P844",
-    "nombre": "Capacitación Empresarial I",
+    "nombre": "Capacitación Empresarial",
     "programaEducativo": "licenciatura-pedagogia",
     "cuatrimestre": 8,
     "objetivo": "Integrará los elementos administrativos, pedagógicos y legales de la capacitación, que le permita ubicar el papel del pedagogo como educador, instructor y formador de recursos humanos.",

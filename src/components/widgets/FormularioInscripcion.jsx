@@ -3,6 +3,7 @@ import CampoFormulario from '../base/CampoFormulario.jsx';
 import CampoTexto from '../base/CampoTexto.jsx';
 import ListaExpandible from '../base/ListaExpandible.jsx';
 import BotonIcono from '../base/BotonIcono.jsx';
+import BotonS from '../base/BotonS.jsx';
 import MarcoFormulario from './MarcoFormulario.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
@@ -65,6 +66,9 @@ function CuadriculaHorario({ horas, dias, propias, ocupadas, onAlternar }) {
   );
 }
 
+const CUATRIMESTRES = 9;
+const NUEVA = '__nueva';
+
 function sinHorariosViejos(form) {
   return { materias: form.materias.map((m) => ({ ...m, horario: (m.horario ?? []).filter((b) => b.hora) })) };
 }
@@ -92,7 +96,7 @@ function igual(a, b) {
 function Inscripcion({ ciclo, grupo, inscripcion }) {
   const {
     MATERIAS, MODALIDADES, HORAS_CLASE, PERSONAL, ESTUDIANTES, EVALUACIONES,
-    guardarInscripcion, guardarBorrador, obtenerBorrador, eliminarBorrador,
+    crearMateria, guardarInscripcion, guardarBorrador, obtenerBorrador, eliminarBorrador,
   } = useRegistros();
   const { setGrupoEnInscripcionId } = useUI();
   const delPrograma = MATERIAS.filter((m) => m.programaEducativo === grupo.programaEducativo);
@@ -107,7 +111,22 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
   const dias = diasDeHorario(tipo);
   const alumnos = ESTUDIANTES.filter((e) => e.grupo === grupo.id && e.activo !== false);
   const docentes = ordenarPorTexto(PERSONAL.filter(puedeImpartir), nombreCompleto);
-  const cuatrimestres = [...new Set(delPrograma.map((m) => m.cuatrimestre))].sort((a, b) => a - b);
+  const cuatrimestres = Array.from({ length: CUATRIMESTRES }, (_, i) => i + 1);
+  const [nuevas, setNuevas] = useState({});
+  const [agregando, setAgregando] = useState(false);
+
+  async function agregarMateria(i, cuatrimestre) {
+    setAgregando(true);
+    setError(null);
+    try {
+      const creada = await crearMateria({ programaEducativo: grupo.programaEducativo, cuatrimestre, nombre: nuevas[i] ?? '' });
+      setNuevas((n) => ({ ...n, [i]: undefined }));
+      cambiarMateria(i, { materia: creada.id });
+    } catch (e) {
+      setError(e?.mensaje ?? 'No se pudo agregar la materia.');
+    }
+    setAgregando(false);
+  }
 
   useEffect(() => {
     let cancelado = false;
@@ -234,14 +253,31 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
               <CampoFormulario etiqueta="Materia" medio>
                 {m.cuatrimestre ? (
                   <ListaExpandible
-                    valorActual={m.materia}
-                    etiquetaActual={materia ? `${materia.clave} · ${materia.nombre}` : 'Selecciona…'}
-                    opciones={opciones}
-                    onSeleccionar={(id) => cambiarMateria(i, { materia: id })}
+                    valorActual={nuevas[i] !== undefined ? NUEVA : m.materia}
+                    etiquetaActual={nuevas[i] !== undefined ? 'Escribir materia nueva' : (materia ? `${materia.clave} · ${materia.nombre}` : 'Selecciona…')}
+                    opciones={[...opciones, { id: NUEVA, label: '+ Escribir materia nueva' }]}
+                    onSeleccionar={(id) => {
+                      if (id === NUEVA) setNuevas((n) => ({ ...n, [i]: '' }));
+                      else {
+                        setNuevas((n) => ({ ...n, [i]: undefined }));
+                        cambiarMateria(i, { materia: id });
+                      }
+                    }}
                   />
                 ) : <CampoTexto value="" placeholder="Elige el cuatrimestre" disabled />}
               </CampoFormulario>
             </div>
+            {m.cuatrimestre && nuevas[i] !== undefined && (
+              <div className="widget-formulario-inscripcion-nueva">
+                <CampoTexto
+                  value={nuevas[i]}
+                  placeholder={`Nombre de la materia (${m.cuatrimestre}º cuatrimestre)`}
+                  enfocar
+                  onChange={(v) => setNuevas((n) => ({ ...n, [i]: v }))}
+                />
+                <BotonS variant="claro" disabled={agregando || !nuevas[i].trim()} onClick={() => agregarMateria(i, m.cuatrimestre)}>Agregar</BotonS>
+              </div>
+            )}
             {cursaron.length > 0 && (
               <p className="widget-formulario-inscripcion-aviso">
                 {`Ya la cursaron: ${cursaron.map(nombreCompleto).join(', ')}.`}

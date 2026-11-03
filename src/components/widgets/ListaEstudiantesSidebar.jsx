@@ -1,11 +1,12 @@
 import BotonSeleccionableMenu from '../base/BotonSeleccionableMenu.jsx';
+import BotonAgregar from '../base/BotonAgregar.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import { filtrarEstudiantes, nombreCompleto, ordenarPorTexto, registroActivo, segunEstado } from '../../utils/registros.js';
 import '../../styles/widgets/ListaEstudiantesSidebar.css';
 
-export default function ListaEstudiantesSidebar() {
+export default function ListaEstudiantesSidebar({ onAgregar }) {
   const { ESTUDIANTES, GRUPOS, CARGA } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, setRegistroSeleccionadoId, filtroEstado, sidebar3Abierto } = useUI();
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
@@ -32,6 +33,7 @@ export default function ListaEstudiantesSidebar() {
               deshabilitado={sidebar3Abierto}
               activo={e.id === activo?.id}
               onClick={() => setRegistroSeleccionadoId(e.id)}
+              accion={onAgregar && <BotonAgregar onClick={() => onAgregar(e.id)}>+</BotonAgregar>}
             >
               <span className="widget-lista-estudiantes-sidebar-nombre">{nombreCompleto(e)}</span>
             </BotonSeleccionableMenu>

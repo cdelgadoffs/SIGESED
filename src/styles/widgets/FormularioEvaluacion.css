@@ -35,3 +35,8 @@
 .widget-formulario-evaluacion-mensaje p {
   margin: 0;
 }
+.widget-formulario-evaluacion-acreditada {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  color: #166e37;
+}

@@ -35,8 +35,8 @@
 }
 .widget-vista-previa-boleta-thumb {
   position: absolute;
-  right: -14px;
-  width: 6px;
+  right: -24px;
+  width: 4px;
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.2);
   cursor: pointer;

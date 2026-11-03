@@ -8,7 +8,7 @@ export function useScrollbarPersonalizada() {
     const el = contenedorRef.current;
     if (!el) return;
     const { scrollTop, scrollHeight, clientHeight } = el;
-    if (scrollHeight <= clientHeight) {
+    if (scrollHeight - clientHeight <= 1) {
       setThumb({ alto: 0, top: 0, visible: false });
       return;
     }

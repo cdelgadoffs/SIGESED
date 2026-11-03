@@ -9,6 +9,7 @@ import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { filtrarEstudiantes, nombreCompleto, registroActivo, segunEstado } from '../../utils/registros.js';
 import { CALIFICACION_MAXIMA, CALIFICACION_MINIMA, ajustarCalificacion, calificacionValida, evaluacionDe, materiasInscritas } from '../../utils/evaluaciones.js';
+import { acreditadasFuera } from '../../utils/kardex.js';
 import '../../styles/widgets/FormularioEvaluacion.css';
 
 function desdeEvaluacion(evaluacion) {
@@ -22,7 +23,7 @@ function igual(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-function Captura({ alumno, cicloId, evaluacion, materias }) {
+function Captura({ alumno, cicloId, evaluacion, materias, acreditadas }) {
   const { guardarEvaluacion, guardarBorrador, obtenerBorrador, eliminarBorrador } = useRegistros();
   const [base] = useState(() => desdeEvaluacion(evaluacion));
   const clave = `formularioEvaluacion:${cicloId}:${alumno.id}`;
@@ -104,6 +105,14 @@ function Captura({ alumno, cicloId, evaluacion, materias }) {
         <div className="widget-formulario-evaluacion-materias">
           {materias.map((m) => {
             const marcada = m.id in form.calificaciones;
+            if (acreditadas.has(m.id)) {
+              return (
+                <div key={m.id} className="widget-formulario-evaluacion-materia">
+                  <Checkbox checked={false} disabled label={m.nombre} onChange={() => {}} />
+                  <span className="widget-formulario-evaluacion-acreditada">Ya registrada en el kárdex</span>
+                </div>
+              );
+            }
             return (
               <div key={m.id} className="widget-formulario-evaluacion-materia">
                 <Checkbox checked={marcada} label={m.nombre} onChange={(v) => marcar(m.id, v)} />
@@ -130,7 +139,7 @@ function Captura({ alumno, cicloId, evaluacion, materias }) {
 }
 
 export default function FormularioEvaluacion() {
-  const { ESTUDIANTES, GRUPOS, EVALUACIONES, MATERIAS, INSCRIPCIONES, CICLOS, cicloActivoId, CARGA } = useRegistros();
+  const { ESTUDIANTES, GRUPOS, EVALUACIONES, KARDEX, MATERIAS, INSCRIPCIONES, CICLOS, cicloActivoId, CARGA } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirPanelControl, filtroEstado } = useUI();
   const alumno = registroActivo(segunEstado(filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda), filtroEstado), registroSeleccionadoId);
 
@@ -168,6 +177,7 @@ export default function FormularioEvaluacion() {
       cicloId={cicloActivoId}
       evaluacion={evaluacion}
       materias={materias}
+      acreditadas={acreditadasFuera(KARDEX.find((k) => k.estudianteId === alumno.id), cicloActivoId)}
     />
   );
 }

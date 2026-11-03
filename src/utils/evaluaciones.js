@@ -12,9 +12,12 @@ export function materiasInscritas(materias, inscripciones, cicloId, grupoId) {
 
 export const NO_PRESENTO = 'NP';
 
-export function filasDeBoleta(materias, calificaciones) {
+export const REGISTRADA_EN_KARDEX = 'Registrada en kárdex';
+
+export function filasDeBoleta(materias, calificaciones, acreditadas = new Set()) {
   return materias.map((m) => {
     const c = calificaciones.find((x) => x.materia === m.id);
+    if (!c && acreditadas.has(m.id)) return { materia: m.nombre, calificacion: REGISTRADA_EN_KARDEX };
     return { materia: m.nombre, calificacion: c ? c.calificacion : NO_PRESENTO };
   });
 }

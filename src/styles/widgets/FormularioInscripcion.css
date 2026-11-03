@@ -112,3 +112,12 @@
 .widget-formulario-inscripcion-fila > .base-campo-formulario:last-child {
   flex: 1 1 0;
 }
+.widget-formulario-inscripcion-nueva {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.widget-formulario-inscripcion-nueva > :first-child {
+  flex: 1;
+  min-width: 0;
+}

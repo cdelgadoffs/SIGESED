@@ -1,0 +1,66 @@
+.widget-vista-previa-kardex {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  padding: 16px 24px 24px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #e9ebee;
+}
+.widget-vista-previa-kardex-acciones {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.widget-vista-previa-kardex-zona {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.widget-vista-previa-kardex-marco {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.widget-vista-previa-kardex-marco::-webkit-scrollbar {
+  display: none;
+}
+.widget-vista-previa-kardex-thumb {
+  position: absolute;
+  right: -24px;
+  width: 4px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+.widget-vista-previa-kardex-hoja {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.widget-vista-previa-kardex-documento {
+  display: block;
+  border: none;
+  transform-origin: top left;
+}
+.widget-vista-previa-kardex-mensaje {
+  flex: 1 1 0;
+  align-self: center;
+  margin: 0;
+  padding: 24px;
+  max-width: 420px;
+  text-align: center;
+  font-size: 13.5px;
+  color: #888;
+}

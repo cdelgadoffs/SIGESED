@@ -4,6 +4,7 @@ import IndicadorSync from '../base/IndicadorSync.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { filtrarEstudiantes, nombreCompleto, registroActivo, segunEstado } from '../../utils/registros.js';
+import { acreditadasFuera } from '../../utils/kardex.js';
 import { CALIFICACION_MINIMA, evaluacionDe, filasDeBoleta, materiasInscritas } from '../../utils/evaluaciones.js';
 import { ALTO_HOJA, ANCHO_HOJA, documentoBoleta } from '../../utils/boleta.js';
 import { imprimirDocumento } from '../../utils/impresion.js';
@@ -15,7 +16,7 @@ import '../../styles/widgets/VistaPreviaBoleta.css';
 const ESPACIO_LEMA = 90;
 
 export default function VistaPreviaBoleta() {
-  const { ESTUDIANTES, GRUPOS, EVALUACIONES, MATERIAS, INSCRIPCIONES, PLANTEL, cicloActivoId } = useRegistros();
+  const { ESTUDIANTES, GRUPOS, EVALUACIONES, KARDEX, MATERIAS, INSCRIPCIONES, PLANTEL, cicloActivoId } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, filtroEstado } = useUI();
   const iframeRef = useRef(null);
   const { contenedorRef: marcoRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
@@ -45,7 +46,7 @@ export default function VistaPreviaBoleta() {
     ciclo: cicloActivoId,
     alumno: nombreCompleto(alumno),
     genero: alumno.genero,
-    filas: filasDeBoleta(materiasInscritas(MATERIAS, INSCRIPCIONES, cicloActivoId, alumno.grupo), evaluacion.calificaciones)
+    filas: filasDeBoleta(materiasInscritas(MATERIAS, INSCRIPCIONES, cicloActivoId, alumno.grupo), evaluacion.calificaciones, acreditadasFuera(KARDEX.find((k) => k.estudianteId === alumno.id), cicloActivoId))
       .map((f) => ({ ...f, reprobada: f.calificacion === CALIFICACION_MINIMA })),
     promedio: evaluacion.promedio,
     observaciones: evaluacion.observaciones,

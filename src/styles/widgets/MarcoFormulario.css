@@ -62,8 +62,8 @@
 }
 .widget-marco-formulario-scrollbar-thumb {
   position: absolute;
-  right: 2px;
-  width: 6px;
+  right: 0;
+  width: 4px;
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.15);
   cursor: pointer;

@@ -1,6 +1,6 @@
 import { ApiError } from '../ApiError.js';
 import {
-  STORE_CATALOGOS, STORE_UNICOS, STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES,
+  STORE_CATALOGOS, STORE_UNICOS, STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES, STORE_KARDEX,
   obtenerTodos, obtener, guardar, escribirVarios,
 } from './db.js';
 import {
@@ -11,6 +11,7 @@ import {
   prepararConfiguracionCiclo, validarCicloSinEncimar, cicloConDerivados, hoyServidor,
   exigirCicloPreparable, prepararInscripcion, validarDocentesSinChoque, pendientesDeInicio, idInscripcion,
   validarFechaReporte, cicloDeFecha, ordenarReportes,
+  prepararCalificacionKardex, validarMateriaKardexUnica, armarKardex, materiasAcreditadas, exigirNoAcreditadas, prepararMateriaManual,
 } from './reglas.js';
 
 const CLAVE_PLANTEL = 'plantel';
@@ -40,6 +41,14 @@ async function eliminar(store, id) {
 export async function listarCatalogos() {
   const filas = await obtenerTodos(STORE_CATALOGOS);
   return Object.fromEntries(filas.map((f) => [f.nombre, f.items]));
+}
+
+export async function crearMateria(datos) {
+  exigirEscritura();
+  const { programasEducativos = [], materias = [] } = await listarCatalogos();
+  const materia = prepararMateriaManual(datos, programasEducativos, materias);
+  await guardar(STORE_CATALOGOS, { nombre: 'materias', items: [...materias, materia] });
+  return materia;
 }
 
 export async function obtenerPlantel() {
@@ -174,6 +183,10 @@ export async function eliminarEstudiante(id) {
   if (evaluaciones.some((e) => e.estudianteId === id)) {
     throw new ApiError('CON_EVALUACIONES', 'No se puede eliminar: el estudiante tiene evaluaciones registradas.');
   }
+  const kardex = await obtenerTodos(STORE_KARDEX);
+  if (kardex.some((k) => k.estudianteId === id)) {
+    throw new ApiError('CON_EVALUACIONES', 'No se puede eliminar: el estudiante tiene calificaciones en su kárdex.');
+  }
   return eliminar(STORE_ESTUDIANTES, id);
 }
 
@@ -286,10 +299,16 @@ export async function guardarInscripcion(cicloId, grupoId, version, datos) {
   return inscripcion;
 }
 
+async function acreditadasFuera(estudianteId, cicloId) {
+  const [registros, evaluaciones, ciclos] = await Promise.all([obtenerTodos(STORE_KARDEX), obtenerTodos(STORE_EVALUACIONES), obtenerTodos(STORE_CICLOS)]);
+  return materiasAcreditadas(estudianteId, registros, evaluaciones, ciclos, { excluirCicloId: cicloId });
+}
+
 async function materiasInscritasDe(estudianteId, cicloId) {
   const estudiante = await obtener(STORE_ESTUDIANTES, estudianteId);
   const inscripcion = estudiante ? await obtener(STORE_INSCRIPCIONES, idInscripcion(cicloId, estudiante.grupo)) : null;
-  return inscripcion?.materias.length ?? 0;
+  const fuera = await acreditadasFuera(estudianteId, cicloId);
+  return (inscripcion?.materias ?? []).filter((m) => !fuera.has(m.materia)).length;
 }
 
 export async function listarEvaluaciones() {
@@ -307,6 +326,8 @@ export async function guardarEvaluacion(estudianteId, cicloId, version, datos) {
   const inscritas = new Set((inscripcion?.materias ?? []).map((m) => m.materia));
   const { materias = [] } = await listarCatalogos();
   const limpio = prepararEvaluacion(datos, materias.filter((m) => inscritas.has(m.id)));
+  const fuera = await acreditadasFuera(estudianteId, cicloId);
+  exigirNoAcreditadas(limpio.calificaciones.map((c) => c.materia), fuera, (id) => materias.find((m) => m.id === id)?.nombre ?? id);
   const id = idEvaluacion(cicloId, estudianteId);
   const actual = await obtener(STORE_EVALUACIONES, id);
   let evaluacion;
@@ -318,7 +339,7 @@ export async function guardarEvaluacion(estudianteId, cicloId, version, datos) {
     evaluacion = { id, estudianteId, cicloId, ...limpio, version: 1, creadoEn: ahora, creadoPor: usuarioActual().id, modificadoEn: ahora };
   }
   await guardar(STORE_EVALUACIONES, evaluacion);
-  return conPromedio(evaluacion, inscritas.size);
+  return conPromedio(evaluacion, [...inscritas].filter((m) => !fuera.has(m)).length);
 }
 
 export async function listarReportes() {
@@ -343,4 +364,62 @@ export async function crearReporte(datos) {
   };
   await guardar(STORE_REPORTES, registro);
   return registro;
+}
+
+async function materiasDelEstudiante(estudianteId) {
+  const estudiante = await exigirExistente(STORE_ESTUDIANTES, estudianteId, 'El estudiante no existe.');
+  const grupo = await exigirExistente(STORE_GRUPOS, estudiante.grupo, 'El estudiante no tiene un grupo válido.');
+  const { materias = [] } = await listarCatalogos();
+  return materias.filter((m) => m.programaEducativo === grupo.programaEducativo);
+}
+
+async function prepararKardex(estudianteId, datos, idActual) {
+  const permitidas = await materiasDelEstudiante(estudianteId);
+  const limpio = prepararCalificacionKardex(datos, permitidas);
+  const nombre = permitidas.find((m) => m.id === limpio.materia).nombre;
+  const registros = await obtenerTodos(STORE_KARDEX);
+  validarMateriaKardexUnica(registros, estudianteId, limpio.materia, nombre, idActual);
+  const [evaluaciones, ciclos] = await Promise.all([obtenerTodos(STORE_EVALUACIONES), obtenerTodos(STORE_CICLOS)]);
+  exigirNoAcreditadas([limpio.materia], materiasAcreditadas(estudianteId, registros, evaluaciones, ciclos, { excluirRegistroId: idActual }), () => nombre);
+  return limpio;
+}
+
+export async function listarCalificacionesKardex() {
+  return obtenerTodos(STORE_KARDEX);
+}
+
+export async function crearCalificacionKardex(datos) {
+  exigirEscritura();
+  if (!datos || typeof datos !== 'object') throw new ApiError('VALIDACION', 'Faltan los datos de la calificación.');
+  const limpio = await prepararKardex(datos.estudianteId, datos);
+  const registro = nuevoRegistro({ estudianteId: datos.estudianteId, ...limpio });
+  await guardar(STORE_KARDEX, registro);
+  return registro;
+}
+
+export async function editarCalificacionKardex(id, version, cambios) {
+  exigirEscritura();
+  const actual = await exigirExistente(STORE_KARDEX, id, 'La calificación no existe.');
+  exigirVersion(actual, version);
+  const limpio = await prepararKardex(actual.estudianteId, { ...actual, ...cambios }, id);
+  const registro = registroEditado(actual, limpio);
+  await guardar(STORE_KARDEX, registro);
+  return registro;
+}
+
+export async function eliminarCalificacionKardex(id) {
+  return eliminar(STORE_KARDEX, id);
+}
+
+export async function listarKardex() {
+  const [registros, evaluaciones, ciclos, estudiantes, inscripciones, { materias = [] }] = await Promise.all([
+    obtenerTodos(STORE_KARDEX), obtenerTodos(STORE_EVALUACIONES), obtenerTodos(STORE_CICLOS),
+    obtenerTodos(STORE_ESTUDIANTES), obtenerTodos(STORE_INSCRIPCIONES), listarCatalogos(),
+  ]);
+  const grupoDe = new Map(estudiantes.map((e) => [e.id, e.grupo]));
+  const ids = new Set([...registros.map((r) => r.estudianteId), ...evaluaciones.map((e) => e.estudianteId)]);
+  return [...ids].map((id) => {
+    const inscritasDe = (cicloId) => (inscripciones.find((i) => i.id === idInscripcion(cicloId, grupoDe.get(id)))?.materias ?? []).map((m) => m.materia);
+    return armarKardex(id, registros, evaluaciones, ciclos, materias, inscritasDe);
+  }).filter((k) => k.totalMaterias > 0);
 }

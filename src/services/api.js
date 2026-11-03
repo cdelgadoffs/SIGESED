@@ -4,6 +4,7 @@ const implementacion = import.meta.env.VITE_API_MODE === 'real'
 
 export const {
   listarCatalogos,
+  crearMateria,
   obtenerPlantel,
   guardarPlantel,
   listarGrupos,
@@ -25,6 +26,11 @@ export const {
   iniciarCiclo,
   listarInscripciones,
   guardarInscripcion,
+  listarCalificacionesKardex,
+  crearCalificacionKardex,
+  editarCalificacionKardex,
+  eliminarCalificacionKardex,
+  listarKardex,
   listarReportes,
   crearReporte,
   listarEvaluaciones,

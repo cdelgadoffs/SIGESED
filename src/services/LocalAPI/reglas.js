@@ -502,3 +502,116 @@ export function ordenarPersonas(registros) {
     || comparar(a.segundoApellido, b.segundoApellido)
     || comparar(a.nombre, b.nombre));
 }
+
+const MAX_OBSERVACIONES_KARDEX = 500;
+
+export function prepararCalificacionKardex(datos, permitidas) {
+  if (!datos || typeof datos !== 'object') throw falla('Faltan los datos de la calificación.');
+  const { materia, calificacion, observaciones = '' } = datos;
+  if (typeof materia !== 'string' || !materia) throw falla('Elige la materia.');
+  if (!permitidas.some((m) => m.id === materia)) throw falla('La materia no pertenece al programa educativo del estudiante.');
+  if (!Number.isInteger(calificacion) || calificacion < CALIFICACION_MINIMA || calificacion > CALIFICACION_MAXIMA) {
+    throw falla(`La calificación debe ser un entero del ${CALIFICACION_MINIMA} al ${CALIFICACION_MAXIMA}.`);
+  }
+  if (typeof observaciones !== 'string') throw falla('Las observaciones deben ser texto.');
+  const texto = observaciones.trim();
+  if (texto.length > MAX_OBSERVACIONES_KARDEX) throw falla(`Las observaciones admiten máximo ${MAX_OBSERVACIONES_KARDEX} caracteres.`);
+  return { materia, calificacion, observaciones: texto };
+}
+
+export const CALIFICACION_APROBATORIA = 7;
+
+export function materiasAcreditadas(estudianteId, registros, evaluaciones, ciclos, { excluirCicloId = null, excluirRegistroId = null } = {}) {
+  const iniciados = new Set(ciclos.filter((c) => c.iniciado).map((c) => c.id));
+  const acreditadas = new Set();
+  registros.filter((r) => r.estudianteId === estudianteId && r.id !== excluirRegistroId && r.calificacion >= CALIFICACION_APROBATORIA)
+    .forEach((r) => acreditadas.add(r.materia));
+  evaluaciones.filter((e) => e.estudianteId === estudianteId && e.cicloId !== excluirCicloId && iniciados.has(e.cicloId))
+    .forEach((e) => e.calificaciones.filter((c) => c.calificacion >= CALIFICACION_APROBATORIA).forEach((c) => acreditadas.add(c.materia)));
+  return acreditadas;
+}
+
+export function exigirNoAcreditadas(materias, acreditadas, nombreDe) {
+  const repetidas = materias.filter((m) => acreditadas.has(m));
+  if (repetidas.length) {
+    throw new ApiError('MATERIA_ACREDITADA', `El estudiante ya acreditó ${repetidas.map(nombreDe).join(', ')}: no se puede registrar de nuevo.`);
+  }
+}
+
+export function validarMateriaKardexUnica(registros, estudianteId, materia, nombreMateria, idActual) {
+  if (registros.some((r) => r.estudianteId === estudianteId && r.materia === materia && r.id !== idActual)) {
+    throw falla(`${nombreMateria} ya tiene calificación en el kárdex de este estudiante: edítala.`);
+  }
+}
+
+export function armarKardex(estudianteId, registros, evaluaciones, ciclos, materias, inscritasDe) {
+  const iniciados = new Set(ciclos.filter((c) => c.iniciado).map((c) => c.id));
+  const propias = evaluaciones.filter((e) => e.estudianteId === estudianteId && iniciados.has(e.cicloId))
+    .sort((a, b) => a.cicloId.localeCompare(b.cicloId));
+  const acreditadas = materiasAcreditadas(estudianteId, registros, evaluaciones, ciclos);
+  const filas = [
+    ...registros.filter((r) => r.estudianteId === estudianteId).map((r) => ({
+      materia: r.materia, calificacion: r.calificacion, observaciones: r.observaciones, origen: 'captura', registroId: r.id, cicloId: null,
+    })),
+    ...propias.flatMap((e) => {
+      const calificadas = e.calificaciones.map((c) => ({
+        materia: c.materia, calificacion: c.calificacion, observaciones: '', origen: 'ciclo', registroId: null, cicloId: e.cicloId,
+      }));
+      const conCalificacion = new Set(e.calificaciones.map((c) => c.materia));
+      const np = inscritasDe(e.cicloId).filter((m) => !conCalificacion.has(m) && !acreditadas.has(m)).map((m) => ({
+        materia: m, calificacion: null, observaciones: '', origen: 'ciclo', registroId: null, cicloId: e.cicloId,
+      }));
+      return [...calificadas, ...np];
+    }),
+  ];
+  const porMateria = new Map();
+  filas.forEach((f) => {
+    const previa = porMateria.get(f.materia);
+    if (!previa || f.calificacion !== null || previa.calificacion === null) porMateria.set(f.materia, f);
+  });
+  const orden = new Map(materias.map((m, i) => [m.id, i]));
+  const cuatrimestreDe = new Map(materias.map((m) => [m.id, m.cuatrimestre]));
+  const grupos = new Map();
+  [...porMateria.values()].filter((f) => orden.has(f.materia)).forEach((f) => {
+    const n = cuatrimestreDe.get(f.materia);
+    if (!grupos.has(n)) grupos.set(n, []);
+    grupos.get(n).push(f);
+  });
+  const promedio = (lista) => (lista.length ? lista.reduce((t, f) => t + (f.calificacion ?? 0), 0) / lista.length : null);
+  const cuatrimestres = [...grupos.entries()].sort((a, b) => a[0] - b[0]).map(([numero, lista]) => {
+    const ordenadas = [...lista].sort((a, b) => orden.get(a.materia) - orden.get(b.materia));
+    return { numero, materias: ordenadas, promedio: promedio(ordenadas) };
+  });
+  const todas = cuatrimestres.flatMap((c) => c.materias);
+  return { estudianteId, cuatrimestres, promedioGeneral: promedio(todas), totalMaterias: todas.length };
+}
+
+export const CUATRIMESTRES_PROGRAMA = 9;
+
+export function prepararMateriaManual(datos, programas, materias) {
+  if (!datos || typeof datos !== 'object') throw falla('Faltan los datos de la materia.');
+  const programa = programas.find((p) => p.id === datos.programaEducativo);
+  if (!programa) throw falla('El programa educativo no existe.');
+  const nombre = typeof datos.nombre === 'string' ? datos.nombre.trim().replace(/\s+/g, ' ') : '';
+  if (!nombre) throw falla('Escribe el nombre de la materia.');
+  if (nombre.length > 120) throw falla('El nombre de la materia admite máximo 120 caracteres.');
+  const { cuatrimestre } = datos;
+  if (!Number.isInteger(cuatrimestre) || cuatrimestre < 1 || cuatrimestre > CUATRIMESTRES_PROGRAMA) {
+    throw falla(`El cuatrimestre debe ser del 1 al ${CUATRIMESTRES_PROGRAMA}.`);
+  }
+  const delPrograma = materias.filter((m) => m.programaEducativo === programa.id);
+  const sinAcentos = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  if (delPrograma.some((m) => sinAcentos(m.nombre) === sinAcentos(nombre))) throw falla(`${programa.nombre} ya tiene la materia «${nombre}».`);
+  const prefijo = sinAcentos(programa.nombre).replace(/[^a-z]/g, '').slice(0, 3).toUpperCase();
+  const claves = new Set(materias.map((m) => m.clave));
+  let consecutivo = delPrograma.filter((m) => m.cuatrimestre === cuatrimestre).length + 1;
+  let clave = `${prefijo}${cuatrimestre}${String(consecutivo).padStart(2, '0')}`;
+  while (claves.has(clave)) {
+    consecutivo += 1;
+    clave = `${prefijo}${cuatrimestre}${String(consecutivo).padStart(2, '0')}`;
+  }
+  return {
+    id: clave.toLowerCase(), clave, nombre, programaEducativo: programa.id, cuatrimestre, manual: true,
+    objetivo: '', temas: [], actividadesDocente: [], actividadesIndependiente: [], evaluacion: [],
+  };
+}

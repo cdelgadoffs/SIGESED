@@ -1,0 +1,295 @@
+.widget-kardex-estudiante {
+  align-self: stretch;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.widget-kardex-estudiante-mensaje {
+  margin: 0;
+  max-width: 420px;
+  text-align: center;
+  font-size: 13.5px;
+  color: #888;
+}
+.widget-kardex-estudiante-tabla-zona {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 20px 16px 24px;
+  box-sizing: border-box;
+  border-right: 1px solid #e8e8e8;
+}
+.widget-kardex-estudiante-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid #e3e8f0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f6f8fc 0%, #edf2fa 100%);
+}
+.widget-kardex-estudiante-avatar {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: #1a56db;
+}
+.widget-kardex-estudiante-avatar-mujer {
+  background: #6a3fc1;
+}
+.widget-kardex-estudiante-identidad {
+  flex: 1;
+  min-width: 0;
+}
+.widget-kardex-estudiante-identidad h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a1a;
+  overflow-wrap: anywhere;
+}
+.widget-kardex-estudiante-insignias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.widget-kardex-estudiante-resumen {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-left: 14px;
+  border-left: 1px solid #d6deea;
+}
+.widget-kardex-estudiante-resumen span {
+  font-size: 11px;
+  color: #6b7a90;
+}
+.widget-kardex-estudiante-resumen strong {
+  font-size: 26px;
+  line-height: 1.1;
+  color: #2c4770;
+}
+.widget-kardex-estudiante-resumen small {
+  font-size: 11px;
+  color: #6b7a90;
+}
+.widget-kardex-estudiante-datos {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid #d6deea;
+}
+.widget-kardex-estudiante-datos dt {
+  font-size: 10.5px;
+  color: #6b7a90;
+}
+.widget-kardex-estudiante-datos dd {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-kardex-estudiante-filtro {
+  width: 240px;
+  margin: 12px 0 10px;
+}
+.widget-kardex-estudiante-filtro .base-lista-expandible-toggle {
+  height: 32px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 0 10px;
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 13px;
+}
+.widget-kardex-estudiante-tabla-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+.widget-kardex-estudiante-tabla {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.widget-kardex-estudiante-tabla::-webkit-scrollbar {
+  display: none;
+}
+.widget-kardex-estudiante-thumb {
+  position: absolute;
+  right: 0;
+  width: 4px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+.widget-kardex-estudiante-vacio {
+  margin: 16px;
+  font-size: 13px;
+  color: #999;
+}
+.widget-kardex-estudiante-tabla table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.widget-kardex-estudiante-tabla th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 7px 8px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2c4770;
+  background: #dce4f0;
+}
+.widget-kardex-estudiante-tabla td {
+  padding: 5px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #1a1a1a;
+  vertical-align: middle;
+}
+.widget-kardex-estudiante-cuatri-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.widget-kardex-estudiante-cuatri td {
+  padding-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c4770;
+  background: #f5f7fa;
+}
+.widget-kardex-estudiante-clave {
+  width: 44px;
+  font-size: 11.5px;
+  color: #1a56db !important;
+}
+.widget-kardex-estudiante-cal {
+  width: 46px;
+  text-align: center !important;
+}
+td.widget-kardex-estudiante-cal {
+  font-weight: 700;
+}
+td.widget-kardex-estudiante-aprobada {
+  color: #166e37;
+}
+td.widget-kardex-estudiante-reprobada {
+  color: #a51e1e;
+}
+.widget-kardex-estudiante-obs {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  color: #666 !important;
+}
+.widget-kardex-estudiante-tabla .widget-kardex-estudiante-acciones {
+  position: relative;
+  width: 0;
+  padding: 0;
+}
+.widget-kardex-estudiante-opciones {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translate(-12px, -50%);
+  opacity: 0;
+  pointer-events: none;
+  padding-left: 6px;
+  background: #f7f9fc;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.widget-kardex-estudiante-opciones .base-boton-icono {
+  width: 22px;
+  height: 22px;
+  min-width: 0;
+  padding: 0;
+  font-size: 12px;
+}
+.widget-kardex-estudiante-tabla tbody tr:hover {
+  background: #f7f9fc;
+}
+.widget-kardex-estudiante-tabla tbody tr:hover .widget-kardex-estudiante-opciones {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(0, -50%);
+}
+@media (hover: none) {
+  .widget-kardex-estudiante-opciones {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(0, -50%);
+  }
+}
+
+.widget-kardex-estudiante-ciclo {
+  margin-left: 6px;
+  font-size: 10.5px;
+  color: #4a6fa5;
+  white-space: nowrap;
+}
+.widget-kardex-estudiante-materia {
+  white-space: nowrap;
+}
+.widget-kardex-estudiante-cuatri {
+  cursor: pointer;
+  user-select: none;
+}
+.widget-kardex-estudiante-cuatri-fila > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.widget-kardex-estudiante-cuatri-fila i {
+  font-size: 15px;
+}
+.widget-kardex-estudiante-cuatri-fila small {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 400;
+  color: #6b7a90;
+}
+.widget-kardex-estudiante-cuatri-fila .base-badge-dinamico {
+  flex-shrink: 0;
+}
+.widget-kardex-estudiante-cuatri-completo td {
+  color: #166e37;
+  background: #eef8f1;
+}
+.widget-kardex-estudiante-cuatri-completo small {
+  color: #4b8a60;
+}
+.widget-kardex-estudiante-th-todos {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.widget-kardex-estudiante-th-todos i {
+  font-size: 15px;
+  vertical-align: middle;
+  margin-right: 2px;
+}
