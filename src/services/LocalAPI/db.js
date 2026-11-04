@@ -2,7 +2,7 @@ import { ApiError } from '../ApiError.js';
 import { CATALOGOS_SEMILLA } from './semilla.js';
 
 const DB_NAME = 'LocalAPI';
-export const DB_VERSION = 19;
+export const DB_VERSION = 23;
 
 export const STORE_CATALOGOS = 'catalogos';
 export const STORE_UNICOS = 'unicos';
@@ -109,6 +109,9 @@ function conectar() {
         });
       }
       if (anterior >= 5 && anterior < 17) db.deleteObjectStore(STORE_CATALOGOS);
+      if (anterior >= 17 && anterior < 23) {
+        req.transaction.objectStore(STORE_CATALOGOS).put({ nombre: 'roles', items: CATALOGOS_SEMILLA.roles });
+      }
       if (anterior === 15) vaciarHorarios(req.transaction.objectStore(STORE_INSCRIPCIONES));
       if (anterior >= 3 && anterior < 15) quitarGruposPersonal(req.transaction.objectStore(STORE_PERSONAL));
       if (anterior > 0 && anterior < 14 && db.objectStoreNames.contains(STORE_EVALUACIONES)) db.deleteObjectStore(STORE_EVALUACIONES);

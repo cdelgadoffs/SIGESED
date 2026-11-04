@@ -1,6 +1,7 @@
 import BotonSeleccionableMenu from '../base/BotonSeleccionableMenu.jsx';
 import EstadoConfirmado from './EstadoConfirmado.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import { ordenarPorTexto, registroActivo, segunEstado } from '../../utils/registros.js';
@@ -10,6 +11,7 @@ import '../../styles/widgets/ListaGruposSidebar.css';
 export default function ListaGruposSidebar() {
   const { GRUPOS, CARGA, editarGrupo } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, setRegistroSeleccionadoId, filtroEstado, sidebar3Abierto } = useUI();
+  const puedeEditar = useAuth().puede('matricula', 'editar');
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   const { cargando, error } = CARGA.grupos;
   const visibles = ordenarPorTexto(segunEstado(GRUPOS.filter((g) => coincideBusqueda(terminoBusqueda, [g.nombre])), filtroEstado), (g) => g.nombre);
@@ -34,7 +36,7 @@ export default function ListaGruposSidebar() {
             deshabilitado={sidebar3Abierto}
             activo={g.id === activo?.id}
             onClick={() => setRegistroSeleccionadoId(g.id)}
-            accion={(
+            accion={puedeEditar && (
               <span className="widget-lista-grupos-sidebar-estado">
                 <EstadoConfirmado
                   encendido={g.activo}

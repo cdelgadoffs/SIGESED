@@ -6,8 +6,10 @@ import Textarea from '../base/Textarea.jsx';
 import BotonS from '../base/BotonS.jsx';
 import MarcoFormulario from './MarcoFormulario.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { filtrarEstudiantes, nombreCompleto, registroActivo, segunEstado } from '../../utils/registros.js';
+import { inscripcionDe } from '../../utils/inscripciones.js';
 import { CALIFICACION_MAXIMA, CALIFICACION_MINIMA, ajustarCalificacion, calificacionValida, evaluacionDe, materiasInscritas } from '../../utils/evaluaciones.js';
 import { acreditadasFuera } from '../../utils/kardex.js';
 import '../../styles/widgets/FormularioEvaluacion.css';
@@ -23,7 +25,7 @@ function igual(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-function Captura({ alumno, cicloId, evaluacion, materias, acreditadas }) {
+function Captura({ alumno, cicloId, evaluacion, materias, acreditadas, ajenas }) {
   const { guardarEvaluacion, guardarBorrador, obtenerBorrador, eliminarBorrador } = useRegistros();
   const [base] = useState(() => desdeEvaluacion(evaluacion));
   const clave = `formularioEvaluacion:${cicloId}:${alumno.id}`;
@@ -113,6 +115,14 @@ function Captura({ alumno, cicloId, evaluacion, materias, acreditadas }) {
                 </div>
               );
             }
+            if (ajenas.has(m.id)) {
+              return (
+                <div key={m.id} className="widget-formulario-evaluacion-materia">
+                  <Checkbox checked={marcada} disabled label={m.nombre} onChange={() => {}} />
+                  <span className="widget-formulario-evaluacion-acreditada">{marcada ? `${form.calificaciones[m.id]} · la captura otro docente` : 'La captura otro docente'}</span>
+                </div>
+              );
+            }
             return (
               <div key={m.id} className="widget-formulario-evaluacion-materia">
                 <Checkbox checked={marcada} label={m.nombre} onChange={(v) => marcar(m.id, v)} />
@@ -141,6 +151,7 @@ function Captura({ alumno, cicloId, evaluacion, materias, acreditadas }) {
 export default function FormularioEvaluacion() {
   const { ESTUDIANTES, GRUPOS, EVALUACIONES, KARDEX, MATERIAS, INSCRIPCIONES, CICLOS, cicloActivoId, CARGA } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirPanelControl, filtroEstado } = useUI();
+  const { puede, cuentaActiva } = useAuth();
   const alumno = registroActivo(segunEstado(filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda), filtroEstado), registroSeleccionadoId);
 
   let mensaje = null;
@@ -170,6 +181,9 @@ export default function FormularioEvaluacion() {
   }
 
   const evaluacion = evaluacionDe(EVALUACIONES, alumno.id, cicloActivoId);
+  const ajenas = new Set(puede('evaluaciones', 'editar') ? [] : (inscripcionDe(INSCRIPCIONES, cicloActivoId, grupo.id)?.materias ?? [])
+    .filter((m) => m.docenteId !== cuentaActiva?.usuario)
+    .map((m) => m.materia));
   return (
     <Captura
       key={`${cicloActivoId}:${alumno.id}:${evaluacion?.version ?? 0}`}
@@ -177,6 +191,7 @@ export default function FormularioEvaluacion() {
       cicloId={cicloActivoId}
       evaluacion={evaluacion}
       materias={materias}
+      ajenas={ajenas}
       acreditadas={acreditadasFuera(KARDEX.find((k) => k.estudianteId === alumno.id), cicloActivoId)}
     />
   );

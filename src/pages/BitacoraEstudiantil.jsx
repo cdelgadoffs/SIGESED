@@ -11,16 +11,18 @@ import ListaEstudiantesSidebar from '../components/widgets/ListaEstudiantesSideb
 import FormularioReporte from '../components/widgets/FormularioReporte.jsx';
 import ReportesEstudiante from '../components/widgets/ReportesEstudiante.jsx';
 import { useRegistros } from '../context/RegistrosContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR2, ANCHO_SIDEBAR3, ALTO_TOPBAR } from '../context/UIContext.jsx';
 
 export default function BitacoraEstudiantil() {
   const { izquierdaSidebar1, sidebar5Abierto, cerrarSidebar5, sidebar5Ancho } = useUI();
+  const puedeEditar = useAuth().puede('bitacora', 'editar');
   const { PLANTEL, CICLOS } = useRegistros();
   const cicloEnCurso = CICLOS.find((c) => c.estado === 'en-curso');
   const izquierdaSidebar2 = izquierdaSidebar1 + ANCHO_SIDEBAR1;
   const izquierdaSidebar3 = izquierdaSidebar2 + ANCHO_SIDEBAR2;
   const arriba = ALTO_TOPBAR;
-  const panelIzquierda = izquierdaSidebar3 + ANCHO_SIDEBAR3;
+  const panelIzquierda = izquierdaSidebar3 + (puedeEditar ? ANCHO_SIDEBAR3 : 0);
 
   return (
     <>
@@ -37,7 +39,7 @@ export default function BitacoraEstudiantil() {
       >
         <ListaEstudiantesSidebar />
       </Sidebar2>
-      <Sidebar3 izquierda={izquierdaSidebar3} arriba={arriba} mostrarCerrar={false} badge="Nuevo reporte"
+      <Sidebar3 abierto={puedeEditar} izquierda={izquierdaSidebar3} arriba={arriba} mostrarCerrar={false} badge="Nuevo reporte"
         titulo={cicloEnCurso ? `Ciclo escolar ${cicloEnCurso.id}` : 'Sin ciclo escolar en curso'}
       >
         <FormularioReporte />

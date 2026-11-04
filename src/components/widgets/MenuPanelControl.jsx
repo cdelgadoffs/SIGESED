@@ -6,15 +6,15 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 
 const ITEMS_PANEL_CONTROL = [
-  { id: 'plantel', label: 'Datos del plantel', Panel: DatosPlantel },
-  { id: 'calendarizacion', label: 'Calendarización anual', Panel: CalendarizacionAnual },
+  { id: 'plantel', label: 'Datos del plantel', Panel: DatosPlantel, modulo: 'panelControl', nivel: 'editar' },
+  { id: 'calendarizacion', label: 'Calendarización anual', Panel: CalendarizacionAnual, modulo: 'panelControl' },
   { id: 'respaldos', label: 'Respaldos', Panel: Respaldos, rol: 'administrador-ti' },
 ];
 
 export default function MenuPanelControl() {
   const { panelControlActivo, setPanelControlActivo } = useUI();
-  const { rolesSesion } = useAuth();
-  const items = ITEMS_PANEL_CONTROL.filter((i) => !i.rol || rolesSesion.includes(i.rol));
+  const { rolesSesion, puede } = useAuth();
+  const items = ITEMS_PANEL_CONTROL.filter((i) => (!i.rol || rolesSesion.includes(i.rol)) && (!i.modulo || puede(i.modulo, i.nivel)));
   const activo = items.find((i) => i.id === panelControlActivo);
 
   if (activo) {

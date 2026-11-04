@@ -7,6 +7,7 @@ import Checkbox from '../base/Checkbox.jsx';
 import ListaExpandible from '../base/ListaExpandible.jsx';
 import OpcionesRegistro from './OpcionesRegistro.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { nombreCompleto, ordenarPorTexto, registroActivo } from '../../utils/registros.js';
 import { coincideBusqueda } from '../../utils/texto.js';
@@ -25,6 +26,7 @@ export default function FichaCurso() {
     eliminarCurso, inscribirEnCurso, quitarDeCurso, marcarAcreditado,
   } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro, setRegistroSeleccionadoId } = useUI();
+  const puedeEditar = useAuth().puede('cursos', 'editar');
   const [error, setError] = useState(null);
   const [ocupado, setOcupado] = useState(false);
   const [documento, setDocumento] = useState('');
@@ -40,7 +42,7 @@ export default function FichaCurso() {
   }
 
   const ciclo = CICLOS.find((c) => c.id === curso.cicloId);
-  const modificable = !!ciclo && !ciclo.cerrado;
+  const modificable = puedeEditar && !!ciclo && !ciclo.cerrado;
   const docente = PERSONAL.find((p) => p.id === curso.docenteId);
   const materia = MATERIAS.find((m) => m.id === curso.materia);
   const horario = `${curso.horaInicio} a ${curso.horaFin} horas`;

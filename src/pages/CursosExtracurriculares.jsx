@@ -12,6 +12,7 @@ import ListaCursosSidebar from '../components/widgets/ListaCursosSidebar.jsx';
 import FormularioCurso from '../components/widgets/FormularioCurso.jsx';
 import FichaCurso from '../components/widgets/FichaCurso.jsx';
 import { useRegistros } from '../context/RegistrosContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR2, ANCHO_SIDEBAR3, ALTO_TOPBAR } from '../context/UIContext.jsx';
 
 export default function CursosExtracurriculares() {
@@ -20,6 +21,7 @@ export default function CursosExtracurriculares() {
     sidebar3Abierto, cerrarSidebar3, registroEnEdicionId, abrirNuevoRegistro,
     sidebar5Abierto, cerrarSidebar5, sidebar5Ancho,
   } = useUI();
+  const puedeEditar = useAuth().puede('cursos', 'editar');
   const { PLANTEL, CURSOS } = useRegistros();
   const izquierdaSidebar2 = izquierdaSidebar1 + ANCHO_SIDEBAR1;
   const izquierdaSidebar3 = izquierdaSidebar2 + ANCHO_SIDEBAR2;
@@ -37,7 +39,7 @@ export default function CursosExtracurriculares() {
         mostrarCerrar={false}
         badge="Cursos extracurriculares"
         subtitulo={`${CURSOS.length} ${CURSOS.length === 1 ? 'curso' : 'cursos'}`}
-        accionesHeader={<BotonAgregar etiqueta="Nuevo curso" onClick={abrirNuevoRegistro} />}
+        accionesHeader={puedeEditar && <BotonAgregar etiqueta="Nuevo curso" onClick={abrirNuevoRegistro} />}
       >
         <ListaCursosSidebar />
       </Sidebar2>

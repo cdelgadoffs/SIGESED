@@ -17,7 +17,8 @@ const MAX_SUGERENCIAS = 8;
 export default function Topbar({ opcionesConfiguracion = [], onSeleccionarConfiguracion }) {
   const { toggleSidebar5, terminoBusqueda, setTerminoBusqueda, setVistaActual, setRegistroSeleccionadoId, setRegistrosAbierto, setFiltroEstado } = useUI();
   const { ESTUDIANTES, GRUPOS } = useRegistros();
-  const sugerencias = filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda).slice(0, MAX_SUGERENCIAS).map((e) => ({
+  const { cerrarSesion, cuentaActiva, puede } = useAuth();
+  const sugerencias = !puede('matricula') ? [] : filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda).slice(0, MAX_SUGERENCIAS).map((e) => ({
     id: e.id,
     texto: nombreCompleto(e),
     icono: 'ri-user-line',
@@ -32,7 +33,6 @@ export default function Topbar({ opcionesConfiguracion = [], onSeleccionarConfig
     setFiltroEstado(sugerencia.activo ? 'activos' : 'inactivos');
     setTerminoBusqueda('');
   }
-  const { cerrarSesion, cuentaActiva } = useAuth();
   const { brilloPantalla, cambiarAjuste } = useAjustesVisuales();
   const opcionesBrillo = NIVELES_BRILLO.map((nivel) => ({
     id: `${PREFIJO_BRILLO}${nivel}`,

@@ -4,6 +4,7 @@ import CardS from '../../components/base/CardS.jsx';
 import Modal from '../../components/base/Modal.jsx';
 import OpcionesNavegacion from '../../components/widgets/OpcionesNavegacion.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { ESTADOS_CICLO } from '../../utils/fechas.js';
 import '../../styles/pages/panelcontrol/CalendarizacionAnual.css';
@@ -16,6 +17,7 @@ export default function CalendarizacionAnual() {
   const [errorCierre, setErrorCierre] = useState(null);
   const [cerrando, setCerrando] = useState(false);
   const { setPanelControlActivo, setSidebar5Ancho, setVistaActual, setCicloEnEdicionId, cerrarSidebar5 } = useUI();
+  const puedeEditar = useAuth().puede('panelControl', 'editar');
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
@@ -87,7 +89,7 @@ export default function CalendarizacionAnual() {
       </div>
       {completa ? (
         !mensaje && <p className="panelcontrol-calendarizacion-anual-nota">La calendarización {anio} ya está creada.</p>
-      ) : (
+      ) : puedeEditar && (
         <BotonS onClick={crear} disabled={enviando}>Crear calendarización anual de ciclos escolares</BotonS>
       )}
       {mensaje && (
@@ -110,11 +112,11 @@ export default function CalendarizacionAnual() {
               titulo={`Ciclo ${c.id}${c.id === cicloActivoId ? ' · activo' : ''}`}
               subtitulo={c.fechaInicio ? `${c.fechaInicio} a ${c.fechaFin}` : `${c.duracionMeses} meses`}
               estadoLabel={c.cerrado ? 'Cerrado' : estado.texto}
-              accion={c.fechaInicio && !c.cerrado
+              accion={puedeEditar && c.fechaInicio && !c.cerrado
                 ? <BotonS variant="claro" onClick={() => setPorConcluir(c.id)}>Concluir ciclo escolar</BotonS>
                 : undefined}
               onClick={() => seleccionarCiclo(c.id)}
-              onEditar={c.cerrado || c.iniciado ? undefined : () => editar(c.id)}
+              onEditar={!puedeEditar || c.cerrado || c.iniciado ? undefined : () => editar(c.id)}
             />
           );
         })}

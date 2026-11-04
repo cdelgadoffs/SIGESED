@@ -1,6 +1,7 @@
 import BadgeDinamico from '../base/BadgeDinamico.jsx';
 import BotonS from '../base/BotonS.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import { DIAS_SEMANA, ESTADOS_CICLO, diasDeSemana, fechaDia, fechaDiaMes, hoyLocal } from '../../utils/fechas.js';
@@ -74,6 +75,7 @@ function Vacaciones({ periodo, hoy }) {
 export default function CalendarioSemanal() {
   const { CICLOS, cicloActivoId, CARGA } = useRegistros();
   const { setCicloEnEdicionId, setGrupoEnInscripcionId } = useUI();
+  const puedeEditar = useAuth().puede('inicio', 'editar');
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   const ciclo = CICLOS.find((c) => c.id === cicloActivoId);
   const hoy = hoyLocal();
@@ -106,7 +108,7 @@ export default function CalendarioSemanal() {
               {pendientes.map((p) => <li key={p.mensaje}>{p.mensaje}</li>)}
             </ul>
           )}
-          {editable && ciclo.fechaInicio && (
+          {puedeEditar && editable && ciclo.fechaInicio && (
             <BotonS
               variant="claro"
               onClick={() => {

@@ -10,6 +10,7 @@ import Galeria from './pages/publico/Galeria.jsx';
 import Admisiones from './pages/publico/Admisiones.jsx';
 import { useUI } from './context/UIContext.jsx';
 import { useAuth } from './context/AuthContext.jsx';
+import { moduloDeVista, primeraVistaPermitida } from './utils/permisos.js';
 
 const PAGES_PUBLICAS = {
   'publico:inicio': InicioPublico,
@@ -37,7 +38,7 @@ const PAGES = {
 
 function App() {
   const { vistaActual, setVistaActual, sidebar4Abierto, setSidebar4Abierto } = useUI();
-  const { cuentaActiva, cargandoSesion } = useAuth();
+  const { cuentaActiva, cargandoSesion, puede } = useAuth();
   const Publica = PAGES_PUBLICAS[vistaActual];
   const Page = PAGES[vistaActual];
   const sinAcceso = !Publica && !cuentaActiva;
@@ -47,6 +48,13 @@ function App() {
       setVistaActual('publico:inicio');
     }
   }, [sinAcceso, cargandoSesion]);
+
+  const vistaPermitida = !Page || !cuentaActiva || puede(moduloDeVista(vistaActual));
+  const alternativa = vistaPermitida ? null : primeraVistaPermitida(puede);
+
+  useEffect(() => {
+    if (alternativa) setVistaActual(alternativa);
+  }, [alternativa]);
 
   if (sinAcceso) return <Skeleton />;
 

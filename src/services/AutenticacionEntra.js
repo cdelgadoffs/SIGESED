@@ -5,7 +5,18 @@ const CLIENTE = import.meta.env.VITE_ENTRA_CLIENT_ID;
 const INQUILINO = import.meta.env.VITE_ENTRA_TENANT_ID;
 const AMBITO = import.meta.env.VITE_ENTRA_SCOPE;
 
+const MARCA_SALIDA = 'sesion=cerrada';
+
 let instancia = null;
+
+export function consumirMarcaSalida() {
+  const parametros = new URLSearchParams(window.location.search);
+  if (parametros.get('sesion') !== 'cerrada') return false;
+  parametros.delete('sesion');
+  const resto = parametros.toString();
+  window.history.replaceState(window.history.state, '', `${window.location.pathname}${resto ? `?${resto}` : ''}${window.location.hash}`);
+  return true;
+}
 
 function limpiarInteraccionPendiente() {
   try {
@@ -82,7 +93,7 @@ export async function salirDeMicrosoft() {
   if (!CLIENTE || !INQUILINO) return;
   const app = await cliente();
   const cuenta = app.getActiveAccount() ?? app.getAllAccounts()[0];
-  await app.logoutRedirect({ account: cuenta ?? undefined, postLogoutRedirectUri: `${window.location.origin}/` });
+  await app.logoutRedirect({ account: cuenta ?? undefined, postLogoutRedirectUri: `${window.location.origin}/?${MARCA_SALIDA}` });
 }
 
 export async function olvidarCuentaMicrosoft() {

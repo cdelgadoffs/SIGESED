@@ -4,6 +4,7 @@ import ListaExpandible from '../base/ListaExpandible.jsx';
 import OpcionesRegistro from './OpcionesRegistro.jsx';
 import VistaPreviaKardex from './VistaPreviaKardex.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import { filtrarEstudiantes, nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
@@ -27,6 +28,7 @@ export default function KardexEstudiante() {
 function Kardex({ alumno }) {
   const { GRUPOS, KARDEX, MATERIAS, PROGRAMAS_EDUCATIVOS, MODALIDADES, TIEMPOS, eliminarCalificacionKardex } = useRegistros();
   const { abrirEdicionRegistro, sidebar3Abierto } = useUI();
+  const puedeEditar = useAuth().puede('kardex', 'editar');
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   const [filtro, setFiltro] = useState(TODOS);
   const [alternados, setAlternados] = useState(() => new Set());
@@ -115,7 +117,7 @@ function Kardex({ alumno }) {
                           <td className={'widget-kardex-estudiante-cal ' + (m.calificacion >= CALIFICACION_APROBATORIA ? 'widget-kardex-estudiante-aprobada' : 'widget-kardex-estudiante-reprobada')}>{textoCalificacion(m)}</td>
                           <td className="widget-kardex-estudiante-obs">{observacionKardex(m)}</td>
                           <td className="widget-kardex-estudiante-acciones">
-                            {m.registroId && !sidebar3Abierto && (
+                            {puedeEditar && m.registroId && !sidebar3Abierto && (
                               <div className="widget-kardex-estudiante-opciones">
                               <OpcionesRegistro
                                 descripcion={`la calificación de ${materia?.nombre ?? m.materia}`}

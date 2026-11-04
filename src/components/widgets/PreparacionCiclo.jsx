@@ -4,6 +4,7 @@ import BadgeDinamico from '../base/BadgeDinamico.jsx';
 import BotonS from '../base/BotonS.jsx';
 import Modal from '../base/Modal.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { ESTADOS_CICLO } from '../../utils/fechas.js';
 import { MATERIAS_POR_GRUPO, inscripcionDe, tramosHorario, tipoHorario } from '../../utils/inscripciones.js';
@@ -31,6 +32,7 @@ function Pendientes({ lista }) {
 export default function PreparacionCiclo() {
   const { CICLOS, cicloActivoId, GRUPOS, MODALIDADES, MATERIAS, HORAS_CLASE, PERSONAL, INSCRIPCIONES, iniciarCiclo } = useRegistros();
   const { setCicloEnEdicionId, grupoEnInscripcionId, setGrupoEnInscripcionId } = useUI();
+  const puedeEditar = useAuth().puede('inicio', 'editar');
   const [confirmando, setConfirmando] = useState(false);
   const [error, setError] = useState(null);
   const [ocupado, setOcupado] = useState(false);
@@ -97,7 +99,7 @@ export default function PreparacionCiclo() {
                   <Marca completo={propios.length === 0} />
                   <span className="widget-preparacion-ciclo-paso-titulo">{g.nombre}</span>
                   <BadgeDinamico texto={nombreDeCatalogo(MODALIDADES, g.modalidad)} tono="gris" />
-                  <BotonS variant="claro" onClick={() => inscribir(g.id)}>{materias.length > 0 ? 'Editar' : 'Inscribir materias'}</BotonS>
+                  {puedeEditar && <BotonS variant="claro" onClick={() => inscribir(g.id)}>{materias.length > 0 ? 'Editar' : 'Inscribir materias'}</BotonS>}
                 </div>
                 {materias.length > 0 && (
                   <div className="widget-preparacion-ciclo-materias">
@@ -130,7 +132,7 @@ export default function PreparacionCiclo() {
               ? 'Completa los pendientes para poder iniciar el ciclo.'
               : 'Al iniciar, el calendario y las inscripciones quedan fijos.'}
           </span>
-          <BotonS variant="claro" onClick={() => setConfirmando(true)} disabled={pendientes.length > 0}>Iniciar ciclo escolar</BotonS>
+          {puedeEditar && <BotonS variant="claro" onClick={() => setConfirmando(true)} disabled={pendientes.length > 0}>Iniciar ciclo escolar</BotonS>}
         </div>
       </Card>
 

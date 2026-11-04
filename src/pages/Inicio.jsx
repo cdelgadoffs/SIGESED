@@ -14,6 +14,7 @@ import PreparacionCiclo from '../components/widgets/PreparacionCiclo.jsx';
 import FormularioInscripcion from '../components/widgets/FormularioInscripcion.jsx';
 import Sidebar3 from '../components/base/Sidebar3.jsx';
 import { useRegistros } from '../context/RegistrosContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR3, ANCHO_SIDEBAR4, ALTO_TOPBAR, ALTO_CINTA } from '../context/UIContext.jsx';
 
 export default function Inicio() {
@@ -21,12 +22,13 @@ export default function Inicio() {
     izquierdaSidebar1, sidebar5Abierto, cerrarSidebar5, sidebar5Ancho,
     cicloEnEdicionId, setCicloEnEdicionId, grupoEnInscripcionId, setGrupoEnInscripcionId,
   } = useUI();
+  const puedeEditar = useAuth().puede('inicio', 'editar');
   const { PLANTEL, CICLOS, GRUPOS, cicloActivoId } = useRegistros();
   const ciclo = CICLOS.find((c) => c.id === cicloActivoId);
   const enPreparacion = !!ciclo && !ciclo.iniciado && !ciclo.cerrado;
   const grupoInscrito = enPreparacion ? GRUPOS.find((g) => g.id === grupoEnInscripcionId) : null;
   const editando = !!cicloActivoId && cicloEnEdicionId === cicloActivoId;
-  const formularioAbierto = !!grupoInscrito || ciclo?.estado === 'sin-configurar' || editando;
+  const formularioAbierto = puedeEditar && (!!grupoInscrito || ciclo?.estado === 'sin-configurar' || editando);
   let badge = `Configurar ciclo ${cicloActivoId ?? ''}`;
   if (grupoInscrito) badge = `Inscripción de ${grupoInscrito.nombre} · ${cicloActivoId}`;
   else if (editando) badge = `Editar ciclo ${cicloActivoId}`;

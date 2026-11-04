@@ -4,7 +4,7 @@ import {
   obtenerTodos, obtener, guardar, escribirVarios, DB_VERSION, almacenesRespaldo, leerTodo, reemplazarTodo,
 } from './db.js';
 import {
-  usuarioActual, exigirEscritura, fijarSesion, sesionDeTokenEntra, exigirRol, ROL_ADMINISTRADOR_TI, armarRespaldo, validarRespaldo, prepararRegistro, exigirVersion,
+  usuarioActual, exigirEscritura, alcanceEscritura, calificacionesDelDocente, fijarSesion, sesionDeTokenEntra, sesionDeTokenGoogle, exigirRol, ROL_ADMINISTRADOR_TI, armarRespaldo, validarRespaldo, prepararRegistro, exigirVersion,
   exigirPlantel, generarMatricula, ordenarPersonas, validarRolesDisponibles, validarRolesAsignables, ciclosDelAnio, ordenarCiclos,
   prepararEvaluacion, idEvaluacion, conPromedio,
   validarNombreGrupoUnico, ordenarGrupos,
@@ -32,8 +32,8 @@ function registroEditado(actual, datos) {
   return { ...actual, ...datos, version: actual.version + 1, modificadoEn: new Date().toISOString() };
 }
 
-async function eliminar(store, id) {
-  exigirEscritura();
+async function eliminar(store, id, modulo) {
+  exigirEscritura(modulo);
   await exigirExistente(store, id, 'El registro no existe.');
   await escribirVarios({ borrar: [{ store, id }] });
   return { id };
@@ -45,6 +45,14 @@ export async function iniciarSesionEntra(token) {
     inquilino: import.meta.env.VITE_ENTRA_TENANT_ID,
     cliente: import.meta.env.VITE_ENTRA_CLIENT_ID,
   }, roles);
+  fijarSesion(sesion);
+  return sesion;
+}
+
+export async function iniciarSesionGoogle(credencial) {
+  const [personal, estudiantes] = await Promise.all([obtenerTodos(STORE_PERSONAL), obtenerTodos(STORE_ESTUDIANTES)]);
+  const { roles = [] } = await listarCatalogos();
+  const sesion = sesionDeTokenGoogle(credencial, import.meta.env.VITE_GOOGLE_CLIENT_ID, personal, estudiantes, roles);
   fijarSesion(sesion);
   return sesion;
 }
@@ -74,7 +82,7 @@ export async function listarCatalogos() {
 }
 
 export async function crearMateria(datos) {
-  exigirEscritura();
+  exigirEscritura('planEstudios');
   const { programasEducativos = [], materias = [] } = await listarCatalogos();
   const materia = prepararMateriaManual(datos, programasEducativos, materias);
   await guardar(STORE_CATALOGOS, { nombre: 'materias', items: [...materias, materia] });
@@ -90,7 +98,7 @@ export async function obtenerPlantel() {
 }
 
 export async function guardarPlantel(version, datos) {
-  exigirEscritura();
+  exigirEscritura('panelControl');
   const limpio = prepararRegistro('plantel', datos, await listarCatalogos());
   const actual = await obtenerPlantel();
   let plantel;
@@ -133,14 +141,14 @@ async function validarGrupo(datos, idPropio = null) {
 }
 
 export async function crearGrupo(datos) {
-  exigirEscritura();
+  exigirEscritura('matricula');
   const registro = nuevoRegistro(await validarGrupo(datos));
   await guardar(STORE_GRUPOS, registro);
   return registro;
 }
 
 export async function editarGrupo(id, version, cambios) {
-  exigirEscritura();
+  exigirEscritura('matricula');
   const actual = await exigirExistente(STORE_GRUPOS, id, 'El grupo no existe.');
   exigirVersion(actual, version);
   const registro = registroEditado(actual, await validarGrupo({ activo: true, ...actual, ...cambios }, id));
@@ -154,7 +162,7 @@ export async function eliminarGrupo(id) {
   if (conAlumnos || inscrito) {
     throw new ApiError('EN_USO', 'No se puede eliminar: el grupo tiene estudiantes o está inscrito en algún ciclo escolar.');
   }
-  return eliminar(STORE_GRUPOS, id);
+  return eliminar(STORE_GRUPOS, id, 'matricula');
 }
 
 export async function listarPersonal() {
@@ -162,14 +170,14 @@ export async function listarPersonal() {
 }
 
 export async function crearPersonal(datos) {
-  exigirEscritura();
+  exigirEscritura('matricula');
   const registro = nuevoRegistro(await validarPersona('personal', datos));
   await guardar(STORE_PERSONAL, registro);
   return registro;
 }
 
 export async function editarPersonal(id, version, cambios) {
-  exigirEscritura();
+  exigirEscritura('matricula');
   const actual = await exigirExistente(STORE_PERSONAL, id, 'El registro no existe.');
   exigirVersion(actual, version);
   const registro = registroEditado(actual, await validarPersona('personal', { activo: true, ...actual, ...cambios }, id));
@@ -185,7 +193,7 @@ export async function eliminarPersonal(id) {
   if (inscripciones.some((i) => i.materias.some((m) => m.docenteId === id))) {
     throw new ApiError('EN_USO', 'No se puede eliminar: es docente de materias inscritas en algún ciclo escolar.');
   }
-  return eliminar(STORE_PERSONAL, id);
+  return eliminar(STORE_PERSONAL, id, 'matricula');
 }
 
 export async function listarEstudiantes() {
@@ -193,7 +201,7 @@ export async function listarEstudiantes() {
 }
 
 export async function crearEstudiante(datos) {
-  exigirEscritura();
+  exigirEscritura('matricula');
   const limpio = await validarPersona('estudiante', datos);
   const existentes = new Set((await obtenerTodos(STORE_ESTUDIANTES)).map((e) => e.matricula));
   const registro = nuevoRegistro({ matricula: generarMatricula(limpio, existentes), ...limpio });
@@ -202,7 +210,7 @@ export async function crearEstudiante(datos) {
 }
 
 export async function editarEstudiante(id, version, cambios) {
-  exigirEscritura();
+  exigirEscritura('matricula');
   if (cambios && 'matricula' in cambios) throw new ApiError('VALIDACION', 'La matrícula no se puede cambiar.');
   const actual = await exigirExistente(STORE_ESTUDIANTES, id, 'El registro no existe.');
   exigirVersion(actual, version);
@@ -223,7 +231,7 @@ export async function eliminarEstudiante(id) {
   if (kardex.some((k) => k.estudianteId === id)) {
     throw new ApiError('CON_EVALUACIONES', 'No se puede eliminar: el estudiante tiene calificaciones en su kárdex.');
   }
-  return eliminar(STORE_ESTUDIANTES, id);
+  return eliminar(STORE_ESTUDIANTES, id, 'matricula');
 }
 
 async function datosPreparacion() {
@@ -251,7 +259,7 @@ export async function listarCiclos() {
 }
 
 export async function configurarCiclo(id, version, datos) {
-  exigirEscritura();
+  exigirEscritura('inicio');
   const actual = await exigirExistente(STORE_CICLOS, id, 'El ciclo escolar no existe.');
   exigirVersion({ version: actual.version ?? 1 }, version);
   const todos = await listarCiclos();
@@ -265,7 +273,7 @@ export async function configurarCiclo(id, version, datos) {
 }
 
 export async function crearCiclosAnuales(anio) {
-  exigirEscritura();
+  exigirEscritura('panelControl');
   const ciclos = ciclosDelAnio(anio);
   const existentes = new Set((await obtenerTodos(STORE_CICLOS)).map((c) => c.id));
   const ahora = new Date().toISOString();
@@ -277,7 +285,7 @@ export async function crearCiclosAnuales(anio) {
 }
 
 export async function concluirCiclo(id, version) {
-  exigirEscritura();
+  exigirEscritura('panelControl');
   const actual = await exigirExistente(STORE_CICLOS, id, 'El ciclo escolar no existe.');
   exigirVersion({ version: actual.version ?? 1 }, version);
   if (!actual.fechaInicio) throw new ApiError('VALIDACION', 'Configura el ciclo antes de concluirlo.');
@@ -289,7 +297,7 @@ export async function concluirCiclo(id, version) {
 }
 
 export async function iniciarCiclo(id, version) {
-  exigirEscritura();
+  exigirEscritura('inicio');
   const actual = await exigirExistente(STORE_CICLOS, id, 'El ciclo escolar no existe.');
   exigirVersion({ version: actual.version ?? 1 }, version);
   if (actual.cerrado) throw new ApiError('VALIDACION', `El ciclo ${id} ya está concluido.`);
@@ -311,7 +319,7 @@ export async function listarInscripciones() {
 }
 
 export async function guardarInscripcion(cicloId, grupoId, version, datos) {
-  exigirEscritura();
+  exigirEscritura('inicio');
   const ciclo = await exigirExistente(STORE_CICLOS, cicloId, 'El ciclo escolar no existe.');
   const grupo = await exigirExistente(STORE_GRUPOS, grupoId, 'El grupo no existe.');
   if (ciclo.cerrado) throw new ApiError('VALIDACION', `El ciclo ${cicloId} ya se concluyó y no se puede modificar.`);
@@ -357,7 +365,7 @@ export async function listarEvaluaciones() {
 }
 
 export async function guardarEvaluacion(estudianteId, cicloId, version, datos) {
-  exigirEscritura();
+  const alcance = alcanceEscritura('evaluaciones');
   const estudiante = await exigirExistente(STORE_ESTUDIANTES, estudianteId, 'El estudiante no existe.');
   const ciclo = await exigirExistente(STORE_CICLOS, cicloId, 'El ciclo escolar no existe.');
   if (!ciclo.iniciado) throw new ApiError('VALIDACION', `El ciclo ${cicloId} aún no se inicia: las evaluaciones se capturan en un ciclo iniciado.`);
@@ -365,11 +373,17 @@ export async function guardarEvaluacion(estudianteId, cicloId, version, datos) {
   const inscripcion = await obtener(STORE_INSCRIPCIONES, idInscripcion(cicloId, grupo.id));
   const inscritas = new Set((inscripcion?.materias ?? []).map((m) => m.materia));
   const { materias = [] } = await listarCatalogos();
-  const limpio = prepararEvaluacion(datos, materias.filter((m) => inscritas.has(m.id)));
-  const fuera = await acreditadasFuera(estudianteId, cicloId);
-  exigirNoAcreditadas(limpio.calificaciones.map((c) => c.materia), fuera, (id) => materias.find((m) => m.id === id)?.nombre ?? id);
   const id = idEvaluacion(cicloId, estudianteId);
   const actual = await obtener(STORE_EVALUACIONES, id);
+  const limpio = prepararEvaluacion(datos, materias.filter((m) => inscritas.has(m.id)));
+  if (alcance === 'propio') {
+    const propias = new Set((inscripcion?.materias ?? []).filter((m) => m.docenteId === usuarioActual().id).map((m) => m.materia));
+    const orden = materias.map((m) => m.id);
+    limpio.calificaciones = calificacionesDelDocente(limpio.calificaciones, actual?.calificaciones ?? [], propias)
+      .sort((a, b) => orden.indexOf(a.materia) - orden.indexOf(b.materia));
+  }
+  const fuera = await acreditadasFuera(estudianteId, cicloId);
+  exigirNoAcreditadas(limpio.calificaciones.map((c) => c.materia), fuera, (id) => materias.find((m) => m.id === id)?.nombre ?? id);
   let evaluacion;
   if (actual) {
     exigirVersion(actual, version);
@@ -387,7 +401,7 @@ export async function listarReportes() {
 }
 
 export async function crearReporte(datos) {
-  exigirEscritura();
+  exigirEscritura('bitacora');
   if (!datos || typeof datos !== 'object') throw new ApiError('VALIDACION', 'Faltan los datos del reporte.');
   const estudiante = await exigirExistente(STORE_ESTUDIANTES, datos.estudianteId, 'El estudiante no existe.');
   if (estudiante.activo === false) throw new ApiError('VALIDACION', 'No se pueden levantar reportes a un estudiante inactivo.');
@@ -429,7 +443,7 @@ export async function listarCalificacionesKardex() {
 }
 
 export async function crearCalificacionKardex(datos) {
-  exigirEscritura();
+  exigirEscritura('kardex');
   if (!datos || typeof datos !== 'object') throw new ApiError('VALIDACION', 'Faltan los datos de la calificación.');
   const limpio = await prepararKardex(datos.estudianteId, datos);
   const registro = nuevoRegistro({ estudianteId: datos.estudianteId, ...limpio });
@@ -438,7 +452,7 @@ export async function crearCalificacionKardex(datos) {
 }
 
 export async function editarCalificacionKardex(id, version, cambios) {
-  exigirEscritura();
+  exigirEscritura('kardex');
   const actual = await exigirExistente(STORE_KARDEX, id, 'La calificación no existe.');
   exigirVersion(actual, version);
   const limpio = await prepararKardex(actual.estudianteId, { ...actual, ...cambios }, id);
@@ -448,7 +462,7 @@ export async function editarCalificacionKardex(id, version, cambios) {
 }
 
 export async function eliminarCalificacionKardex(id) {
-  return eliminar(STORE_KARDEX, id);
+  return eliminar(STORE_KARDEX, id, 'kardex');
 }
 
 async function cargarAcademico() {
@@ -508,7 +522,7 @@ async function datosParaCurso(idPropio) {
 }
 
 export async function crearCurso(datos) {
-  exigirEscritura();
+  exigirEscritura('cursos');
   const ciclo = cicloParaCurso(await listarCiclos());
   const limpio = prepararCurso(datos, { ...(await datosParaCurso(null)), cicloId: ciclo.id });
   const curso = nuevoRegistro({ ...limpio, cicloId: ciclo.id, voluntarios: [], acreditados: [] });
@@ -517,7 +531,7 @@ export async function crearCurso(datos) {
 }
 
 export async function editarCurso(id, version, cambios) {
-  exigirEscritura();
+  exigirEscritura('cursos');
   const actual = await cursoModificable(id, version);
   const limpio = prepararCurso({ ...actual, ...cambios }, { ...(await datosParaCurso(id)), cicloId: actual.cicloId });
   let curso = registroEditado(actual, limpio);
@@ -528,15 +542,15 @@ export async function editarCurso(id, version, cambios) {
 }
 
 export async function eliminarCurso(id) {
-  exigirEscritura();
+  exigirEscritura('cursos');
   const actual = await exigirExistente(STORE_CURSOS, id, 'El curso no existe.');
   exigirCursoModificable(await obtener(STORE_CICLOS, actual.cicloId));
   if (actual.acreditados.length > 0) throw new ApiError('EN_USO', 'No se puede eliminar: el curso ya tiene alumnos acreditados.');
-  return eliminar(STORE_CURSOS, id);
+  return eliminar(STORE_CURSOS, id, 'cursos');
 }
 
 export async function inscribirEnCurso(id, version, estudianteId) {
-  exigirEscritura();
+  exigirEscritura('cursos');
   const actual = await cursoModificable(id, version);
   const estudiante = await exigirExistente(STORE_ESTUDIANTES, estudianteId, 'El estudiante no existe.');
   if (estudiante.activo === false) throw new ApiError('VALIDACION', 'No se puede inscribir a un estudiante inactivo.');
@@ -547,7 +561,7 @@ export async function inscribirEnCurso(id, version, estudianteId) {
 }
 
 export async function quitarDeCurso(id, version, estudianteId) {
-  exigirEscritura();
+  exigirEscritura('cursos');
   const actual = await cursoModificable(id, version);
   if (!actual.voluntarios.includes(estudianteId)) throw new ApiError('VALIDACION', 'Solo se pueden quitar alumnos voluntarios.');
   await guardar(STORE_CURSOS, registroEditado(actual, {
@@ -558,7 +572,7 @@ export async function quitarDeCurso(id, version, estudianteId) {
 }
 
 export async function marcarAcreditado(id, version, estudianteId, acreditado) {
-  exigirEscritura();
+  exigirEscritura('cursos');
   const actual = await cursoModificable(id, version);
   if (typeof acreditado !== 'boolean') throw new ApiError('VALIDACION', 'Indica si el alumno acreditó.');
   const inscritos = new Set([...obligatoriosDe(actual, await cargarAcademico()), ...actual.voluntarios]);
