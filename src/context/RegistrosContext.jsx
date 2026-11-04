@@ -208,6 +208,7 @@ export function RegistrosProvider({ children }) {
   const anioEnCurso = new Date().getFullYear();
   const cicloActivo = ciclos.find((c) => c.id === cicloElegidoId)
     ?? ciclos.find((c) => c.estado === 'en-curso')
+    ?? ciclos.find((c) => c.estado === 'proximo')
     ?? ciclos.find((c) => c.anio === anioEnCurso)
     ?? ciclos[0]
     ?? null;

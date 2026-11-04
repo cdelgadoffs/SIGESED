@@ -5,7 +5,8 @@ export default function Skeleton({ children }) {
     <div className="skeleton">
       {children}
       <div className="skeleton-contenido">
-        <span className="skeleton-version">v.0</span>
+        <i className="skeleton-icono ri-graduation-cap-line" />
+        <span className="skeleton-marca">SIGESED</span>
       </div>
     </div>
   );

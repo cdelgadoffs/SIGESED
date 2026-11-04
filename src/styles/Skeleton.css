@@ -9,12 +9,20 @@
 .skeleton-contenido {
   flex: 1;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
   align-items: center;
   justify-content: center;
 }
-.skeleton-version {
+.skeleton-icono {
+  font-size: 160px;
+  line-height: 1;
+  color: #e4e4e4;
+}
+.skeleton-marca {
   font-family: 'DM Mono', monospace;
   font-size: 28px;
   font-weight: 600;
+  letter-spacing: 0.3em;
   color: #ccc;
 }
