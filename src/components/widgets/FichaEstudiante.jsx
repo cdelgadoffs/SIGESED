@@ -4,6 +4,7 @@ import OpcionesRegistro from './OpcionesRegistro.jsx';
 import EstadoConfirmado from './EstadoConfirmado.jsx';
 import CodigoQR from './CodigoQR.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { estiloGenero, filtrarEstudiantes, nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
 import '../../styles/widgets/FichaEstudiante.css';
@@ -11,6 +12,7 @@ import '../../styles/widgets/FichaEstudiante.css';
 export default function FichaEstudiante() {
   const { ESTUDIANTES, GRUPOS, GENEROS, PROGRAMAS_EDUCATIVOS, TIEMPOS, MODALIDADES, CARGA, eliminarEstudiante, editarEstudiante } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro, filtroEstado } = useUI();
+  const puedeEditar = useAuth().puede('matricula', 'editar');
   const alumno = registroActivo(segunEstado(filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda), filtroEstado), registroSeleccionadoId);
 
   if (!alumno) {
@@ -50,12 +52,12 @@ export default function FichaEstudiante() {
         <CodigoQR texto={alumno.matricula} leyenda={alumno.matricula} nombreArchivo={`QR_${alumno.matricula}`} />
         </div>
         <div className="widget-ficha-estudiante-acciones">
-          <EstadoConfirmado tamano="grande" encendido={alumno.activo !== false} descripcion={`a ${nombreCompleto(alumno)}`} onCambiar={(activo) => editarEstudiante(alumno.id, { activo })} />
-          <OpcionesRegistro
+          {puedeEditar && <EstadoConfirmado tamano="grande" encendido={alumno.activo !== false} descripcion={`a ${nombreCompleto(alumno)}`} onCambiar={(activo) => editarEstudiante(alumno.id, { activo })} />}
+          {puedeEditar && <OpcionesRegistro
             descripcion={`a ${nombreCompleto(alumno)} (matrícula ${alumno.matricula})`}
             onEditar={() => abrirEdicionRegistro(alumno.id)}
             onEliminar={() => eliminarEstudiante(alumno.id)}
-          />
+          />}
         </div>
       </Card>
     </div>

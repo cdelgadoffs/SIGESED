@@ -4,6 +4,7 @@ const implementacion = import.meta.env.VITE_API_MODE === 'real'
 
 export const {
   iniciarSesionEntra,
+  iniciarSesionGoogle,
   cerrarSesion,
   exportarRespaldo,
   restaurarRespaldo,

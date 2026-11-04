@@ -1,6 +1,8 @@
 import BotonSeleccionableMenu from '../base/BotonSeleccionableMenu.jsx';
 import SubMenuDD from './SubMenuDD.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { moduloDeVista } from '../../utils/permisos.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import '../../styles/widgets/MenuPrincipal.css';
 
@@ -28,6 +30,7 @@ const ITEMS_MENU_PRINCIPAL = [
 
 export default function MenuPrincipal() {
   const registros = useRegistros();
+  const { puede } = useAuth();
   const { vistaActual, setVistaActual, abrirNuevoRegistro, registrosAbierto, setRegistrosAbierto } = useUI();
 
   function irA(vista) {
@@ -51,7 +54,7 @@ export default function MenuPrincipal() {
 
   return (
     <div className="widget-menu-principal">
-      {ITEMS_MENU_PRINCIPAL.map((item) => {
+      {ITEMS_MENU_PRINCIPAL.filter((item) => puede(item.hijos ? moduloDeVista(item.hijos[0].id) : item.id)).map((item) => {
         if (!item.hijos) {
           return (
             <div key={item.id} className={item.destacado ? 'widget-menu-principal-destacado' : undefined}>
@@ -78,7 +81,7 @@ export default function MenuPrincipal() {
                 items={item.hijos.map((h) => ({ id: h.id, nombre: h.nombre, badge: registros[h.lista].length }))}
                 activoId={vistaActual}
                 onSeleccionar={setVistaActual}
-                onAgregar={agregar}
+                onAgregar={puede('matricula', 'editar') ? agregar : undefined}
                 iconoAgregar="+"
               />
             )}

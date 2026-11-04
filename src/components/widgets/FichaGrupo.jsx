@@ -3,6 +3,7 @@ import BadgeDinamico from '../base/BadgeDinamico.jsx';
 import IndicadorSync from '../base/IndicadorSync.jsx';
 import OpcionesRegistro from './OpcionesRegistro.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
 import { coincideBusqueda } from '../../utils/texto.js';
@@ -12,6 +13,7 @@ import '../../styles/widgets/FichaGrupo.css';
 export default function FichaGrupo() {
   const { GRUPOS, ESTUDIANTES, PERSONAL, MATERIAS, INSCRIPCIONES, PROGRAMAS_EDUCATIVOS, MODALIDADES, cicloActivoId, CARGA, eliminarGrupo } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro, filtroEstado } = useUI();
+  const puedeEditar = useAuth().puede('matricula', 'editar');
   const grupo = registroActivo(segunEstado(GRUPOS.filter((g) => coincideBusqueda(terminoBusqueda, [g.nombre])), filtroEstado), registroSeleccionadoId);
 
   if (!grupo) {
@@ -49,11 +51,11 @@ export default function FichaGrupo() {
           </dd>
         </dl>
         <div className="widget-ficha-grupo-acciones">
-          <OpcionesRegistro
+          {puedeEditar && <OpcionesRegistro
             descripcion={`el grupo ${grupo.nombre}`}
             onEditar={() => abrirEdicionRegistro(grupo.id)}
             onEliminar={() => eliminarGrupo(grupo.id)}
-          />
+          />}
         </div>
       </Card>
     </div>

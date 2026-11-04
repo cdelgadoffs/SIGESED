@@ -12,15 +12,18 @@ import ListaEstudiantesSidebar from '../components/widgets/ListaEstudiantesSideb
 import FormularioEvaluacion from '../components/widgets/FormularioEvaluacion.jsx';
 import VistaPreviaBoleta from '../components/widgets/VistaPreviaBoleta.jsx';
 import { useRegistros } from '../context/RegistrosContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR2, ANCHO_SIDEBAR3, ALTO_TOPBAR, ALTO_CINTA } from '../context/UIContext.jsx';
 
 export default function Evaluaciones() {
   const { izquierdaSidebar1, sidebar5Abierto, cerrarSidebar5, sidebar5Ancho, registroSeleccionadoId } = useUI();
+  const { puede } = useAuth();
+  const puedeEditar = puede('evaluaciones', 'propio');
   const { PLANTEL, cicloActivoId } = useRegistros();
   const izquierdaSidebar2 = izquierdaSidebar1 + ANCHO_SIDEBAR1;
   const izquierdaSidebar3 = izquierdaSidebar2 + ANCHO_SIDEBAR2;
   const arriba = ALTO_TOPBAR + ALTO_CINTA;
-  const capturaAbierta = !!registroSeleccionadoId;
+  const capturaAbierta = puedeEditar && !!registroSeleccionadoId;
   const panelIzquierda = izquierdaSidebar3 + (capturaAbierta ? ANCHO_SIDEBAR3 : 0);
 
   return (
@@ -37,7 +40,7 @@ export default function Evaluaciones() {
         badge="Evaluaciones"
         subtitulo={cicloActivoId ? `Ciclo escolar ${cicloActivoId}` : 'Sin ciclo escolar'}
       >
-        <ListaEstudiantesSidebar />
+        <ListaEstudiantesSidebar soloDelDocente={!puede('evaluaciones', 'editar')} />
       </Sidebar2>
       <Sidebar3 abierto={capturaAbierta} izquierda={izquierdaSidebar3} arriba={arriba} mostrarCerrar={false} badge="Captura de calificaciones">
         <FormularioEvaluacion />

@@ -1,6 +1,7 @@
 import { ApiError } from '../ApiError.js';
 
-const USUARIO = { id: 'usuario-local', nombre: 'Administrador local', rol: 'administrador' };
+const USUARIO = { id: 'usuario-local', nombre: 'Usuario local' };
+const NIVELES = { ninguno: 0, ver: 1, propio: 2, editar: 3 };
 
 const RE_GMAIL = /^(?=[a-z0-9.]{6,30}@)[a-z0-9]+(\.[a-z0-9]+)*@gmail\.com$/;
 const RE_TELEFONO = /^\d{10}$/;
@@ -60,12 +61,20 @@ function falla(mensaje) {
 let sesion = null;
 
 export function usuarioActual() {
-  return sesion ? { id: sesion.usuario, nombre: sesion.nombre, rol: USUARIO.rol } : USUARIO;
+  return sesion ? { id: sesion.usuario, nombre: sesion.nombre } : USUARIO;
 }
 
 export function exigirRol(rol, mensaje) {
   if (!sesion) throw new ApiError('NO_AUTORIZADO', 'Inicia sesión para continuar.');
   if (!sesion.roles.includes(rol)) throw new ApiError('PERMISO_DENEGADO', mensaje);
+}
+
+function permisosPorRol(roles, rolesCatalogo) {
+  return Object.fromEntries(roles.map((rol) => [rol, rolesCatalogo.find((r) => r.id === rol)?.permisos ?? {}]));
+}
+
+function nivelEn(porRol, modulo) {
+  return Math.max(0, ...Object.values(porRol).map((permisos) => NIVELES[permisos[modulo] ?? permisos['*']] ?? 0));
 }
 
 export function fijarSesion(valor) {
@@ -97,14 +106,58 @@ export function sesionDeTokenEntra(token, { inquilino, cliente }, rolesCatalogo)
     nombre: datos.name ?? '',
     correo: (datos.email ?? datos.preferred_username ?? datos.upn ?? datos.unique_name ?? '').replace(/^[^#]*#/, ''),
     roles,
+    permisosPorRol: permisosPorRol(roles, rolesCatalogo),
     proveedor: 'entra-id',
   };
 }
 
-export function exigirEscritura() {
-  if (USUARIO.rol !== 'administrador') {
-    throw new ApiError('NO_AUTORIZADO', 'No tienes permiso para modificar registros.');
+const EMISORES_GOOGLE = ['accounts.google.com', 'https://accounts.google.com'];
+
+export function sesionDeTokenGoogle(token, cliente, personal, estudiantes, rolesCatalogo) {
+  const datos = typeof token === 'string' ? leerToken(token) : null;
+  if (!datos) throw new ApiError('NO_AUTORIZADO', 'La credencial de Google no es válida.');
+  if (!EMISORES_GOOGLE.includes(datos.iss)) throw new ApiError('NO_AUTORIZADO', 'La credencial no fue emitida por Google.');
+  if (datos.aud !== cliente) throw new ApiError('NO_AUTORIZADO', 'La credencial no fue emitida para SIGESED.');
+  if (!datos.exp || datos.exp * 1000 < Date.now()) throw new ApiError('NO_AUTORIZADO', 'La sesión de Google expiró. Vuelve a acceder.');
+  if (datos.email_verified !== true) throw new ApiError('NO_AUTORIZADO', 'El correo de tu cuenta de Google no está verificado.');
+  const correo = String(datos.email ?? '').toLowerCase();
+  const persona = personal.find((p) => (p.correo ?? '').toLowerCase() === correo && p.activo !== false);
+  if (persona) {
+    return {
+      usuario: persona.id,
+      nombre: [persona.nombre, persona.primerApellido].filter(Boolean).join(' ') || datos.name || '',
+      correo,
+      roles: persona.roles ?? [],
+      permisosPorRol: permisosPorRol(persona.roles ?? [], rolesCatalogo),
+      proveedor: 'google',
+    };
   }
+  if (estudiantes.some((e) => (e.correo ?? '').toLowerCase() === correo && e.activo !== false)) {
+    throw new ApiError('PERMISO_DENEGADO', 'El acceso para estudiantes estará disponible próximamente.');
+  }
+  throw new ApiError('NO_REGISTRADO', 'Tu cuenta no está registrada en SIGESED.');
+}
+
+export function exigirEscritura(modulo) {
+  if (alcanceEscritura(modulo) !== 'todo') throw new ApiError('PERMISO_DENEGADO', 'Tu rol no permite modificar este módulo.');
+}
+
+export function alcanceEscritura(modulo) {
+  if (!sesion) throw new ApiError('NO_AUTORIZADO', 'Inicia sesión para continuar.');
+  const nivel = nivelEn(sesion.permisosPorRol ?? {}, modulo);
+  if (nivel >= NIVELES.editar) return 'todo';
+  if (nivel >= NIVELES.propio) return 'propio';
+  throw new ApiError('PERMISO_DENEGADO', 'Tu rol no permite modificar este módulo.');
+}
+
+export function calificacionesDelDocente(nuevas, anteriores, propias) {
+  if (!nuevas.some((c) => propias.has(c.materia)) && !anteriores.some((c) => propias.has(c.materia))) {
+    throw new ApiError('PERMISO_DENEGADO', 'Solo puedes calificar las materias que impartes.');
+  }
+  return [
+    ...nuevas.filter((c) => propias.has(c.materia)),
+    ...anteriores.filter((c) => !propias.has(c.materia)),
+  ];
 }
 
 function validarLista(def, valor, catalogos) {

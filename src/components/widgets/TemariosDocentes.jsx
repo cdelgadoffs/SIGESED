@@ -1,11 +1,14 @@
 import { useRef, useState } from 'react';
 import BotonS from '../base/BotonS.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import { nombreCompleto, nombreDeCatalogo, ordenarPorTexto } from '../../utils/registros.js';
 import { documentoPlanEstudios } from '../../utils/planEstudios.js';
 import { imprimirDocumento } from '../../utils/impresion.js';
 import '../../styles/widgets/TemariosDocentes.css';
+
+const ROL_DOCENTE = 'docente';
 
 function primeraPalabra(texto) {
   return (texto ?? '').trim().split(/\s+/)[0] ?? '';
@@ -17,6 +20,9 @@ function tieneTemario(m) {
 
 export default function TemariosDocentes() {
   const { PERSONAL, GRUPOS, MATERIAS, INSCRIPCIONES, PROGRAMAS_EDUCATIVOS, PLANTEL, cicloActivoId } = useRegistros();
+  const { cuentaActiva, rolesSesion, rolActivo } = useAuth();
+  const rolesVigentes = rolesSesion.filter(rolActivo);
+  const soloPropios = rolesVigentes.length > 0 && rolesVigentes.every((r) => r === ROL_DOCENTE);
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   const [documento, setDocumento] = useState('');
   const [impresiones, setImpresiones] = useState(0);
@@ -35,7 +41,7 @@ export default function TemariosDocentes() {
       if (materia) grupos.get(grupo.id).materias.push(materia);
     });
   });
-  const docentes = ordenarPorTexto(PERSONAL.filter((p) => porDocente.has(p.id)), nombreCompleto);
+  const docentes = ordenarPorTexto(PERSONAL.filter((p) => porDocente.has(p.id) && (!soloPropios || p.id === cuentaActiva?.usuario)), nombreCompleto);
 
   function materiasCon(grupos) {
     const unicas = new Map();
@@ -62,7 +68,7 @@ export default function TemariosDocentes() {
     <div className="widget-temarios-docentes">
       <div className="widget-temarios-docentes-lista" ref={contenedorRef} onScroll={onScroll}>
         {docentes.length === 0 ? (
-          <p className="widget-temarios-docentes-vacio">{`No hay docentes con materias inscritas en el ciclo ${cicloActivoId ?? ''}.`}</p>
+          <p className="widget-temarios-docentes-vacio">{soloPropios ? `No tienes materias inscritas en el ciclo ${cicloActivoId ?? ''}.` : `No hay docentes con materias inscritas en el ciclo ${cicloActivoId ?? ''}.`}</p>
         ) : docentes.map((d) => {
           const grupos = [...porDocente.get(d.id).values()];
           const disponible = materiasCon(grupos).length > 0;

@@ -1,8 +1,8 @@
 import { DIAS_SEMANA } from './fechas.js';
 
-const DIAS_POR_TIPO = { 'entre-semana': [1, 2, 3, 4, 5], sabado: [6] };
+export const DIAS_POR_TIPO = { 'entre-semana': [1, 2, 3, 4, 5], sabado: [6] };
 
-const COLORES_DIA = {
+export const COLORES_DIA = {
   1: { fondo: '#ffc7ce', acento: '#e0607a' },
   2: { fondo: '#f7c7ac', acento: '#d9804f' },
   3: { fondo: '#ffeb9c', acento: '#d4a514' },
@@ -68,13 +68,13 @@ html, body { background: #fff; -webkit-print-color-adjust: exact; print-color-ad
 const escapar = (texto) => String(texto ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const sinCero = (hora) => hora.replace(/^0/, '');
 
-function tinte(hex, cuanto) {
+export function tinte(hex, cuanto) {
   const n = parseInt(hex.slice(1), 16);
   const mezcla = (c) => Math.round(c + (255 - c) * cuanto);
   return `rgb(${mezcla(n >> 16)}, ${mezcla((n >> 8) & 255)}, ${mezcla(n & 255)})`;
 }
 
-function bloquesDe(asignaciones, horas) {
+export function bloquesDe(asignaciones, horas) {
   const clase = horas.filter((h) => !h.descanso);
   const indice = new Map(clase.map((h, i) => [h.id, i]));
   const recesoAntes = (i) => horas.slice(horas.indexOf(clase[i - 1]) + 1, horas.indexOf(clase[i])).some((h) => h.descanso);

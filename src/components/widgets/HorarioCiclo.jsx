@@ -3,22 +3,94 @@ import Card from '../base/Card.jsx';
 import BadgeDinamico from '../base/BadgeDinamico.jsx';
 import BotonS from '../base/BotonS.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { horasDeModalidad, inscripcionDe, textoHorario, tipoHorario } from '../../utils/inscripciones.js';
-import { documentoHorarios, tieneDisenoHorario } from '../../utils/horarioEscolar.js';
+import { horasDeModalidad, inscripcionDe, tipoHorario } from '../../utils/inscripciones.js';
+import { COLORES_DIA, DIAS_POR_TIPO, bloquesDe, documentoHorarios, tieneDisenoHorario, tinte } from '../../utils/horarioEscolar.js';
+import { DIAS_SEMANA } from '../../utils/fechas.js';
 import { imprimirDocumento } from '../../utils/impresion.js';
 import { nombreCompleto, nombreDeCatalogo } from '../../utils/registros.js';
 import logoIcom from '../../assets/Icom.jpg';
 import logo55 from '../../assets/55.jpg';
 import comfortaaRegular from '@fontsource/comfortaa/files/comfortaa-latin-400-normal.woff2';
 import comfortaaNegrita from '@fontsource/comfortaa/files/comfortaa-latin-700-normal.woff2';
+import '@fontsource/comfortaa/700.css';
 import '../../styles/widgets/HorarioCiclo.css';
 
 const FUENTES_COMFORTAA = ['400 11pt Comfortaa', '700 11pt Comfortaa'];
 
+const sinCero = (hora) => hora.replace(/^0/, '');
+
+function Rejilla({ hoja }) {
+  const dias = DIAS_POR_TIPO[hoja.tipo];
+  const filaDe = new Map();
+  const filas = ['34px'];
+  hoja.horas.forEach((h) => {
+    filaDe.set(h.id, filas.length + 1);
+    filas.push(h.descanso ? '30px' : 'minmax(56px, auto)');
+  });
+  const clase = hoja.horas.filter((h) => !h.descanso);
+  const filaClase = (i) => filaDe.get(clase[i].id);
+  const estilo = {
+    gridTemplateColumns: `104px repeat(${dias.length}, minmax(0, 1fr))`,
+    gridTemplateRows: filas.join(' '),
+    maxWidth: dias.length === 1 ? 480 : undefined,
+  };
+  return (
+    <div className="widget-horario-ciclo-rejilla" style={estilo}>
+      <div className="widget-horario-ciclo-cabecera widget-horario-ciclo-cabecera-hora" style={{ gridRow: 1, gridColumn: 1 }}>Hora</div>
+      {dias.map((d, i) => (
+        <div key={d} className="widget-horario-ciclo-cabecera" style={{ gridRow: 1, gridColumn: i + 2, background: COLORES_DIA[d].fondo }}>
+          {DIAS_SEMANA[d]}
+        </div>
+      ))}
+      {hoja.horas.map((h) => {
+        const fila = filaDe.get(h.id);
+        const rango = `${sinCero(h.inicio)} – ${sinCero(h.fin)}`;
+        if (h.descanso) {
+          return [
+            <div key={`${h.id}-h`} className="widget-horario-ciclo-receso-hora" style={{ gridRow: fila, gridColumn: 1 }}><strong>DESCANSO</strong>{rango}</div>,
+            <div key={`${h.id}-r`} className="widget-horario-ciclo-receso" style={{ gridRow: fila, gridColumn: `2 / ${dias.length + 2}` }} />,
+          ];
+        }
+        return [
+          <div key={`${h.id}-h`} className="widget-horario-ciclo-hora" style={{ gridRow: fila, gridColumn: 1 }}>
+            <span className="widget-horario-ciclo-hora-numero">{`${h.numero}ª HORA`}</span>
+            <span className="widget-horario-ciclo-hora-rango">{rango}</span>
+          </div>,
+          ...dias.map((d, i) => <div key={`${h.id}-${d}`} className="widget-horario-ciclo-vacia" style={{ gridRow: fila, gridColumn: i + 2 }} />),
+        ];
+      })}
+      {bloquesDe(hoja.asignaciones, hoja.horas).map((b) => {
+        const i = dias.indexOf(b.dia);
+        if (i < 0) return null;
+        const color = COLORES_DIA[b.dia];
+        const a = b.asignacion;
+        return (
+          <div
+            key={`${a.clave}-${b.dia}-${b.desde}`}
+            className="widget-horario-ciclo-bloque"
+            style={{ gridRow: `${filaClase(b.desde)} / ${filaClase(b.hasta) + 1}`, gridColumn: i + 2, background: tinte(color.fondo, 0.35), borderLeftColor: color.acento }}
+          >
+            {b.continua ? (
+              <span className="widget-horario-ciclo-bloque-continua">{`${a.clave} · (continúa)`}</span>
+            ) : (
+              <>
+                <span className="widget-horario-ciclo-bloque-materia">{a.materia}</span>
+                <span className="widget-horario-ciclo-bloque-detalle"><strong>{a.clave}</strong>{a.docente ? ` · ${a.docente}` : ''}</span>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function HorarioCiclo() {
   const { CICLOS, cicloActivoId, GRUPOS, MODALIDADES, MATERIAS, HORAS_CLASE, PERSONAL, INSCRIPCIONES, PLANTEL, CARGA } = useRegistros();
   const { setVistaActual } = useUI();
+  const { puede } = useAuth();
   const iframeRef = useRef(null);
   const [documento, setDocumento] = useState(null);
   const [impresiones, setImpresiones] = useState(0);
@@ -86,7 +158,7 @@ export default function HorarioCiclo() {
         {ciclo.iniciado
           ? <BadgeDinamico texto="Iniciado" icono="ri-play-circle-line" tono="verde" />
           : <BadgeDinamico texto="En preparación" icono="ri-time-line" tono="naranja" />}
-        {!ciclo.iniciado && !ciclo.cerrado && <BotonS variant="claro" onClick={() => setVistaActual('inicio')}>Configurar en Inicio</BotonS>}
+        {puede('inicio') && !ciclo.iniciado && !ciclo.cerrado && <BotonS variant="claro" onClick={() => setVistaActual('inicio')}>Configurar en Inicio</BotonS>}
         {imprimibles.length > 1 && (
           <BotonS variant="claro" onClick={() => imprimir(imprimibles, `Control de horarios_${ciclo.id}`)}>Imprimir todos</BotonS>
         )}
@@ -106,25 +178,19 @@ export default function HorarioCiclo() {
             </div>
             {materias.length === 0 ? (
               <p className="widget-horario-ciclo-vacio">Sin materias inscritas.</p>
+            ) : tieneDisenoHorario(tipo) ? (
+              <div className="widget-horario-ciclo-cuerpo">
+                <Rejilla hoja={hojaDe(entrada)} />
+              </div>
             ) : (
-              <table className="widget-horario-ciclo-tabla">
-                <thead>
-                  <tr><th>Materia</th><th>Docente</th><th>Horario</th></tr>
-                </thead>
-                <tbody>
-                  {materias.map((m) => {
-                    const materia = MATERIAS.find((x) => x.id === m.materia);
-                    const docente = PERSONAL.find((p) => p.id === m.docenteId);
-                    return (
-                      <tr key={m.materia}>
-                        <td>{materia ? `${materia.clave} · ${materia.nombre}` : m.materia}</td>
-                        <td>{docente ? nombreCompleto(docente) : 'Sin docente'}</td>
-                        <td>{tipo === null ? 'Online, sin horario' : (textoHorario(m.horario, HORAS_CLASE) || 'Sin horario')}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="widget-horario-ciclo-online">
+                {hojaDe(entrada).asignaciones.map((a) => (
+                  <div key={a.clave} className="widget-horario-ciclo-bloque widget-horario-ciclo-bloque-online">
+                    <span className="widget-horario-ciclo-bloque-materia">{a.materia}</span>
+                    <span className="widget-horario-ciclo-bloque-detalle"><strong>{a.clave}</strong>{a.docente ? ` · ${a.docente}` : ''}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </Card>
         );

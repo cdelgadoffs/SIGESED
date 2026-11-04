@@ -13,6 +13,7 @@ import FormularioKardex from '../components/widgets/FormularioKardex.jsx';
 import KardexEstudiante from '../components/widgets/KardexEstudiante.jsx';
 import BadgeDinamico from '../components/base/BadgeDinamico.jsx';
 import { useRegistros } from '../context/RegistrosContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR2, ANCHO_SIDEBAR3, ALTO_TOPBAR } from '../context/UIContext.jsx';
 
 export default function Kardex() {
@@ -20,6 +21,7 @@ export default function Kardex() {
     izquierdaSidebar1, sidebar5Abierto, cerrarSidebar5, sidebar5Ancho,
     sidebar3Abierto, cerrarSidebar3, abrirNuevoRegistro, registroEnEdicionId, registroSeleccionadoId, setRegistroSeleccionadoId,
   } = useUI();
+  const puedeEditar = useAuth().puede('kardex', 'editar');
   const { PLANTEL, KARDEX, ESTUDIANTES } = useRegistros();
   const matricula = ESTUDIANTES.find((e) => e.id === registroSeleccionadoId)?.matricula;
   const izquierdaSidebar2 = izquierdaSidebar1 + ANCHO_SIDEBAR1;
@@ -41,7 +43,7 @@ export default function Kardex() {
         subtitulo={`${KARDEX.length} con calificaciones`}
         accionesHeader={<FiltroEstado />}
       >
-        <ListaEstudiantesSidebar onAgregar={(id) => { setRegistroSeleccionadoId(id); abrirNuevoRegistro(); }} />
+        <ListaEstudiantesSidebar onAgregar={puedeEditar ? (id) => { setRegistroSeleccionadoId(id); abrirNuevoRegistro(); } : undefined} />
       </Sidebar2>
       <Sidebar3
         abierto={sidebar3Abierto}

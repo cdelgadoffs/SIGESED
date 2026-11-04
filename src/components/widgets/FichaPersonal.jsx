@@ -4,6 +4,7 @@ import OpcionesRegistro from './OpcionesRegistro.jsx';
 import CodigoQR from './CodigoQR.jsx';
 import EstadoConfirmado from './EstadoConfirmado.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { materiasDeDocente } from '../../utils/inscripciones.js';
 import { estiloGenero, filtrarPersonas, nombreCompleto, nombreDeCatalogo, registroActivo, segunEstado } from '../../utils/registros.js';
@@ -12,6 +13,7 @@ import '../../styles/widgets/FichaPersonal.css';
 export default function FichaPersonal() {
   const { PERSONAL, GENEROS, ROLES, GRUPOS, MATERIAS, INSCRIPCIONES, cicloActivoId, CARGA, eliminarPersonal, editarPersonal } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro, filtroEstado } = useUI();
+  const puedeEditar = useAuth().puede('matricula', 'editar');
   const persona = registroActivo(segunEstado(filtrarPersonas(PERSONAL, terminoBusqueda), filtroEstado), registroSeleccionadoId);
 
   if (!persona) {
@@ -61,12 +63,12 @@ export default function FichaPersonal() {
         <CodigoQR texto={persona.id} leyenda="Personal" nombreArchivo={`QR_${nombreCompleto(persona).replace(/\s+/g, '_')}`} />
         </div>
         <div className="widget-ficha-personal-acciones">
-          <EstadoConfirmado tamano="grande" encendido={persona.activo !== false} descripcion={`a ${nombreCompleto(persona)}`} onCambiar={(activo) => editarPersonal(persona.id, { activo })} />
-          <OpcionesRegistro
+          {puedeEditar && <EstadoConfirmado tamano="grande" encendido={persona.activo !== false} descripcion={`a ${nombreCompleto(persona)}`} onCambiar={(activo) => editarPersonal(persona.id, { activo })} />}
+          {puedeEditar && <OpcionesRegistro
             descripcion={`a ${nombreCompleto(persona)} del personal`}
             onEditar={() => abrirEdicionRegistro(persona.id)}
             onEliminar={() => eliminarPersonal(persona.id)}
-          />
+          />}
         </div>
       </Card>
     </div>

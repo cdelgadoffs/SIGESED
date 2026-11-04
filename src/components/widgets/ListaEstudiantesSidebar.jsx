@@ -1,17 +1,23 @@
 import BotonSeleccionableMenu from '../base/BotonSeleccionableMenu.jsx';
 import BotonAgregar from '../base/BotonAgregar.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import { filtrarEstudiantes, nombreCompleto, ordenarPorTexto, registroActivo, segunEstado } from '../../utils/registros.js';
 import '../../styles/widgets/ListaEstudiantesSidebar.css';
 
-export default function ListaEstudiantesSidebar({ onAgregar }) {
-  const { ESTUDIANTES, GRUPOS, CARGA } = useRegistros();
+export default function ListaEstudiantesSidebar({ onAgregar, soloDelDocente = false }) {
+  const { ESTUDIANTES, GRUPOS, INSCRIPCIONES, cicloActivoId, CARGA } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, setRegistroSeleccionadoId, filtroEstado, sidebar3Abierto } = useUI();
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   const { cargando, error } = CARGA.estudiantes;
-  const visibles = ordenarPorTexto(segunEstado(filtrarEstudiantes(ESTUDIANTES, GRUPOS, terminoBusqueda), filtroEstado), nombreCompleto);
+  const { cuentaActiva } = useAuth();
+  const gruposPropios = new Set(INSCRIPCIONES
+    .filter((i) => i.cicloId === cicloActivoId && i.materias.some((m) => m.docenteId === cuentaActiva?.usuario))
+    .map((i) => i.grupoId));
+  const disponibles = soloDelDocente ? ESTUDIANTES.filter((e) => gruposPropios.has(e.grupo)) : ESTUDIANTES;
+  const visibles = ordenarPorTexto(segunEstado(filtrarEstudiantes(disponibles, GRUPOS, terminoBusqueda), filtroEstado), nombreCompleto);
   const activo = registroActivo(visibles, registroSeleccionadoId);
 
   let mensaje = null;
