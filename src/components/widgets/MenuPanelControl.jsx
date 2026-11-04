@@ -1,16 +1,21 @@
 import BotonSeleccionablePanel from '../base/BotonSeleccionablePanel.jsx';
 import DatosPlantel from '../../pages/panelcontrol/DatosPlantel.jsx';
 import CalendarizacionAnual from '../../pages/panelcontrol/CalendarizacionAnual.jsx';
+import Respaldos from '../../pages/panelcontrol/Respaldos.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 
 const ITEMS_PANEL_CONTROL = [
   { id: 'plantel', label: 'Datos del plantel', Panel: DatosPlantel },
   { id: 'calendarizacion', label: 'Calendarización anual', Panel: CalendarizacionAnual },
+  { id: 'respaldos', label: 'Respaldos', Panel: Respaldos, rol: 'administrador-ti' },
 ];
 
 export default function MenuPanelControl() {
   const { panelControlActivo, setPanelControlActivo } = useUI();
-  const activo = ITEMS_PANEL_CONTROL.find((i) => i.id === panelControlActivo);
+  const { rolesSesion } = useAuth();
+  const items = ITEMS_PANEL_CONTROL.filter((i) => !i.rol || rolesSesion.includes(i.rol));
+  const activo = items.find((i) => i.id === panelControlActivo);
 
   if (activo) {
     const Panel = activo.Panel;
@@ -19,7 +24,7 @@ export default function MenuPanelControl() {
 
   return (
     <>
-      {ITEMS_PANEL_CONTROL.map((item) => (
+      {items.map((item) => (
         <BotonSeleccionablePanel key={item.id} onClick={() => setPanelControlActivo(item.id)}>
           {item.label}
         </BotonSeleccionablePanel>

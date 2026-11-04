@@ -208,6 +208,8 @@ Con el ciclo del curso cerrado, el curso ya no se modifica (`VALIDACION`).
 |---|---|---|
 | `iniciarSesionEntra(token)` | `Sesion` | `token`: token de acceso de Microsoft Entra ID (ámbito `api://<cliente>/acceso`). El servidor **debe** validar firma (llaves públicas del inquilino), emisor (`tid` del inquilino), audiencia (`api://<cliente>`), vigencia y que el claim `roles` incluya un rol con `asignacion: 'entra-id'` (`NO_AUTORIZADO` / `PERMISO_DENEGADO`). Devuelve `{ usuario, nombre, correo, roles, proveedor: 'entra-id' }`. `LocalAPI` solo lee los claims (no puede verificar la firma). |
 | `cerrarSesion()` | `{ cerrada: true }` | |
+| `exportarRespaldo()` | `Respaldo` | Solo **Administrador TI** (`NO_AUTORIZADO` sin sesión, `PERMISO_DENEGADO` sin el rol). `{ app: 'SIGESED', version, generadoEn, generadoPor, datos: { [almacén]: registro[] } }` con todos los datos (catálogos, plantel, personal, estudiantes, ciclos, evaluaciones, grupos, reportes, inscripciones, kárdex, cursos). |
+| `restaurarRespaldo(respaldo)` | `{ restaurado: true, generadoEn }` | Solo **Administrador TI**. Valida `app`, que `version` sea la de la base actual, que cada almacén sea una lista con su clave y sin repetidos y que haya catálogos (`VALIDACION`); reemplaza **todos** los datos de forma atómica. |
 | `listarCatalogos()` | `{ [nombre]: Elemento[] }` | |
 | `obtenerPlantel()` | `Plantel \| null` | `null` mientras no se haya configurado. |
 | `guardarPlantel(version, datos)` | `Plantel` | Si no existe lo crea (`version` = `null`); si existe lo reemplaza con los `datos` completos y exige su `version` (`CONFLICTO`). |

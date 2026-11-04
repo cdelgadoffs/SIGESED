@@ -45,3 +45,5 @@ export const quitarDeCurso = () => noImplementado();
 export const marcarAcreditado = () => noImplementado();
 export const iniciarSesionEntra = () => noImplementado();
 export const cerrarSesion = () => noImplementado();
+export const exportarRespaldo = () => noImplementado();
+export const restaurarRespaldo = () => noImplementado();
