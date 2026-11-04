@@ -1,0 +1,30 @@
+.base-textarea {
+  display: block;
+  width: 100%;
+  min-height: 90px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #fff;
+  color: #1a1a1a;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  resize: none;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.base-textarea::placeholder {
+  color: #aaa;
+}
+.base-textarea:focus {
+  outline: none;
+  border-color: #1a56db;
+  box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.15);
+}
+.base-textarea:disabled {
+  background: #f5f6f8;
+  color: #555;
+  cursor: default;
+}

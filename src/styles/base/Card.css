@@ -1,0 +1,13 @@
+.base-card {
+  border: 2px solid #c9c9ca;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.base-card-clickable {
+  cursor: pointer;
+}
+.base-card-clickable:hover {
+  border-color: #a0a0a2;
+}

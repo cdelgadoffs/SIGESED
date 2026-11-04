@@ -1,0 +1,169 @@
+.widget-formulario-inscripcion-nota {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 12.5px;
+  color: #666;
+}
+.widget-formulario-inscripcion-materia {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e3e3e3;
+  border-radius: 6px;
+  background: #fafafa;
+}
+.widget-formulario-inscripcion-materia-encabezado {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 26px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-formulario-inscripcion-fila {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.widget-formulario-inscripcion-aviso {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 12px;
+  color: #8a4b08;
+}
+.widget-formulario-inscripcion-vacio {
+  font-size: 12.5px;
+  color: #999;
+}
+.widget-formulario-inscripcion-cuadricula {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: 11.5px;
+  color: #555;
+}
+.widget-formulario-inscripcion-cuadricula th {
+  font-weight: 600;
+  color: #777;
+  text-align: center;
+}
+.widget-formulario-inscripcion-cuadricula th:first-child,
+.widget-formulario-inscripcion-cuadricula td:first-child {
+  width: 104px;
+  text-align: left;
+  white-space: nowrap;
+}
+.widget-formulario-inscripcion-hora {
+  display: inline-block;
+  width: 22px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-formulario-inscripcion-celda {
+  width: 100%;
+  height: 26px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fff;
+  color: #1a56db;
+  font-size: 10.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.widget-formulario-inscripcion-dia-1 {
+  --dia-fondo: #ffc7ce;
+  --dia-acento: #e0607a;
+  --dia-suave: #fff3f5;
+}
+.widget-formulario-inscripcion-dia-2 {
+  --dia-fondo: #f7c7ac;
+  --dia-acento: #d9804f;
+  --dia-suave: #fdf3ec;
+}
+.widget-formulario-inscripcion-dia-3 {
+  --dia-fondo: #ffeb9c;
+  --dia-acento: #d4a514;
+  --dia-suave: #fffaea;
+}
+.widget-formulario-inscripcion-dia-4 {
+  --dia-fondo: #c6efce;
+  --dia-acento: #3f9d5c;
+  --dia-suave: #f1fbf3;
+}
+.widget-formulario-inscripcion-dia-5 {
+  --dia-fondo: #caedfb;
+  --dia-acento: #2f97c9;
+  --dia-suave: #f0f9fe;
+}
+.widget-formulario-inscripcion-dia-6 {
+  --dia-fondo: #ffc7ce;
+  --dia-acento: #e0607a;
+  --dia-suave: #fff3f5;
+}
+.widget-formulario-inscripcion-celda[class*='-dia-'] {
+  border-color: var(--dia-fondo);
+  background: var(--dia-suave);
+  color: var(--dia-acento);
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.widget-formulario-inscripcion-celda[class*='-dia-']:hover:not(:disabled) {
+  border-color: var(--dia-acento);
+  background: var(--dia-fondo);
+}
+.widget-formulario-inscripcion-celda.widget-formulario-inscripcion-celda-propia {
+  border: 2px solid var(--dia-acento);
+  background: var(--dia-fondo);
+  color: var(--dia-acento);
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.widget-formulario-inscripcion-celda.widget-formulario-inscripcion-celda-propia i {
+  font-weight: 700;
+}
+.widget-formulario-inscripcion-celda[class*='-dia-']:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.widget-formulario-inscripcion-celda.widget-formulario-inscripcion-celda-ocupada:disabled {
+  opacity: 1;
+  border-color: #e3e3e3;
+  background: #efefef;
+  color: #999;
+}
+.widget-formulario-inscripcion-receso td {
+  padding: 3px 0;
+  color: #999;
+  font-style: italic;
+}
+.widget-formulario-inscripcion-receso td:last-child {
+  text-align: center;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+.widget-formulario-inscripcion-aviso-general {
+  margin: 16px 20px;
+  font-size: 13px;
+  color: #8a4b08;
+}
+.widget-formulario-inscripcion-fila > .base-campo-formulario:first-child {
+  flex: 0 0 90px;
+}
+.widget-formulario-inscripcion-fila > .base-campo-formulario:last-child {
+  flex: 1 1 0;
+}
+.widget-formulario-inscripcion-nueva {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.widget-formulario-inscripcion-nueva > :first-child {
+  flex: 1;
+  min-width: 0;
+}

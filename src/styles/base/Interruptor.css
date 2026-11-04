@@ -1,0 +1,83 @@
+.base-interruptor {
+  position: relative;
+  width: 24px;
+  height: 13px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: #d93025;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.base-interruptor-encendido {
+  background: #1e8e3e;
+}
+.base-interruptor:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.base-interruptor-perilla {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: left 0.15s;
+}
+.base-interruptor-encendido .base-interruptor-perilla {
+  left: calc(100% - 11px);
+}
+.base-interruptor-con-texto {
+  width: 60px;
+}
+.base-interruptor-texto {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 13px;
+  right: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+.base-interruptor-encendido .base-interruptor-texto {
+  left: 3px;
+  right: 13px;
+}
+.base-interruptor-grande {
+  width: 38px;
+  height: 21px;
+  border-radius: 11px;
+}
+.base-interruptor-grande .base-interruptor-perilla {
+  top: 3px;
+  left: 3px;
+  width: 15px;
+  height: 15px;
+}
+.base-interruptor-grande.base-interruptor-encendido .base-interruptor-perilla {
+  left: calc(100% - 18px);
+}
+.base-interruptor-grande.base-interruptor-con-texto {
+  width: 78px;
+}
+.base-interruptor-grande .base-interruptor-texto {
+  left: 20px;
+  right: 5px;
+  font-size: 10px;
+}
+.base-interruptor-grande.base-interruptor-encendido .base-interruptor-texto {
+  left: 5px;
+  right: 20px;
+}

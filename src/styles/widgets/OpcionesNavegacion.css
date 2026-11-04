@@ -1,0 +1,8 @@
+.widget-opciones-navegacion {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.widget-opciones-navegacion-vertical {
+  flex-direction: column;
+}

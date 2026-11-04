@@ -1,0 +1,28 @@
+.base-boton-s {
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.base-boton-s:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.base-boton-s-oscuro {
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  color: #ccc;
+}
+.base-boton-s-oscuro:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+.base-boton-s-claro {
+  background: #fff;
+  border: 1px solid #ccc;
+  color: #333;
+}
+.base-boton-s-claro:hover:not(:disabled) {
+  background: #f2f2f2;
+}

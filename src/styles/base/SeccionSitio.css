@@ -1,0 +1,55 @@
+@import '@fontsource/comfortaa/700.css';
+
+.base-seccion-sitio {
+  padding: 64px 48px;
+  box-sizing: border-box;
+}
+.base-seccion-sitio-claro {
+  background: #f6f8fb;
+}
+.base-seccion-sitio-blanco {
+  background: #ffffff;
+}
+.base-seccion-sitio-interior {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.base-seccion-sitio-encabezado {
+  margin-bottom: 32px;
+  text-align: center;
+}
+.base-seccion-sitio-encabezado h2 {
+  margin: 0;
+  font-family: 'Comfortaa', 'DM Sans', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d3557;
+}
+.base-seccion-sitio-encabezado p {
+  margin: 12px auto 0;
+  max-width: 640px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #5b6a80;
+}
+.base-seccion-sitio-rejilla {
+  display: grid;
+  grid-template-columns: repeat(var(--columnas), minmax(0, 1fr));
+  gap: 20px;
+}
+@media (max-width: 980px) {
+  .base-seccion-sitio-rejilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .base-seccion-sitio {
+    padding: 44px 16px;
+  }
+  .base-seccion-sitio-encabezado h2 {
+    font-size: 23px;
+  }
+  .base-seccion-sitio-rejilla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

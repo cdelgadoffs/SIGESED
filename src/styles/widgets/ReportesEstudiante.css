@@ -1,0 +1,83 @@
+.widget-reportes-estudiante {
+  align-self: flex-start;
+  width: 100%;
+  max-width: 900px;
+  padding: 24px 32px;
+  box-sizing: border-box;
+}
+.widget-reportes-estudiante-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.widget-reportes-estudiante-nombre {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-reportes-estudiante-subtitulo {
+  margin: 6px 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.widget-reportes-estudiante-vacio,
+.widget-reportes-estudiante-mensaje {
+  margin: 0;
+  font-size: 13.5px;
+  color: #888;
+}
+.widget-reportes-estudiante-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.widget-reportes-estudiante-reporte {
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-left: 3px solid #f0a14a;
+  border-radius: 4px;
+  background: #fafafa;
+}
+.widget-reportes-estudiante-reporte-cabeza {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.widget-reportes-estudiante-fecha {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #333;
+}
+.widget-reportes-estudiante-fecha::first-letter {
+  text-transform: uppercase;
+}
+.widget-reportes-estudiante-tipo {
+  margin-left: auto;
+}
+.widget-reportes-estudiante-ciclo {
+  font-size: 11.5px;
+  color: #888;
+}
+.widget-reportes-estudiante-descripcion,
+.widget-reportes-estudiante-acciones {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #1a1a1a;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.widget-reportes-estudiante-acciones {
+  color: #555;
+}

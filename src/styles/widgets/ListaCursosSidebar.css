@@ -1,0 +1,45 @@
+.widget-lista-cursos-sidebar-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+}
+.widget-lista-cursos-sidebar {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.widget-lista-cursos-sidebar::-webkit-scrollbar {
+  display: none;
+}
+.widget-lista-cursos-sidebar-mensaje {
+  margin: 8px 16px;
+  font-size: 12.5px;
+  color: #999;
+}
+.widget-lista-cursos-sidebar-ciclo {
+  margin: 10px 16px 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #888;
+}
+.widget-lista-cursos-sidebar .base-boton-seleccionable-menu > span:nth-child(2) {
+  min-width: 0;
+}
+.widget-lista-cursos-sidebar-nombre {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.widget-lista-cursos-sidebar-thumb {
+  position: absolute;
+  right: 0;
+  width: 4px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}

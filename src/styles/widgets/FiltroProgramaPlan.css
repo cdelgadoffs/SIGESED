@@ -1,0 +1,16 @@
+.widget-filtro-programa-plan {
+  max-width: 100%;
+}
+.widget-filtro-programa-plan .base-lista-expandible-toggle {
+  max-width: 100%;
+  height: 28px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 0 8px;
+  background: #fff;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,0 +1,31 @@
+.widget-codigo-qr {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+.widget-codigo-qr img,
+.widget-codigo-qr-vacio {
+  width: 120px;
+  height: 120px;
+  border: 1px solid #e3e8f0;
+  border-radius: 6px;
+  background: #fff;
+}
+.widget-codigo-qr figcaption {
+  font-size: 11px;
+  color: #6b7a90;
+}
+.widget-codigo-qr-descargar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #1a56db;
+  text-decoration: none;
+}
+.widget-codigo-qr-descargar:hover {
+  text-decoration: underline;
+}

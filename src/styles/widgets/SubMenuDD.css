@@ -1,0 +1,17 @@
+.widget-submenu-dd {
+  padding-left: 20px;
+  border-left: 2px solid #cecdcd;
+  margin: 2px 0 6px 16px;
+}
+.widget-submenu-dd .base-boton-seleccionable-menu:hover .base-boton-agregar {
+  width: 18px;
+  margin-left: 4px;
+  opacity: 1;
+}
+@media (hover: none) {
+  .widget-submenu-dd .base-boton-agregar {
+    width: 18px;
+    margin-left: 4px;
+    opacity: 1;
+  }
+}

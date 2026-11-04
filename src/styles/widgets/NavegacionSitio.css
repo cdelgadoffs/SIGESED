@@ -1,0 +1,19 @@
+.widget-navegacion-sitio-acceso .base-boton-s {
+  padding: 6px 14px;
+  border: 1px solid #c9d3e1;
+  border-radius: 6px;
+  background: transparent;
+  color: #3b4a60;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.widget-navegacion-sitio-acceso .base-boton-s:hover:not(:disabled) {
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+}
+.widget-navegacion-sitio-acceso .base-boton-s:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
