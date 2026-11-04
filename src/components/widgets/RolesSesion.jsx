@@ -5,22 +5,32 @@ import '../../styles/widgets/RolesSesion.css';
 
 export default function RolesSesion() {
   const { ROLES } = useRegistros();
-  const { rolActivo, alternarRol } = useAuth();
-  if (ROLES.length === 0) return null;
+  const { cuentaActiva, rolActivo, alternarRol, rolesSesion } = useAuth();
+  const propios = ROLES.filter((r) => rolesSesion.includes(r.id));
+  if (!cuentaActiva) return null;
   return (
-    <div className="widget-roles-sesion">
-      {ROLES.map((rol) => {
-        const activo = rolActivo(rol.id);
-        return (
-          <BadgeDinamico
-            key={rol.id}
-            texto={rol.nombre}
-            tono={activo ? 'verde' : 'gris'}
-            title={activo ? `${rol.nombre}: activo (clic para desactivar)` : `${rol.nombre}: inactivo (clic para activar)`}
-            onClick={() => alternarRol(rol.id)}
-          />
-        );
-      })}
-    </div>
+    <>
+      {cuentaActiva.correo && (
+        <div className="widget-roles-sesion-correo" title={cuentaActiva.correo}>
+          <i className="ri-mail-line" /> {cuentaActiva.correo}
+        </div>
+      )}
+      {propios.length > 0 && (
+        <div className="widget-roles-sesion">
+          {propios.map((rol) => {
+            const activo = rolActivo(rol.id);
+            return (
+              <BadgeDinamico
+                key={rol.id}
+                texto={rol.nombre}
+                tono={activo ? 'verde' : 'gris'}
+                title={activo ? `${rol.nombre}: activo (clic para desactivar)` : `${rol.nombre}: inactivo (clic para activar)`}
+                onClick={() => alternarRol(rol.id)}
+              />
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }

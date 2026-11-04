@@ -1,0 +1,66 @@
+.base-tarjeta-sitio {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border: 1px solid #e3e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(20, 40, 80, 0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.base-tarjeta-sitio:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(20, 40, 80, 0.09);
+}
+.base-tarjeta-sitio-cabeza {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.base-tarjeta-sitio-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #e8f0fe;
+  color: #1d4ed8;
+  font-size: 22px;
+}
+.base-tarjeta-sitio-numero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #1d3557;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+.base-tarjeta-sitio-detalle {
+  margin-left: auto;
+  font-size: 12px;
+  color: #6b7a90;
+}
+.base-tarjeta-sitio h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1b2433;
+}
+.base-tarjeta-sitio p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #5b6a80;
+}
+.base-tarjeta-sitio-extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}

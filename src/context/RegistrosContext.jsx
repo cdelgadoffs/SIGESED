@@ -14,10 +14,11 @@ const RECURSOS = {
   inscripciones: { listar: api.listarInscripciones },
   calificacionesKardex: { listar: api.listarCalificacionesKardex, crear: api.crearCalificacionKardex, editar: api.editarCalificacionKardex, eliminar: api.eliminarCalificacionKardex },
   kardex: { listar: api.listarKardex },
+  cursos: { listar: api.listarCursos, crear: api.crearCurso, editar: api.editarCurso, eliminar: api.eliminarCurso },
 };
 const AFECTAN_CICLOS = ['grupos', 'personal'];
 const CLAVES = Object.keys(RECURSOS);
-const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [], reportes: [], inscripciones: [], calificacionesKardex: [], kardex: [] };
+const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [], reportes: [], inscripciones: [], calificacionesKardex: [], kardex: [], cursos: [] };
 
 const RegistrosContext = createContext(null);
 
@@ -69,6 +70,8 @@ export function RegistrosProvider({ children }) {
   function recargarCiclosSi(recurso) {
     if (AFECTAN_CICLOS.includes(recurso)) recargar('ciclos');
     if (recurso === 'calificacionesKardex') { recargar('kardex'); recargar('evaluaciones'); }
+    if (['calificacionesKardex', 'estudiantes'].includes(recurso)) recargar('cursos');
+    if (recurso === 'cursos') { recargar('kardex'); recargar('evaluaciones'); }
   }
 
   async function crear(recurso, valores) {
@@ -127,6 +130,7 @@ export function RegistrosProvider({ children }) {
   async function iniciarCiclo(id) {
     const ciclo = await actualizarCiclo(id, (version) => api.iniciarCiclo(id, version));
     recargar('kardex');
+    recargar('cursos');
     return ciclo;
   }
 
@@ -167,9 +171,26 @@ export function RegistrosProvider({ children }) {
       fijar('evaluaciones', valor);
       guardarCache('evaluaciones', valor).catch(() => {});
       recargar('kardex');
+      recargar('cursos');
       return evaluacion;
     } catch (e) {
       if (e?.codigo === 'CONFLICTO' || e?.codigo === 'NO_ENCONTRADO') recargar('evaluaciones');
+      throw e;
+    }
+  }
+
+  async function operarCurso(id, operacion) {
+    const actual = datosRef.current.cursos.find((c) => c.id === id);
+    try {
+      const [curso] = conSincronizacion('cursos', [await operacion(actual?.version)]);
+      const valor = datosRef.current.cursos.map((c) => (c.id === curso.id ? curso : c));
+      fijar('cursos', valor);
+      guardarCache('cursos', valor).catch(() => {});
+      recargar('kardex');
+      recargar('evaluaciones');
+      return curso;
+    } catch (e) {
+      if (e?.codigo === 'CONFLICTO' || e?.codigo === 'NO_ENCONTRADO') recargar('cursos');
       throw e;
     }
   }
@@ -210,6 +231,13 @@ export function RegistrosProvider({ children }) {
     INSCRIPCIONES: datos.inscripciones,
     CALIFICACIONES_KARDEX: datos.calificacionesKardex,
     KARDEX: datos.kardex,
+    CURSOS: datos.cursos,
+    crearCurso: (v) => crear('cursos', v),
+    editarCurso: (id, c) => editar('cursos', id, c),
+    eliminarCurso: (id) => eliminar('cursos', id),
+    inscribirEnCurso: (id, estudianteId) => operarCurso(id, (v) => api.inscribirEnCurso(id, v, estudianteId)),
+    quitarDeCurso: (id, estudianteId) => operarCurso(id, (v) => api.quitarDeCurso(id, v, estudianteId)),
+    marcarAcreditado: (id, estudianteId, acreditado) => operarCurso(id, (v) => api.marcarAcreditado(id, v, estudianteId, acreditado)),
     crearCalificacionKardex: (v) => crear('calificacionesKardex', v),
     editarCalificacionKardex: (id, c) => editar('calificacionesKardex', id, c),
     eliminarCalificacionKardex: (id) => eliminar('calificacionesKardex', id),

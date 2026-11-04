@@ -1,0 +1,33 @@
+.base-pagina-sitio {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: #f6f8fb;
+  color: #1b2433;
+}
+.base-pagina-sitio-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.base-pagina-sitio-scroll::-webkit-scrollbar {
+  display: none;
+}
+.base-pagina-sitio-contenido {
+  flex: 1 0 auto;
+}
+.base-pagina-sitio-thumb {
+  position: absolute;
+  right: 0;
+  width: 4px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}

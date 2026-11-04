@@ -180,12 +180,34 @@ Historial académico capturado a mano (decisión del usuario: traslada los datos
 | `promedioGeneral` | number \| null | Suma ÷ número de materias (NP cuenta 0; sin redondear); `null` sin materias. |
 | `totalMaterias` | number | |
 
-Nunca se guarda: lo calcula el servidor con las calificaciones de kárdex y las evaluaciones.
+Nunca se guarda: lo calcula el servidor con las calificaciones de kárdex, las evaluaciones y los cursos extracurriculares.
+
+**Recuperación por curso extracurricular:** si el estudiante quedó **acreditado** como alumno obligatorio en un curso con `materia`, la fila de esa materia (si está reprobada o en NP) suma 2 puntos (NP parte de 5; máximo 10), lleva `observaciones: 'RECUPERADA'` y `recuperadaEn` (id del curso). Con eso la materia cuenta como acreditada (`MATERIA_ACREDITADA` en capturas y evaluaciones posteriores).
+
+### Curso extracurricular
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | string | Servidor. |
+| `nombre` | string | Obligatorio, máx. 120, único en el ciclo (sin distinguir mayúsculas ni espacios). |
+| `docenteId` | string | Persona activa con rol Docente. |
+| `materia` | string \| null | Materia que recupera; `null` = curso voluntario. |
+| `horaInicio` | string | `HH:MM`, por omisión `10:00`; dura **3 horas** y termina el mismo día. |
+| `cicloId` | string | Lo asigna el servidor: el ciclo **en curso e iniciado** (si no hay, `VALIDACION`). Se imparte en la semana 8 (Cierre de ciclo). |
+| `voluntarios` | string[] | Estudiantes inscritos a mano (activos, que no sean obligatorios). |
+| `acreditados` | string[] | Inscritos (obligatorios o voluntarios) que acreditaron. |
+| `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | Servidor. |
+| `obligatorios` | string[] | **Derivado:** estudiantes activos cuyo kárdex (sin contar este curso) tiene `materia` reprobada (5 o 6) o en NP. |
+| `semana` | `{ inicio, fin }` \| null | **Derivado:** la semana 8 del ciclo. |
+| `horaFin` | string | **Derivado:** `horaInicio` + 3 h. |
+
+Con el ciclo del curso cerrado, el curso ya no se modifica (`VALIDACION`).
 
 ## Operaciones
 
 | Operación | Devuelve | Notas |
 |---|---|---|
+| `iniciarSesionEntra(token)` | `Sesion` | `token`: token de acceso de Microsoft Entra ID (ámbito `api://<cliente>/acceso`). El servidor **debe** validar firma (llaves públicas del inquilino), emisor (`tid` del inquilino), audiencia (`api://<cliente>`), vigencia y que el claim `roles` incluya un rol con `asignacion: 'entra-id'` (`NO_AUTORIZADO` / `PERMISO_DENEGADO`). Devuelve `{ usuario, nombre, correo, roles, proveedor: 'entra-id' }`. `LocalAPI` solo lee los claims (no puede verificar la firma). |
+| `cerrarSesion()` | `{ cerrada: true }` | |
 | `listarCatalogos()` | `{ [nombre]: Elemento[] }` | |
 | `obtenerPlantel()` | `Plantel \| null` | `null` mientras no se haya configurado. |
 | `guardarPlantel(version, datos)` | `Plantel` | Si no existe lo crea (`version` = `null`); si existe lo reemplaza con los `datos` completos y exige su `version` (`CONFLICTO`). |
@@ -197,11 +219,11 @@ Nunca se guarda: lo calcula el servidor con las calificaciones de kárdex y las 
 | `listarPersonal()` | `Personal[]` | Ordenados por apellidos y nombre. |
 | `crearPersonal(datos)` | `Personal` | `PLANTEL_NO_CONFIGURADO` si aún no hay plantel. |
 | `editarPersonal(id, version, cambios)` | `Personal` | Solo los campos enviados. Valida `roles` igual que al crear (sin contarse a sí misma). |
-| `eliminarPersonal(id)` | `{ id }` | `EN_USO` si es docente de alguna materia inscrita. |
+| `eliminarPersonal(id)` | `{ id }` | `EN_USO` si es docente de alguna materia inscrita o imparte cursos extracurriculares. |
 | `listarEstudiantes()` | `Estudiante[]` | Ordenados por apellidos y nombre. |
 | `crearEstudiante(datos)` | `Estudiante` | Asigna `matricula`. `PLANTEL_NO_CONFIGURADO` si aún no hay plantel. |
 | `editarEstudiante(id, version, cambios)` | `Estudiante` | `matricula` no se puede enviar (`VALIDACION`). |
-| `eliminarEstudiante(id)` | `{ id }` | `CON_EVALUACIONES` si tiene evaluaciones o calificaciones de kárdex registradas. |
+| `eliminarEstudiante(id)` | `{ id }` | `CON_EVALUACIONES` si tiene evaluaciones o calificaciones de kárdex registradas, o está inscrito como voluntario o acreditó cursos extracurriculares. |
 | `listarCiclos()` | `Ciclo[]` | Ordenados por año y número, con sus derivados. |
 | `crearCiclosAnuales(anio)` | `Ciclo[]` | Crea los 6 ciclos de `anio` (entero, 2000–2100; si no, `VALIDACION`). Idempotente: solo crea los que falten. Devuelve **todos** los ciclos. |
 | `configurarCiclo(id, version, datos)` | `Ciclo` | `datos`: `{ fechaInicio, diaInicioSemana, vacaciones, asuetos }` completos. Valida fechas, que `fechaInicio` caiga en `diaInicioSemana`, que cada vacación empiece al inicio de una semana del ciclo, que los asuetos estén dentro del ciclo y que no se encime con otro ciclo (`VALIDACION`). Exige `version` (`CONFLICTO`). Un ciclo `cerrado` no se puede configurar, y no se puede configurar uno nuevo mientras haya un ciclo configurado anterior sin cerrar (`VALIDACION`). |
@@ -214,6 +236,13 @@ Nunca se guarda: lo calcula el servidor con las calificaciones de kárdex y las 
 | `editarCalificacionKardex(id, version, cambios)` | `CalificacionKardex` | `cambios`: `{ materia, calificacion, observaciones }`. |
 | `eliminarCalificacionKardex(id)` | `{ id }` | |
 | `listarKardex()` | `Kardex[]` | Uno por estudiante con calificaciones. |
+| `listarCursos()` | `Curso[]` | Del ciclo más reciente al más antiguo y por nombre, con sus derivados. |
+| `crearCurso(datos)` | `Curso` | `datos`: `{ nombre, docenteId, materia, horaInicio }`. |
+| `editarCurso(id, version, cambios)` | `Curso` | Mismos campos. Quita de `acreditados` a quien deje de estar inscrito. |
+| `eliminarCurso(id)` | `{ id }` | `EN_USO` si ya tiene acreditados. |
+| `inscribirEnCurso(id, version, estudianteId)` | `Curso` | Agrega un voluntario. `VALIDACION` si está inactivo o ya inscrito. |
+| `quitarDeCurso(id, version, estudianteId)` | `Curso` | Solo voluntarios (`VALIDACION`). |
+| `marcarAcreditado(id, version, estudianteId, acreditado)` | `Curso` | `acreditado` booleano; el estudiante debe estar inscrito. |
 | `listarReportes()` | `Reporte[]` | Del más reciente al más antiguo (`fecha`, luego `creadoEn`). |
 | `crearReporte(datos)` | `Reporte` | `datos`: `{ estudianteId, fecha, tipo, descripcion, acciones }`. `NO_ENCONTRADO` si el estudiante no existe; `VALIDACION` si está inactivo. |
 | `listarEvaluaciones()` | `Evaluacion[]` | Con `promedio`. |
@@ -237,6 +266,12 @@ Al editar se valida el registro completo resultante.
 | `NO_AUTORIZADO` | El rol no permite escribir. |
 | `NO_DISPONIBLE` | El almacenamiento no está disponible (en `LocalAPI`: otra pestaña con una versión anterior). |
 | `NO_IMPLEMENTADO` | `ServerConnection` mientras no haya backend. |
+
+## Seguridad (obligatorio para el backend)
+
+- Cada operación valida la sesión y el rol en el servidor; la interfaz solo oculta lo que el usuario no puede hacer. Sin sesión válida: `NO_AUTORIZADO`; sin permiso: `PERMISO_DENEGADO`. Nunca se envían datos que el usuario no puede ver.
+- Consultas a la base siempre parametrizadas (nunca SQL armado con texto).
+- Sitio público (etapa 2): leer el contenido es público; editarlo solo **Administrador TI**. Bloques de tipos cerrados, texto con formato limitado (nunca HTML), longitudes máximas, enlaces solo `https://`, imágenes con tipo y tamaño validados.
 
 ## Pendiente (próximas versiones del contrato)
 

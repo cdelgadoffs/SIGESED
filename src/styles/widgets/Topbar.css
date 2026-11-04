@@ -42,3 +42,15 @@
   display: block;
   mix-blend-mode: lighten;
 }
+
+.widget-topbar-cuenta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 200px;
+  font-size: 13px;
+  color: #ddd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

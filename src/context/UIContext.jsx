@@ -1,4 +1,13 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { PAGINAS_SITIO, esVistaPublica, vistaDeRuta } from '../utils/sitio.js';
+
+const RUTA_SISTEMA = '/sistema';
+
+function vistaDeUbicacion() {
+  const ruta = window.location.pathname;
+  if (ruta === RUTA_SISTEMA) return 'inicio';
+  return vistaDeRuta(ruta) ?? 'publico:inicio';
+}
 
 export const ANCHO_SIDEBAR1 = 270;
 export const ANCHO_SIDEBAR2 = 250;
@@ -18,7 +27,7 @@ export function UIProvider({ children }) {
   const [sidebar2Amplio, setSidebar2Amplio] = useState(false);
   const [panelControlActivo, setPanelControlActivo] = useState(null);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
-  const [vistaActual, setVistaActualEstado] = useState('inicio');
+  const [vistaActual, setVistaActualEstado] = useState(vistaDeUbicacion);
   const [registroEnEdicionId, setRegistroEnEdicionId] = useState(null);
   const [registroSeleccionadoId, setRegistroSeleccionadoId] = useState(null);
   const [registrosAbierto, setRegistrosAbierto] = useState(false);
@@ -53,7 +62,15 @@ export function UIProvider({ children }) {
     setSidebar3Abierto(false);
     setRegistroEnEdicionId(null);
   }
+  useEffect(() => {
+    const alVolver = () => setVistaActualEstado(vistaDeUbicacion());
+    window.addEventListener('popstate', alVolver);
+    return () => window.removeEventListener('popstate', alVolver);
+  }, []);
+
   function setVistaActual(vista) {
+    const ruta = esVistaPublica(vista) ? PAGINAS_SITIO[vista].ruta : RUTA_SISTEMA;
+    if (window.location.pathname !== ruta) window.history.pushState(null, '', ruta);
     setVistaActualEstado(vista);
     cerrarSidebar3();
     setRegistroSeleccionadoId(null);

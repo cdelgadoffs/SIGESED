@@ -3,6 +3,8 @@ const implementacion = import.meta.env.VITE_API_MODE === 'real'
   : await import('./LocalAPI/index.js');
 
 export const {
+  iniciarSesionEntra,
+  cerrarSesion,
   listarCatalogos,
   crearMateria,
   obtenerPlantel,
@@ -35,4 +37,11 @@ export const {
   crearReporte,
   listarEvaluaciones,
   guardarEvaluacion,
+  listarCursos,
+  crearCurso,
+  editarCurso,
+  eliminarCurso,
+  inscribirEnCurso,
+  quitarDeCurso,
+  marcarAcreditado,
 } = implementacion;

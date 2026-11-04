@@ -1,0 +1,133 @@
+.widget-ficha-curso {
+  align-self: flex-start;
+  width: 100%;
+  padding: 24px 32px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.widget-ficha-curso-mensaje {
+  margin: 0;
+  font-size: 13.5px;
+  color: #888;
+}
+.widget-ficha-curso-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f3f3f3;
+  border-bottom: 1px solid #e0e0e0;
+}
+.widget-ficha-curso-nombre {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  overflow-wrap: anywhere;
+}
+.widget-ficha-curso-datos {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 16px;
+  font-size: 13px;
+}
+.widget-ficha-curso-datos dt {
+  font-size: 11px;
+  font-weight: 600;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  align-self: center;
+}
+.widget-ficha-curso-datos dd {
+  margin: 0;
+  color: #1a1a1a;
+}
+.widget-ficha-curso-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid #e0e0e0;
+}
+.widget-ficha-curso-alumnos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.widget-ficha-curso-alumnos-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.widget-ficha-curso-alumnos-encabezado h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-ficha-curso-conteo {
+  flex: 1;
+  font-size: 12px;
+  color: #777;
+}
+.widget-ficha-curso-agregar .base-lista-expandible-toggle {
+  height: 30px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 0 10px;
+  background: #fff;
+  font-size: 12.5px;
+}
+.widget-ficha-curso-error {
+  margin: 0;
+  font-size: 12.5px;
+  color: #b42318;
+}
+.widget-ficha-curso-alumno {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px 96px 28px 28px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  background: #fff;
+}
+.widget-ficha-curso-alumno-acreditado {
+  border-color: #b7e1c3;
+  background: #f3fbf5;
+}
+.widget-ficha-curso-alumno-datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.widget-ficha-curso-alumno-nombre {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.widget-ficha-curso-alumno-detalle {
+  font-size: 11.5px;
+  color: #777;
+}
+.widget-ficha-curso-impresion {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 0;
+  visibility: hidden;
+}

@@ -1,0 +1,36 @@
+.widget-bloques-sitio-accion .base-boton-s,
+.widget-bloques-sitio-accion button {
+  padding: 11px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 8px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 15px;
+  cursor: pointer;
+}
+.widget-bloques-sitio-accion-principal .base-boton-s,
+.widget-bloques-sitio-accion-principal button {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #1d3557;
+  font-weight: 600;
+}
+.widget-bloques-sitio-enlace,
+.widget-bloques-sitio-celda {
+  display: flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+}
+.widget-bloques-sitio-enlace {
+  cursor: pointer;
+}
+.widget-bloques-sitio-enlace > .base-tarjeta-sitio,
+.widget-bloques-sitio-celda > .base-tarjeta-sitio {
+  flex: 1;
+}
+.widget-bloques-sitio-enlace:hover h3 {
+  color: #1d4ed8;
+}

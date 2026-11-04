@@ -32,7 +32,7 @@ export default function Topbar({ opcionesConfiguracion = [], onSeleccionarConfig
     setFiltroEstado(sugerencia.activo ? 'activos' : 'inactivos');
     setTerminoBusqueda('');
   }
-  const { cerrarSesion } = useAuth();
+  const { cerrarSesion, cuentaActiva } = useAuth();
   const { brilloPantalla, cambiarAjuste } = useAjustesVisuales();
   const opcionesBrillo = NIVELES_BRILLO.map((nivel) => ({
     id: `${PREFIJO_BRILLO}${nivel}`,
@@ -61,7 +61,8 @@ export default function Topbar({ opcionesConfiguracion = [], onSeleccionarConfig
           onElegir={abrirEstudiante}
         />
         <FechaDia />
-        <BotonS onClick={cerrarSesion}>Salir</BotonS>
+        {cuentaActiva && <span className="widget-topbar-cuenta" title={cuentaActiva.correo}><i className="ri-user-line" /> {cuentaActiva.nombre}</span>}
+        <BotonS onClick={async () => { await cerrarSesion(); setVistaActual('publico:inicio'); }}>Salir</BotonS>
         <BotonExpandible
           icono="ri-settings-3-line"
           ariaLabel="Configuración visual"

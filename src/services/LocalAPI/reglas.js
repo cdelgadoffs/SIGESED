@@ -57,8 +57,43 @@ function falla(mensaje) {
   return new ApiError('VALIDACION', mensaje);
 }
 
+let sesion = null;
+
 export function usuarioActual() {
-  return USUARIO;
+  return sesion ? { id: sesion.usuario, nombre: sesion.nombre, rol: USUARIO.rol } : USUARIO;
+}
+
+export function fijarSesion(valor) {
+  sesion = valor;
+}
+
+function leerToken(token) {
+  try {
+    const parte = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const bytes = Uint8Array.from(atob(parte.padEnd(Math.ceil(parte.length / 4) * 4, '=')), (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null;
+  }
+}
+
+export function sesionDeTokenEntra(token, { inquilino, cliente }, rolesCatalogo) {
+  const datos = typeof token === 'string' ? leerToken(token) : null;
+  if (!datos) throw new ApiError('NO_AUTORIZADO', 'El token de Microsoft no es válido.');
+  if (datos.tid !== inquilino) throw new ApiError('NO_AUTORIZADO', 'La cuenta no pertenece al directorio de la institución.');
+  const audiencias = [cliente, `api://${cliente}`];
+  if (!audiencias.includes(datos.aud)) throw new ApiError('NO_AUTORIZADO', 'El token no fue emitido para SIGESED.');
+  if (!datos.exp || datos.exp * 1000 < Date.now()) throw new ApiError('NO_AUTORIZADO', 'La sesión de Microsoft expiró. Vuelve a iniciar sesión.');
+  const deEntra = new Set(rolesCatalogo.filter((r) => r.asignacion === 'entra-id').map((r) => r.id));
+  const roles = (datos.roles ?? []).filter((r) => deEntra.has(r));
+  if (roles.length === 0) throw new ApiError('PERMISO_DENEGADO', 'Tu cuenta de Microsoft no tiene el rol Administrador TI en SIGESED.');
+  return {
+    usuario: datos.oid ?? datos.sub,
+    nombre: datos.name ?? '',
+    correo: (datos.email ?? datos.preferred_username ?? datos.upn ?? datos.unique_name ?? '').replace(/^[^#]*#/, ''),
+    roles,
+    proveedor: 'entra-id',
+  };
 }
 
 export function exigirEscritura() {
@@ -521,9 +556,9 @@ export function prepararCalificacionKardex(datos, permitidas) {
 
 export const CALIFICACION_APROBATORIA = 7;
 
-export function materiasAcreditadas(estudianteId, registros, evaluaciones, ciclos, { excluirCicloId = null, excluirRegistroId = null } = {}) {
+export function materiasAcreditadas(estudianteId, registros, evaluaciones, ciclos, { excluirCicloId = null, excluirRegistroId = null, recuperadas = [] } = {}) {
   const iniciados = new Set(ciclos.filter((c) => c.iniciado).map((c) => c.id));
-  const acreditadas = new Set();
+  const acreditadas = new Set(recuperadas);
   registros.filter((r) => r.estudianteId === estudianteId && r.id !== excluirRegistroId && r.calificacion >= CALIFICACION_APROBATORIA)
     .forEach((r) => acreditadas.add(r.materia));
   evaluaciones.filter((e) => e.estudianteId === estudianteId && e.cicloId !== excluirCicloId && iniciados.has(e.cicloId))
@@ -544,7 +579,7 @@ export function validarMateriaKardexUnica(registros, estudianteId, materia, nomb
   }
 }
 
-export function armarKardex(estudianteId, registros, evaluaciones, ciclos, materias, inscritasDe) {
+export function armarKardex(estudianteId, registros, evaluaciones, ciclos, materias, inscritasDe, recuperaciones = new Map()) {
   const iniciados = new Set(ciclos.filter((c) => c.iniciado).map((c) => c.id));
   const propias = evaluaciones.filter((e) => e.estudianteId === estudianteId && iniciados.has(e.cicloId))
     .sort((a, b) => a.cicloId.localeCompare(b.cicloId));
@@ -568,6 +603,16 @@ export function armarKardex(estudianteId, registros, evaluaciones, ciclos, mater
   filas.forEach((f) => {
     const previa = porMateria.get(f.materia);
     if (!previa || f.calificacion !== null || previa.calificacion === null) porMateria.set(f.materia, f);
+  });
+  recuperaciones.forEach((cursoId, materia) => {
+    const fila = porMateria.get(materia);
+    if (!fila || (fila.calificacion !== null && fila.calificacion >= CALIFICACION_APROBATORIA)) return;
+    porMateria.set(materia, {
+      ...fila,
+      calificacion: Math.min(CALIFICACION_MAXIMA, (fila.calificacion ?? CALIFICACION_MINIMA) + PUNTOS_RECUPERACION),
+      observaciones: OBSERVACION_RECUPERADA,
+      recuperadaEn: cursoId,
+    });
   });
   const orden = new Map(materias.map((m, i) => [m.id, i]));
   const cuatrimestreDe = new Map(materias.map((m) => [m.id, m.cuatrimestre]));
@@ -614,4 +659,66 @@ export function prepararMateriaManual(datos, programas, materias) {
     id: clave.toLowerCase(), clave, nombre, programaEducativo: programa.id, cuatrimestre, manual: true,
     objetivo: '', temas: [], actividadesDocente: [], actividadesIndependiente: [], evaluacion: [],
   };
+}
+
+const PUNTOS_RECUPERACION = 2;
+const OBSERVACION_RECUPERADA = 'RECUPERADA';
+export const HORAS_CURSO = 3;
+const SEMANA_CURSO = 8;
+const RE_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export function filaReprobada(kardex, materia) {
+  const fila = kardex?.cuatrimestres.flatMap((c) => c.materias).find((m) => m.materia === materia);
+  return !!fila && (fila.calificacion === null || fila.calificacion < CALIFICACION_APROBATORIA);
+}
+
+export function recuperacionesDe(estudianteId, cursos) {
+  const mapa = new Map();
+  cursos.filter((c) => c.materia && c.acreditados.includes(estudianteId) && !c.voluntarios.includes(estudianteId))
+    .forEach((c) => mapa.set(c.materia, c.id));
+  return mapa;
+}
+
+export function cicloParaCurso(ciclos) {
+  const ciclo = ciclos.find((c) => c.estado === 'en-curso' && c.iniciado && !c.cerrado);
+  if (!ciclo) throw falla('No hay un ciclo escolar en curso e iniciado: los cursos extracurriculares pertenecen al ciclo en curso.');
+  return ciclo;
+}
+
+export function exigirCursoModificable(ciclo) {
+  if (!ciclo || ciclo.cerrado) throw falla('El ciclo escolar del curso ya se concluyó: el curso no se puede modificar.');
+}
+
+export function prepararCurso(datos, { materias, personal, otros, cicloId }) {
+  if (!datos || typeof datos !== 'object') throw falla('Faltan los datos del curso.');
+  const nombre = typeof datos.nombre === 'string' ? datos.nombre.trim().replace(/\s+/g, ' ') : '';
+  if (!nombre) throw falla('Escribe el nombre del curso.');
+  if (nombre.length > 120) throw falla('El nombre del curso admite máximo 120 caracteres.');
+  if (otros.some((c) => c.cicloId === cicloId && claveNombre(c.nombre) === claveNombre(nombre))) {
+    throw falla(`Ya existe el curso «${nombre}» en el ciclo ${cicloId}.`);
+  }
+  const docente = personal.find((p) => p.id === datos.docenteId);
+  if (!docente) throw falla('Elige al docente que imparte el curso.');
+  if (!puedeImpartir(docente)) throw falla(`${nombrePersona(docente)} no está activo o no tiene el rol Docente.`);
+  const materia = datos.materia || null;
+  if (materia && !materias.some((m) => m.id === materia)) throw falla('La materia no existe en el plan de estudios.');
+  const horaInicio = datos.horaInicio ?? '10:00';
+  if (typeof horaInicio !== 'string' || !RE_HORA.test(horaInicio)) throw falla('La hora de inicio debe tener el formato HH:MM.');
+  if (Number(horaInicio.slice(0, 2)) + HORAS_CURSO > 24) throw falla(`El curso dura ${HORAS_CURSO} horas: debe terminar el mismo día.`);
+  return { nombre, docenteId: docente.id, materia, horaInicio };
+}
+
+export function cursoConDerivados(curso, ciclo, obligatorios) {
+  const semana = ciclo?.semanas.find((s) => s.numero === SEMANA_CURSO) ?? null;
+  const [h, m] = curso.horaInicio.split(':');
+  return {
+    ...curso,
+    semana: semana ? { inicio: semana.inicio, fin: semana.fin } : null,
+    horaFin: `${String(Number(h) + HORAS_CURSO).padStart(2, '0')}:${m}`,
+    obligatorios,
+  };
+}
+
+export function ordenarCursos(cursos) {
+  return [...cursos].sort((a, b) => b.cicloId.localeCompare(a.cicloId) || comparar(a.nombre, b.nombre));
 }
