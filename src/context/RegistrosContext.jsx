@@ -37,10 +37,12 @@ export function RegistrosProvider({ children }) {
   const [carga, setCarga] = useState(() => Object.fromEntries(CLAVES.map((c) => [c, { cargando: true, error: null }])));
   const datosRef = useRef(VACIOS);
   const [cicloElegidoId, setCicloElegidoId] = useState(null);
+  const [cambios, setCambios] = useState(0);
 
   function fijar(recurso, valor) {
     datosRef.current = { ...datosRef.current, [recurso]: valor };
     setDatos(datosRef.current);
+    setCambios((n) => n + 1);
   }
 
   function fijarCarga(recurso, estado) {
@@ -72,6 +74,10 @@ export function RegistrosProvider({ children }) {
     if (recurso === 'calificacionesKardex') { recargar('kardex'); recargar('evaluaciones'); }
     if (['calificacionesKardex', 'estudiantes'].includes(recurso)) recargar('cursos');
     if (recurso === 'cursos') { recargar('kardex'); recargar('evaluaciones'); }
+  }
+
+  async function recargarTodo() {
+    await Promise.all(CLAVES.map((recurso) => recargar(recurso)));
   }
 
   async function crear(recurso, valores) {
@@ -254,6 +260,8 @@ export function RegistrosProvider({ children }) {
     concluirCiclo,
     SEMANAS_CICLO: catalogos.semanasCiclo || [],
     CARGA: carga,
+    CAMBIOS: cambios,
+    recargarTodo,
     cargando: CLAVES.some((c) => carga[c].cargando),
     error: errores[0] ?? null,
     guardarPlantel,

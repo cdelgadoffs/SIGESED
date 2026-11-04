@@ -6,16 +6,19 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { RegistrosProvider } from './context/RegistrosContext.jsx'
 import { AjustesVisualesProvider } from './context/AjustesVisualesContext.jsx'
 import { UIProvider } from './context/UIContext.jsx'
+import { RespaldosProvider } from './context/RespaldosContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
       <RegistrosProvider>
+        <RespaldosProvider>
         <AjustesVisualesProvider>
           <UIProvider>
             <App />
           </UIProvider>
         </AjustesVisualesProvider>
+        </RespaldosProvider>
       </RegistrosProvider>
     </AuthProvider>
   </StrictMode>,

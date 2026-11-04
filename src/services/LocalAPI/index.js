@@ -1,10 +1,10 @@
 import { ApiError } from '../ApiError.js';
 import {
   STORE_CATALOGOS, STORE_UNICOS, STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES, STORE_KARDEX, STORE_CURSOS,
-  obtenerTodos, obtener, guardar, escribirVarios,
+  obtenerTodos, obtener, guardar, escribirVarios, DB_VERSION, almacenesRespaldo, leerTodo, reemplazarTodo,
 } from './db.js';
 import {
-  usuarioActual, exigirEscritura, fijarSesion, sesionDeTokenEntra, prepararRegistro, exigirVersion,
+  usuarioActual, exigirEscritura, fijarSesion, sesionDeTokenEntra, exigirRol, ROL_ADMINISTRADOR_TI, armarRespaldo, validarRespaldo, prepararRegistro, exigirVersion,
   exigirPlantel, generarMatricula, ordenarPersonas, validarRolesDisponibles, validarRolesAsignables, ciclosDelAnio, ordenarCiclos,
   prepararEvaluacion, idEvaluacion, conPromedio,
   validarNombreGrupoUnico, ordenarGrupos,
@@ -52,6 +52,20 @@ export async function iniciarSesionEntra(token) {
 export async function cerrarSesion() {
   fijarSesion(null);
   return { cerrada: true };
+}
+
+const SOLO_TI = 'Solo el Administrador TI puede manejar respaldos.';
+
+export async function exportarRespaldo() {
+  exigirRol(ROL_ADMINISTRADOR_TI, SOLO_TI);
+  return armarRespaldo(await leerTodo(), DB_VERSION);
+}
+
+export async function restaurarRespaldo(respaldo) {
+  exigirRol(ROL_ADMINISTRADOR_TI, SOLO_TI);
+  const datos = validarRespaldo(respaldo, DB_VERSION, almacenesRespaldo());
+  await reemplazarTodo(datos);
+  return { restaurado: true, generadoEn: respaldo.generadoEn ?? null };
 }
 
 export async function listarCatalogos() {

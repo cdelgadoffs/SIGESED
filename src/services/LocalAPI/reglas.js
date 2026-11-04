@@ -63,6 +63,11 @@ export function usuarioActual() {
   return sesion ? { id: sesion.usuario, nombre: sesion.nombre, rol: USUARIO.rol } : USUARIO;
 }
 
+export function exigirRol(rol, mensaje) {
+  if (!sesion) throw new ApiError('NO_AUTORIZADO', 'Inicia sesión para continuar.');
+  if (!sesion.roles.includes(rol)) throw new ApiError('PERMISO_DENEGADO', mensaje);
+}
+
 export function fijarSesion(valor) {
   sesion = valor;
 }
@@ -721,4 +726,36 @@ export function cursoConDerivados(curso, ciclo, obligatorios) {
 
 export function ordenarCursos(cursos) {
   return [...cursos].sort((a, b) => b.cicloId.localeCompare(a.cicloId) || comparar(a.nombre, b.nombre));
+}
+
+export const ROL_ADMINISTRADOR_TI = 'administrador-ti';
+const APP_RESPALDO = 'SIGESED';
+
+export function armarRespaldo(datos, version) {
+  return { app: APP_RESPALDO, version, generadoEn: new Date().toISOString(), generadoPor: usuarioActual().id, datos };
+}
+
+export function validarRespaldo(respaldo, version, almacenes) {
+  if (!respaldo || typeof respaldo !== 'object' || respaldo.app !== APP_RESPALDO || !respaldo.datos || typeof respaldo.datos !== 'object') {
+    throw falla('El archivo no es un respaldo de SIGESED.');
+  }
+  if (respaldo.version !== version) {
+    throw falla(`El respaldo es de otra versión de la base de datos (${respaldo.version}); esta usa la ${version}.`);
+  }
+  const limpio = {};
+  almacenes.forEach(({ store, clave }) => {
+    const filas = respaldo.datos[store] ?? [];
+    if (!Array.isArray(filas)) throw falla(`El respaldo está dañado: «${store}» no es una lista.`);
+    const claves = new Set();
+    filas.forEach((f) => {
+      if (!f || typeof f !== 'object' || (typeof f[clave] !== 'string' && typeof f[clave] !== 'number')) {
+        throw falla(`El respaldo está dañado: hay un registro sin «${clave}» en «${store}».`);
+      }
+      if (claves.has(f[clave])) throw falla(`El respaldo está dañado: «${store}» tiene registros repetidos.`);
+      claves.add(f[clave]);
+    });
+    limpio[store] = filas;
+  });
+  if (limpio.catalogos.length === 0) throw falla('El respaldo está dañado: no tiene catálogos.');
+  return limpio;
 }

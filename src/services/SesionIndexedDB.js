@@ -1,7 +1,8 @@
 const DB_NAME = 'SesionIndexedDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_BORRADORES = 'borradores';
 const STORE_CACHE = 'cache';
+const STORE_CARPETAS = 'carpetas';
 
 function abrirDB() {
   return new Promise((resolve, reject) => {
@@ -13,6 +14,9 @@ function abrirDB() {
       }
       if (!db.objectStoreNames.contains(STORE_CACHE)) {
         db.createObjectStore(STORE_CACHE, { keyPath: 'clave' });
+      }
+      if (!db.objectStoreNames.contains(STORE_CARPETAS)) {
+        db.createObjectStore(STORE_CARPETAS, { keyPath: 'clave' });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -50,3 +54,7 @@ export const eliminarBorrador = (clave) => borrar(STORE_BORRADORES, clave);
 
 export const guardarCache = (clave, valor) => escribir(STORE_CACHE, clave, valor);
 export const obtenerCache = (clave) => leer(STORE_CACHE, clave);
+
+export const guardarCarpeta = (clave, valor) => escribir(STORE_CARPETAS, clave, valor);
+export const obtenerCarpeta = (clave) => leer(STORE_CARPETAS, clave);
+export const eliminarCarpeta = (clave) => borrar(STORE_CARPETAS, clave);

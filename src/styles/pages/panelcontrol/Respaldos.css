@@ -1,0 +1,75 @@
+.panelcontrol-respaldos {
+  margin: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.panelcontrol-respaldos-volver {
+  align-self: flex-start;
+}
+.panelcontrol-respaldos-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+.panelcontrol-respaldos-seccion h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+.panelcontrol-respaldos-estado {
+  margin: 0;
+  font-size: 13.5px;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+.panelcontrol-respaldos-estado .ri-checkbox-circle-fill {
+  color: #6fcf8e;
+}
+.panelcontrol-respaldos-estado .ri-error-warning-fill {
+  color: #f5b14c;
+}
+.panelcontrol-respaldos-nota {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #aaa;
+}
+.panelcontrol-respaldos-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.panelcontrol-respaldos-mensaje {
+  margin: 0;
+  font-size: 12.5px;
+  color: #6fcf8e;
+}
+.panelcontrol-respaldos-error {
+  margin: 0;
+  font-size: 12.5px;
+  color: #ff8a80;
+}
+.panelcontrol-respaldos-modal-texto {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: #333;
+}
+.panelcontrol-respaldos-modal-error {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: #b42318;
+}
+.panelcontrol-respaldos-modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

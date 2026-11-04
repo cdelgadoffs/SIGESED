@@ -2,7 +2,7 @@ import { ApiError } from '../ApiError.js';
 import { CATALOGOS_SEMILLA } from './semilla.js';
 
 const DB_NAME = 'LocalAPI';
-const DB_VERSION = 19;
+export const DB_VERSION = 19;
 
 export const STORE_CATALOGOS = 'catalogos';
 export const STORE_UNICOS = 'unicos';
@@ -170,6 +170,39 @@ export async function escribirVarios({ poner = [], borrar = [] }) {
     const tx = db.transaction(stores, 'readwrite');
     poner.forEach(({ store, valor }) => tx.objectStore(store).put(valor));
     borrar.forEach(({ store, id }) => tx.objectStore(store).delete(id));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+const ALMACENES = [
+  { store: STORE_CATALOGOS, clave: 'nombre' },
+  { store: STORE_UNICOS, clave: 'clave' },
+  ...[STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES, STORE_KARDEX, STORE_CURSOS]
+    .map((store) => ({ store, clave: 'id' })),
+];
+
+export function almacenesRespaldo() {
+  return ALMACENES;
+}
+
+export async function leerTodo() {
+  const datos = {};
+  for (const { store } of ALMACENES) datos[store] = await obtenerTodos(store);
+  return datos;
+}
+
+export async function reemplazarTodo(datos) {
+  const db = await abrirDB();
+  const stores = ALMACENES.map((a) => a.store);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(stores, 'readwrite');
+    stores.forEach((store) => {
+      const almacen = tx.objectStore(store);
+      almacen.clear();
+      (datos[store] ?? []).forEach((valor) => almacen.put(valor));
+    });
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
