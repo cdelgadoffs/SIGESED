@@ -78,7 +78,9 @@
 }
 .widget-preparacion-ciclo-materia {
   display: grid;
-  grid-template-columns: 2fr 1.4fr 1.6fr;
+  grid-template-columns: minmax(0, 2.6fr) minmax(0, 1.2fr) 150px;
+  border: 1px solid #e6e6e6;
+  align-items: center;
   gap: 10px;
   padding: 5px 8px;
   border-radius: 4px;
@@ -89,10 +91,31 @@
 .widget-preparacion-ciclo-materia-nombre {
   font-weight: 500;
   color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .widget-preparacion-ciclo-materia-horario {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
   color: #666;
 }
+.widget-preparacion-ciclo-dia {
+  padding: 1px 8px;
+  border: 1px solid var(--dia-acento);
+  border-radius: 10px;
+  background: var(--dia-fondo);
+  color: #1a1a1a;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.widget-preparacion-ciclo-dia-1, .widget-preparacion-ciclo-dia-6 { --dia-fondo: #ffc7ce; --dia-acento: #e0607a; }
+.widget-preparacion-ciclo-dia-2 { --dia-fondo: #f7c7ac; --dia-acento: #d9804f; }
+.widget-preparacion-ciclo-dia-3 { --dia-fondo: #ffeb9c; --dia-acento: #d4a514; }
+.widget-preparacion-ciclo-dia-4 { --dia-fondo: #c6efce; --dia-acento: #3f9d5c; }
+.widget-preparacion-ciclo-dia-5 { --dia-fondo: #caedfb; --dia-acento: #2f97c9; }
 .widget-preparacion-ciclo-pendientes {
   margin: 6px 0 0 25px;
   padding-left: 16px;

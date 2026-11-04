@@ -4,12 +4,13 @@ import SubMenuDD from './SubMenuDD.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
-import { cuatrimestresDe, filtrarMaterias, nombreCuatrimestre } from '../../utils/planEstudios.js';
+import { cuatrimestresDe, filtrarMaterias, materiasDePrograma, programaVigente, nombreCuatrimestre } from '../../utils/planEstudios.js';
 import '../../styles/widgets/ListaPlanEstudios.css';
 
 export default function ListaPlanEstudios() {
-  const { MATERIAS, CARGA } = useRegistros();
-  const { terminoBusqueda, registroSeleccionadoId, setRegistroSeleccionadoId, setSidebar2Amplio } = useUI();
+  const { MATERIAS: TODAS, CARGA } = useRegistros();
+  const { programaPlanEstudios, terminoBusqueda, registroSeleccionadoId, setRegistroSeleccionadoId, setSidebar2Amplio } = useUI();
+  const MATERIAS = materiasDePrograma(TODAS, programaVigente(TODAS, programaPlanEstudios));
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   const [abierto, setAbierto] = useState(null);
   const buscando = terminoBusqueda.trim() !== '';

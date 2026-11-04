@@ -53,10 +53,10 @@ export default function Inicio() {
       >
         {grupoInscrito ? <FormularioInscripcion /> : <FormularioCiclo />}
       </Sidebar3>
-      <Sidebar4 abierto={!!ciclo} mostrarCerrar={false} titulo={`Calendario ${cicloActivoId ?? ''}`} arriba={arriba}>
+      <Sidebar4 abierto={!!ciclo && !grupoInscrito} mostrarCerrar={false} titulo={`Calendario ${cicloActivoId ?? ''}`} arriba={arriba}>
         <CalendarioSemanal />
       </Sidebar4>
-      <PanelPrincipal izquierda={izquierdaSidebar3 + (formularioAbierto ? ANCHO_SIDEBAR3 : 0)} derecha={ciclo ? ANCHO_SIDEBAR4 : 0} arriba={arriba}>
+      <PanelPrincipal izquierda={izquierdaSidebar3 + (formularioAbierto ? ANCHO_SIDEBAR3 : 0)} derecha={ciclo && !grupoInscrito ? ANCHO_SIDEBAR4 : 0} arriba={arriba}>
         {enPreparacion ? <PreparacionCiclo /> : <ResumenCiclo />}
       </PanelPrincipal>
     </>

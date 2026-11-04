@@ -6,14 +6,15 @@ import BadgeDinamico from '../base/BadgeDinamico.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { nombreDeCatalogo } from '../../utils/registros.js';
-import { cuatrimestresDe, documentoPlanEstudios, filtrarMaterias, nombreCuatrimestre } from '../../utils/planEstudios.js';
+import { cuatrimestresDe, documentoPlanEstudios, filtrarMaterias, materiasDePrograma, programaVigente, nombreCuatrimestre } from '../../utils/planEstudios.js';
 import { imprimirDocumento } from '../../utils/impresion.js';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import '../../styles/widgets/ResumenPlanEstudios.css';
 
 export default function ResumenPlanEstudios() {
-  const { MATERIAS, PROGRAMAS_EDUCATIVOS, PLANTEL } = useRegistros();
-  const { setRegistroSeleccionadoId } = useUI();
+  const { MATERIAS: TODAS, PROGRAMAS_EDUCATIVOS, PLANTEL } = useRegistros();
+  const { setRegistroSeleccionadoId, programaPlanEstudios } = useUI();
+  const MATERIAS = materiasDePrograma(TODAS, programaVigente(TODAS, programaPlanEstudios));
   const [filtro, setFiltro] = useState('');
   const [elegidas, setElegidas] = useState(() => new Set());
   const [archivo, setArchivo] = useState('plan_estudios');

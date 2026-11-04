@@ -47,7 +47,7 @@ function CuadriculaHorario({ horas, dias, propias, ocupadas, onAlternar }) {
                 <td key={d}>
                   <button
                     type="button"
-                    className={'widget-formulario-inscripcion-celda' + (propia ? ' widget-formulario-inscripcion-celda-propia' : '')}
+                    className={`widget-formulario-inscripcion-celda widget-formulario-inscripcion-dia-${d}` + (otra ? ' widget-formulario-inscripcion-celda-ocupada' : '') + (propia ? ' widget-formulario-inscripcion-celda-propia' : '')}
                     disabled={!!otra || (llena && !propia)}
                     title={otra ? `Ocupada por ${otra}` : undefined}
                     aria-label={`${DIAS_SEMANA[d]}, ${h.nombre}`}
@@ -213,7 +213,7 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
     >
       <p className="widget-formulario-inscripcion-nota">
         {`Elige las ${MATERIAS_POR_GRUPO} materias que cursará el grupo en el ciclo ${ciclo.id}, su docente`}
-        {tipo === null ? '. Modalidad Online: sin horario.' : ` y sus horas de clase (${tipo === 'sabado' ? 'sábados' : 'de lunes a viernes'}); ${HORAS_POR_MATERIA} horas por materia; las horas que ya ocupa otra materia del grupo aparecen con su clave.`}
+        {tipo === null ? '. Modalidad Online: sin horario.' : ` y sus horas de clase (${tipo === 'sabado' ? 'sábados' : 'de lunes a viernes'}); 1 o ${HORAS_POR_MATERIA} horas por materia; las horas que ya ocupa otra materia del grupo aparecen con su clave.`}
         {' Puedes guardar a medias y completar después.'}
       </p>
       {form.materias.map((m, i) => {
@@ -298,7 +298,7 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
                   )}
                 </CampoFormulario>
                 {tipo !== null && (
-                  <CampoFormulario etiqueta={`Horario (${m.horario.length} de ${HORAS_POR_MATERIA} horas)`}>
+                  <CampoFormulario etiqueta={`Horario (${m.horario.length} de máx. ${HORAS_POR_MATERIA} horas)`}>
                     <CuadriculaHorario
                       horas={horas}
                       dias={dias}

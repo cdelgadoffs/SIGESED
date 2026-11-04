@@ -76,20 +76,66 @@
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.widget-formulario-inscripcion-celda:hover:not(:disabled) {
-  border-color: #1a56db;
-  background: #f3f7ff;
+.widget-formulario-inscripcion-dia-1 {
+  --dia-fondo: #ffc7ce;
+  --dia-acento: #e0607a;
+  --dia-suave: #fff3f5;
 }
-.widget-formulario-inscripcion-celda-propia {
-  border-color: #1a56db;
-  background: #e8f0fe;
-  font-size: 14px;
+.widget-formulario-inscripcion-dia-2 {
+  --dia-fondo: #f7c7ac;
+  --dia-acento: #d9804f;
+  --dia-suave: #fdf3ec;
 }
-.widget-formulario-inscripcion-celda:disabled {
+.widget-formulario-inscripcion-dia-3 {
+  --dia-fondo: #ffeb9c;
+  --dia-acento: #d4a514;
+  --dia-suave: #fffaea;
+}
+.widget-formulario-inscripcion-dia-4 {
+  --dia-fondo: #c6efce;
+  --dia-acento: #3f9d5c;
+  --dia-suave: #f1fbf3;
+}
+.widget-formulario-inscripcion-dia-5 {
+  --dia-fondo: #caedfb;
+  --dia-acento: #2f97c9;
+  --dia-suave: #f0f9fe;
+}
+.widget-formulario-inscripcion-dia-6 {
+  --dia-fondo: #ffc7ce;
+  --dia-acento: #e0607a;
+  --dia-suave: #fff3f5;
+}
+.widget-formulario-inscripcion-celda[class*='-dia-'] {
+  border-color: var(--dia-fondo);
+  background: var(--dia-suave);
+  color: var(--dia-acento);
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.widget-formulario-inscripcion-celda[class*='-dia-']:hover:not(:disabled) {
+  border-color: var(--dia-acento);
+  background: var(--dia-fondo);
+}
+.widget-formulario-inscripcion-celda.widget-formulario-inscripcion-celda-propia {
+  border: 2px solid var(--dia-acento);
+  background: var(--dia-fondo);
+  color: var(--dia-acento);
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.widget-formulario-inscripcion-celda.widget-formulario-inscripcion-celda-propia i {
+  font-weight: 700;
+}
+.widget-formulario-inscripcion-celda[class*='-dia-']:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.widget-formulario-inscripcion-celda.widget-formulario-inscripcion-celda-ocupada:disabled {
+  opacity: 1;
   border-color: #e3e3e3;
   background: #efefef;
   color: #999;
-  cursor: not-allowed;
 }
 .widget-formulario-inscripcion-receso td {
   padding: 3px 0;

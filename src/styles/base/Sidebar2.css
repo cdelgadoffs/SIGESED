@@ -67,3 +67,6 @@
 .base-sidebar2-cerrar:hover {
   opacity: 1;
 }
+.base-sidebar2-debajo-badge {
+  margin-top: 8px;
+}

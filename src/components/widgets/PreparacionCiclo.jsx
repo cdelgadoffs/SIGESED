@@ -6,7 +6,7 @@ import Modal from '../base/Modal.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { ESTADOS_CICLO } from '../../utils/fechas.js';
-import { MATERIAS_POR_GRUPO, inscripcionDe, textoHorario, tipoHorario } from '../../utils/inscripciones.js';
+import { MATERIAS_POR_GRUPO, inscripcionDe, tramosHorario, tipoHorario } from '../../utils/inscripciones.js';
 import { nombreCompleto, nombreDeCatalogo } from '../../utils/registros.js';
 import '../../styles/widgets/PreparacionCiclo.css';
 
@@ -109,7 +109,9 @@ export default function PreparacionCiclo() {
                           <span className="widget-preparacion-ciclo-materia-nombre">{materia ? `${materia.clave} · ${materia.nombre}` : m.materia}</span>
                           <span>{docente ? nombreCompleto(docente) : 'Sin docente'}</span>
                           <span className="widget-preparacion-ciclo-materia-horario">
-                            {tipo === null ? 'Sin horario (Online)' : (textoHorario(m.horario, HORAS_CLASE) || 'Sin horario')}
+                            {tipo === null ? 'Sin horario (Online)' : m.horario.length === 0 ? 'Sin horario' : tramosHorario(m.horario, HORAS_CLASE).map((t, i) => (
+                              <span key={i} className={`widget-preparacion-ciclo-dia widget-preparacion-ciclo-dia-${t.dia}`}>{t.texto}</span>
+                            ))}
                           </span>
                         </div>
                       );

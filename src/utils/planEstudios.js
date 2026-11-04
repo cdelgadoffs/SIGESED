@@ -15,6 +15,15 @@ export function cuatrimestresDe(materias) {
   return [...grupos.entries()].sort((a, b) => a[0] - b[0]).map(([numero, lista]) => ({ numero, materias: lista }));
 }
 
+export function programaVigente(materias, elegido) {
+  const programas = [...new Set(materias.map((m) => m.programaEducativo))];
+  return programas.includes(elegido) ? elegido : (programas[0] ?? null);
+}
+
+export function materiasDePrograma(materias, programa) {
+  return materias.filter((m) => m.programaEducativo === programa);
+}
+
 export function filtrarMaterias(materias, termino) {
   return materias.filter((m) => coincideBusqueda(termino, [
     m.nombre,
@@ -114,14 +123,14 @@ function seccionMateria(m, indice, total, { institucion, programa, soloTemas }) 
     </div>${pie}</section>`;
 }
 
-export function documentoPlanEstudios({ materias, institucion, programa, titulo, soloTemas = false, fecha }) {
+export function documentoPlanEstudios({ materias, institucion, programa, titulo, soloTemas = false, fecha, etiqueta = 'Plan de estudios', detalles = [] }) {
   const total = materias.length;
   const portada = soloTemas ? '' : `
     <div class="portada">
-      <span class="badge">Plan de estudios</span>
+      <span class="badge">${escapar(etiqueta)}</span>
       <h1>${escapar(programa)}</h1>
       <div class="inst">${escapar(institucion)}</div>
-      <div class="meta"><div>Documento generado: ${escapar(fecha)}</div><div>Materias incluidas: ${total}</div></div>
+      <div class="meta">${detalles.map((d) => `<div>${escapar(d)}</div>`).join('')}<div>Documento generado: ${escapar(fecha)}</div><div>Materias incluidas: ${total}</div></div>
       <div class="subtitulo">Contenido</div>
       ${materias.map((m, i) => `<div class="indice"><span class="num">${String(i + 1).padStart(2, '0')}</span><span class="nombre">${escapar(m.nombre)}</span><span class="cuatri">${escapar(m.clave)} · ${escapar(nombreCuatrimestre(m.cuatrimestre))}</span></div>`).join('')}
     </div>`;

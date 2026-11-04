@@ -29,6 +29,24 @@ export function horasDeModalidad(horasClase, grupo) {
 
 const sinCero = (hora) => hora.replace(/^0/, '');
 
+export function tramosHorario(horario, horasClase) {
+  const dias = [...new Set(horario.map((b) => b.dia))].sort((a, b) => a - b);
+  return dias.flatMap((dia) => {
+    const horas = horario
+      .filter((b) => b.dia === dia)
+      .map((b) => horasClase.find((h) => h.id === b.hora))
+      .filter(Boolean)
+      .sort((a, b) => a.numero - b.numero);
+    const tramos = [];
+    horas.forEach((h) => {
+      const ultimo = tramos[tramos.length - 1];
+      if (ultimo && ultimo[ultimo.length - 1].numero === h.numero - 1) ultimo.push(h);
+      else tramos.push([h]);
+    });
+    return tramos.map((tr) => ({ dia, texto: `${DIAS_SEMANA[dia]} ${sinCero(tr[0].inicio)}–${sinCero(tr[tr.length - 1].fin)}` }));
+  });
+}
+
 export function textoHorario(horario, horasClase) {
   const dias = [...new Set(horario.map((b) => b.dia))].sort((a, b) => a - b);
   return dias.map((dia) => {

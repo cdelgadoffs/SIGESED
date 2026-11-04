@@ -8,6 +8,7 @@ import MenuPanelControl from '../components/widgets/MenuPanelControl.jsx';
 import RolesSesion from '../components/widgets/RolesSesion.jsx';
 import ListaPlanEstudios from '../components/widgets/ListaPlanEstudios.jsx';
 import FichaMateria from '../components/widgets/FichaMateria.jsx';
+import FiltroProgramaPlan from '../components/widgets/FiltroProgramaPlan.jsx';
 import ResumenPlanEstudios from '../components/widgets/ResumenPlanEstudios.jsx';
 import { useRegistros } from '../context/RegistrosContext.jsx';
 import { useUI, ANCHO_SIDEBAR1, ANCHO_SIDEBAR2, ANCHO_SIDEBAR2_AMPLIO, ALTO_TOPBAR } from '../context/UIContext.jsx';
@@ -29,6 +30,7 @@ export default function PlanEstudios() {
         ancho={anchoSidebar2}
         arriba={ALTO_TOPBAR}
         mostrarCerrar={false}
+        debajoBadge={<FiltroProgramaPlan />}
         badge="Plan de estudios"
         subtitulo={`${MATERIAS.length} ${MATERIAS.length === 1 ? 'materia' : 'materias'}`}
       >

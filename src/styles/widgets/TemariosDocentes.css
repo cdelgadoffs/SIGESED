@@ -1,0 +1,94 @@
+.widget-temarios-docentes {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+.widget-temarios-docentes-lista {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.widget-temarios-docentes-lista::-webkit-scrollbar {
+  display: none;
+}
+.widget-temarios-docentes-thumb {
+  position: absolute;
+  right: 0;
+  width: 4px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+.widget-temarios-docentes-vacio {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+}
+.widget-temarios-docentes-card {
+  flex-shrink: 0;
+  padding: 12px 14px;
+  border: 1px solid #e3e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+.widget-temarios-docentes-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-temarios-docentes-card h3 i {
+  color: #1a56db;
+}
+.widget-temarios-docentes-grupo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid #f0f0f0;
+}
+.widget-temarios-docentes-grupo-info {
+  flex: 1;
+  min-width: 0;
+}
+.widget-temarios-docentes-grupo-info strong {
+  font-size: 12.5px;
+  color: #2c4770;
+}
+.widget-temarios-docentes-grupo-info ul {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: #555;
+}
+.widget-temarios-docentes-card-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.widget-temarios-docentes-card-encabezado h3 {
+  margin: 0;
+  min-width: 0;
+}
+.widget-temarios-docentes-card-encabezado button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.widget-temarios-docentes-impresion {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 0;
+  visibility: hidden;
+}

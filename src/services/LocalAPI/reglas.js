@@ -442,7 +442,7 @@ export function pendientesDeInicio(ciclo, { grupos, inscripciones, personal, cat
       }
       if (!m.docenteId) agregar(`Asigna el docente de «${materia.nombre}».`);
       else if (!puedeImpartir(personal.find((p) => p.id === m.docenteId))) agregar(`El docente de «${materia.nombre}» está inactivo o ya no tiene el rol Docente.`);
-      if (tipo !== null && m.horario.length < HORAS_POR_MATERIA) agregar(`«${materia.nombre}» lleva ${m.horario.length} de ${HORAS_POR_MATERIA} horas de clase.`);
+      if (tipo !== null && m.horario.length === 0) agregar(`«${materia.nombre}» no tiene horas de clase.`);
       else if (tipo !== null && m.horario.some((b) => !bloqueValido(b, tipo, horas))) agregar(`El horario de «${materia.nombre}» no corresponde a la modalidad del grupo.`);
     });
   });
