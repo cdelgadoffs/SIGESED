@@ -1,0 +1,60 @@
+.widget-bitacora-movil {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.widget-bitacora-movil-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.widget-bitacora-movil-alumna {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid #e3e6ea;
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.widget-bitacora-movil-alumna:active {
+  background: #f1f5fa;
+}
+.widget-bitacora-movil-alumna-nombre {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-bitacora-movil-alumna-detalle {
+  font-size: 12.5px;
+  color: #777;
+}
+.widget-bitacora-movil-volver {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: #0078d4;
+  cursor: pointer;
+}
+.widget-bitacora-movil-formulario {
+  position: relative;
+  border: 1px solid #e3e6ea;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.widget-bitacora-movil-mensaje {
+  margin: 0;
+  font-size: 13.5px;
+  color: #888;
+}

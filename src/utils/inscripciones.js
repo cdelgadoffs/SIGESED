@@ -76,6 +76,33 @@ export function cursaronAntes(materiaId, alumnos, evaluaciones, cicloId) {
     && e.calificaciones.some((c) => c.materia === materiaId)));
 }
 
+export function clasesDelCiclo(inscripciones, cicloId, horasClase) {
+  const horas = new Map(horasClase.map((h) => [h.id, h]));
+  const sueltas = inscripciones
+    .filter((i) => i.cicloId === cicloId)
+    .flatMap((i) => i.materias.flatMap((m) => (m.horario ?? [])
+      .filter((b) => horas.has(b.hora))
+      .map((b) => ({
+        dia: b.dia,
+        inicio: horas.get(b.hora).inicio,
+        fin: horas.get(b.hora).fin,
+        grupoId: i.grupoId,
+        materia: m.materia,
+        docenteId: m.docenteId,
+      }))));
+  sueltas.sort((a, b) => a.dia - b.dia || a.grupoId.localeCompare(b.grupoId) || a.inicio.localeCompare(b.inicio));
+  const unidas = sueltas.reduce((lista, c) => {
+    const ultima = lista[lista.length - 1];
+    if (ultima && ultima.dia === c.dia && ultima.grupoId === c.grupoId && ultima.materia === c.materia && ultima.fin === c.inicio) {
+      ultima.fin = c.fin;
+      return lista;
+    }
+    lista.push({ ...c });
+    return lista;
+  }, []);
+  return unidas.sort((a, b) => a.dia - b.dia || a.inicio.localeCompare(b.inicio));
+}
+
 export function materiasDeDocente(inscripciones, cicloId, docenteId) {
   return inscripciones
     .filter((i) => i.cicloId === cicloId)

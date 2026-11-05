@@ -738,8 +738,10 @@ export function recuperacionesDe(estudianteId, cursos) {
 }
 
 export function cicloParaCurso(ciclos) {
-  const ciclo = ciclos.find((c) => c.estado === 'en-curso' && c.iniciado && !c.cerrado);
-  if (!ciclo) throw falla('No hay un ciclo escolar en curso e iniciado: los cursos extracurriculares pertenecen al ciclo en curso.');
+  const iniciados = ciclos.filter((c) => c.iniciado && !c.cerrado);
+  const ciclo = iniciados.find((c) => c.estado === 'en-curso')
+    ?? [...iniciados].sort((a, b) => (a.fechaInicio ?? '').localeCompare(b.fechaInicio ?? ''))[0];
+  if (!ciclo) throw falla('No hay un ciclo escolar iniciado: los cursos extracurriculares pertenecen al ciclo iniciado.');
   return ciclo;
 }
 

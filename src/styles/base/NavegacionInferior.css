@@ -1,0 +1,36 @@
+.base-navegacion-inferior {
+  flex-shrink: 0;
+  display: flex;
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid #e3e6ea;
+}
+.base-navegacion-inferior-boton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #7a8290;
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.base-navegacion-inferior-boton i {
+  font-size: 22px;
+  line-height: 1;
+}
+.base-navegacion-inferior-activo {
+  color: #0078d4;
+  font-weight: 600;
+}
+.base-navegacion-inferior-activo i {
+  background: #e6f1fb;
+  border-radius: 14px;
+  padding: 2px 16px;
+}

@@ -10,7 +10,7 @@ import { COLORES_DIA, DIAS_POR_TIPO, bloquesDe, documentoHorarios, tieneDisenoHo
 import { DIAS_SEMANA } from '../../utils/fechas.js';
 import { imprimirDocumento } from '../../utils/impresion.js';
 import { nombreCompleto, nombreDeCatalogo } from '../../utils/registros.js';
-import logoIcom from '../../assets/Icom.jpg';
+import logoIcom from '../../assets/Icom.png';
 import logo55 from '../../assets/55.jpg';
 import comfortaaRegular from '@fontsource/comfortaa/files/comfortaa-latin-400-normal.woff2';
 import comfortaaNegrita from '@fontsource/comfortaa/files/comfortaa-latin-700-normal.woff2';

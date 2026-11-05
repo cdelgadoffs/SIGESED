@@ -16,6 +16,13 @@ export const ANCHO_SIDEBAR3 = 500;
 export const ALTO_TOPBAR = 52;
 export const ALTO_CINTA = 50;
 export const ANCHO_SIDEBAR4 = 320;
+export const ANCHO_MOVIL = 768;
+
+const CONSULTA_ANGOSTA = `(max-width: ${ANCHO_MOVIL - 1}px)`;
+
+function pantallaEsAngosta() {
+  return typeof window !== 'undefined' && window.matchMedia(CONSULTA_ANGOSTA).matches;
+}
 
 const UIContext = createContext(null);
 
@@ -35,6 +42,7 @@ export function UIProvider({ children }) {
   const [programaPlanEstudios, setProgramaPlanEstudios] = useState(null);
   const [cicloEnEdicionId, setCicloEnEdicionId] = useState(null);
   const [grupoEnInscripcionId, setGrupoEnInscripcionId] = useState(null);
+  const [pantallaAngosta, setPantallaAngosta] = useState(pantallaEsAngosta);
   const izquierdaSidebar1 = 0;
   const izquierdaSidebar3 = izquierdaSidebar1 + ANCHO_SIDEBAR1;
 
@@ -62,6 +70,13 @@ export function UIProvider({ children }) {
     setSidebar3Abierto(false);
     setRegistroEnEdicionId(null);
   }
+  useEffect(() => {
+    const consulta = window.matchMedia(CONSULTA_ANGOSTA);
+    const alCambiar = () => setPantallaAngosta(consulta.matches);
+    consulta.addEventListener('change', alCambiar);
+    return () => consulta.removeEventListener('change', alCambiar);
+  }, []);
+
   useEffect(() => {
     const alVolver = () => setVistaActualEstado(vistaDeUbicacion());
     window.addEventListener('popstate', alVolver);
@@ -95,6 +110,7 @@ export function UIProvider({ children }) {
     panelControlActivo, setPanelControlActivo, abrirPanelControl,
     terminoBusqueda, setTerminoBusqueda,
     vistaActual, setVistaActual,
+    pantallaAngosta,
     izquierdaSidebar1, izquierdaSidebar3,
   };
 

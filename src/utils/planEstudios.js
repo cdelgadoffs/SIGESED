@@ -53,6 +53,9 @@ const ESTILOS = `
 body { font-family: 'Segoe UI', Roboto, system-ui, sans-serif; color: #1a1a1a; line-height: 1.6; font-size: 12.5px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .portada { display: flex; flex-direction: column; justify-content: center; min-height: 225mm; break-after: page; }
 .badge { font-family: Consolas, monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #1a56db; background: #e8f0fe; display: inline-block; padding: 5px 14px; border-radius: 3px; margin-bottom: 26px; width: fit-content; }
+.portada-titulo { position: relative; margin-bottom: 44px; }
+.portada-titulo .inst { margin-bottom: 0; }
+.portada-logo { position: absolute; right: 0; bottom: 0; width: 230px; height: 230px; object-fit: contain; object-position: right bottom; }
 .portada h1 { font-size: 34px; font-weight: 600; line-height: 1.3; margin-bottom: 10px; }
 .inst { font-size: 15px; color: #666; margin-bottom: 44px; }
 .meta { border-top: 1px solid #e0e0e0; padding-top: 16px; margin-bottom: 34px; font-size: 11.5px; color: #888; font-family: Consolas, monospace; }
@@ -123,13 +126,12 @@ function seccionMateria(m, indice, total, { institucion, programa, soloTemas }) 
     </div>${pie}</section>`;
 }
 
-export function documentoPlanEstudios({ materias, institucion, programa, titulo, soloTemas = false, fecha, etiqueta = 'Plan de estudios', detalles = [] }) {
+export function documentoPlanEstudios({ materias, institucion, programa, titulo, soloTemas = false, fecha, etiqueta = 'Plan de estudios', detalles = [], logo = null }) {
   const total = materias.length;
   const portada = soloTemas ? '' : `
     <div class="portada">
       <span class="badge">${escapar(etiqueta)}</span>
-      <h1>${escapar(programa)}</h1>
-      <div class="inst">${escapar(institucion)}</div>
+      <div class="portada-titulo"><h1>${escapar(programa)}</h1><div class="inst">${escapar(institucion)}</div>${logo ? `<img class="portada-logo" src="${escapar(logo)}" alt="">` : ''}</div>
       <div class="meta">${detalles.map((d) => `<div>${escapar(d)}</div>`).join('')}<div>Documento generado: ${escapar(fecha)}</div><div>Materias incluidas: ${total}</div></div>
       <div class="subtitulo">Contenido</div>
       ${materias.map((m, i) => `<div class="indice"><span class="num">${String(i + 1).padStart(2, '0')}</span><span class="nombre">${escapar(m.nombre)}</span><span class="cuatri">${escapar(m.clave)} · ${escapar(nombreCuatrimestre(m.cuatrimestre))}</span></div>`).join('')}

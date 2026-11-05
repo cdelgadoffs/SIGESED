@@ -10,6 +10,7 @@ import Galeria from './pages/publico/Galeria.jsx';
 import Admisiones from './pages/publico/Admisiones.jsx';
 import { useUI } from './context/UIContext.jsx';
 import { useAuth } from './context/AuthContext.jsx';
+import { useAjustesVisuales } from './context/AjustesVisualesContext.jsx';
 import { moduloDeVista, primeraVistaPermitida } from './utils/permisos.js';
 
 const PAGES_PUBLICAS = {
@@ -36,8 +37,18 @@ const PAGES = {
   bitacora: lazy(() => import('./pages/BitacoraEstudiantil.jsx')),
 };
 
+const PAGES_MOVIL = {
+  inicio: lazy(() => import('./pages/movil/Inicio.jsx')),
+  horarios: lazy(() => import('./pages/movil/Horario.jsx')),
+  bitacora: lazy(() => import('./pages/movil/Bitacora.jsx')),
+};
+
+const NoDisponibleMovil = lazy(() => import('./pages/movil/NoDisponible.jsx'));
+
 function App() {
-  const { vistaActual, setVistaActual, sidebar4Abierto, setSidebar4Abierto } = useUI();
+  const { vistaActual, setVistaActual, sidebar4Abierto, setSidebar4Abierto, pantallaAngosta } = useUI();
+  const { vistaSistema } = useAjustesVisuales();
+  const movil = vistaSistema === 'movil' || (vistaSistema === 'auto' && pantallaAngosta);
   const { cuentaActiva, cargandoSesion, puede } = useAuth();
   const Publica = PAGES_PUBLICAS[vistaActual];
   const Page = PAGES[vistaActual];
@@ -49,7 +60,7 @@ function App() {
     }
   }, [sinAcceso, cargandoSesion]);
 
-  const vistaPermitida = !Page || !cuentaActiva || puede(moduloDeVista(vistaActual));
+  const vistaPermitida = !Page || !cuentaActiva || (movil && vistaActual === 'inicio') || puede(moduloDeVista(vistaActual));
   const alternativa = vistaPermitida ? null : primeraVistaPermitida(puede);
 
   useEffect(() => {
@@ -63,6 +74,20 @@ function App() {
       <Skeleton>
         <Publica />
       </Skeleton>
+    );
+  }
+
+  if (movil) {
+    const PageMovil = PAGES_MOVIL[vistaActual] ?? (Page ? NoDisponibleMovil : null);
+    return (
+      <>
+        <Skeleton>
+          <Suspense fallback={null}>
+            {PageMovil && <PageMovil />}
+          </Suspense>
+        </Skeleton>
+        <AtenuadorPantalla />
+      </>
     );
   }
 

@@ -8,7 +8,7 @@ import { useUI } from '../../context/UIContext.jsx';
 import { useFormularioRegistro } from '../../hooks/useFormularioRegistro.js';
 import { nombreCompleto, ordenarPorTexto } from '../../utils/registros.js';
 import { puedeImpartir } from '../../utils/inscripciones.js';
-import { reprobadosPorMateria } from '../../utils/cursos.js';
+import { cicloParaNuevoCurso, reprobadosPorMateria } from '../../utils/cursos.js';
 import { normalizarTexto } from '../../utils/texto.js';
 
 const VACIO = { nombre: '', docenteId: '', materia: '', horaInicio: '10:00' };
@@ -40,7 +40,7 @@ export default function FormularioCurso() {
 
   const ciclo = registro
     ? CICLOS.find((c) => c.id === registro.cicloId)
-    : CICLOS.find((c) => c.estado === 'en-curso' && c.iniciado && !c.cerrado);
+    : cicloParaNuevoCurso(CICLOS);
   const docentes = ordenarPorTexto(PERSONAL.filter((p) => puedeImpartir(p) || p.id === form.docenteId), nombreCompleto);
   const docente = PERSONAL.find((p) => p.id === form.docenteId);
   const reprobados = reprobadosPorMateria(KARDEX, ESTUDIANTES);
@@ -83,7 +83,7 @@ export default function FormularioCurso() {
     >
       <CampoFormulario
         etiqueta="Ciclo escolar"
-        error={ciclo ? null : 'No hay un ciclo escolar en curso e iniciado: los cursos pertenecen al ciclo en curso.'}
+        error={ciclo ? null : 'No hay un ciclo escolar iniciado: los cursos pertenecen al ciclo iniciado.'}
       >
         <CampoTexto value={ciclo ? `${ciclo.id} · se imparte en la semana 8` : '—'} disabled onChange={() => {}} />
       </CampoFormulario>
