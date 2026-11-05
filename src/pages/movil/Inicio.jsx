@@ -1,6 +1,7 @@
 import MarcoMovil from '../../components/base/MarcoMovil.jsx';
 import NavegacionMovil from '../../components/widgets/NavegacionMovil.jsx';
-import OpcionesCuentaMovil from '../../components/widgets/OpcionesCuentaMovil.jsx';
+import MenuMovil from '../../components/widgets/MenuMovil.jsx';
+import EscanerMovil from '../../components/widgets/EscanerMovil.jsx';
 import InicioMovil from '../../components/widgets/InicioMovil.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 
@@ -10,8 +11,9 @@ export default function Inicio() {
     <MarcoMovil
       titulo={PLANTEL?.nombre || 'SIGESED'}
       subtitulo={PLANTEL?.institucion || 'Sistema Integral de Gestión Educativa'}
-      accion={<OpcionesCuentaMovil />}
+      accion={<MenuMovil />}
       navegacion={<NavegacionMovil />}
+      flotante={<EscanerMovil />}
     >
       <InicioMovil />
     </MarcoMovil>

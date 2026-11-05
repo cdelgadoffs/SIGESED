@@ -10,6 +10,11 @@ const VISTAS_DE_RESPALDO = [
 ];
 
 export const ROL_DOCENTE = 'docente';
+export const ROL_ADMINISTRADOR_TI = 'administrador-ti';
+
+export function esAdministradorTI(rolesVigentes) {
+  return rolesVigentes.includes(ROL_ADMINISTRADOR_TI);
+}
 
 export function esSoloDocente(rolesVigentes) {
   return rolesVigentes.length > 0 && rolesVigentes.every((r) => r === ROL_DOCENTE);

@@ -1,17 +1,13 @@
 import NavegacionInferior from '../base/NavegacionInferior.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { moduloDeVista } from '../../utils/permisos.js';
-
-const ITEMS_NAVEGACION_MOVIL = [
-  { id: 'inicio', etiqueta: 'Inicio', icono: 'ri-home-4-line', siempre: true },
-  { id: 'horarios', etiqueta: 'Horario', icono: 'ri-time-line' },
-  { id: 'bitacora', etiqueta: 'Bitácora', icono: 'ri-draft-line' },
-];
+import { esAdministradorTI, moduloDeVista } from '../../utils/permisos.js';
+import { SECCIONES_MOVIL } from '../../utils/movil.js';
 
 export default function NavegacionMovil() {
-  const { puede } = useAuth();
+  const { puede, rolesSesion, rolActivo } = useAuth();
   const { vistaActual, setVistaActual } = useUI();
-  const items = ITEMS_NAVEGACION_MOVIL.filter((i) => i.siempre || puede(moduloDeVista(i.id)));
+  if (esAdministradorTI(rolesSesion.filter(rolActivo))) return null;
+  const items = SECCIONES_MOVIL.filter((s) => s.siempre || puede(moduloDeVista(s.id)));
   return <NavegacionInferior items={items} activo={vistaActual} onElegir={setVistaActual} />;
 }

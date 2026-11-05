@@ -1,6 +1,7 @@
 import MarcoMovil from '../../components/base/MarcoMovil.jsx';
 import NavegacionMovil from '../../components/widgets/NavegacionMovil.jsx';
-import OpcionesCuentaMovil from '../../components/widgets/OpcionesCuentaMovil.jsx';
+import MenuMovil from '../../components/widgets/MenuMovil.jsx';
+import EscanerMovil from '../../components/widgets/EscanerMovil.jsx';
 import BitacoraMovil from '../../components/widgets/BitacoraMovil.jsx';
 
 export default function Bitacora() {
@@ -8,8 +9,9 @@ export default function Bitacora() {
     <MarcoMovil
       titulo="Bitácora estudiantil"
       subtitulo="Reportes disciplinarios"
-      accion={<OpcionesCuentaMovil />}
+      accion={<MenuMovil />}
       navegacion={<NavegacionMovil />}
+      flotante={<EscanerMovil />}
     >
       <BitacoraMovil />
     </MarcoMovil>

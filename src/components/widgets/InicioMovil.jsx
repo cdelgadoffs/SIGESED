@@ -3,14 +3,13 @@ import BadgeDinamico from '../base/BadgeDinamico.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { moduloDeVista } from '../../utils/permisos.js';
+import { useAjustesVisuales } from '../../context/AjustesVisualesContext.jsx';
+import { esAdministradorTI, moduloDeVista } from '../../utils/permisos.js';
+import { MODULOS_SOLO_ESCRITORIO, SECCIONES_MOVIL } from '../../utils/movil.js';
 import { ESTADOS_CICLO } from '../../utils/fechas.js';
 import '../../styles/widgets/InicioMovil.css';
 
-const ACCESOS_MOVIL = [
-  { id: 'horarios', titulo: 'Horario', detalle: 'Las clases de hoy y de la semana', icono: 'ri-time-line' },
-  { id: 'bitacora', titulo: 'Bitácora', detalle: 'Levantar un reporte de una alumna', icono: 'ri-draft-line' },
-];
+const ESCRITORIO = 'accion:escritorio';
 
 function enIPhoneSinInstalar() {
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -19,13 +18,22 @@ function enIPhoneSinInstalar() {
 }
 
 export default function InicioMovil() {
-  const { cuentaActiva, puede } = useAuth();
+  const { cuentaActiva, puede, rolesSesion, rolActivo } = useAuth();
+  const { cambiarAjuste } = useAjustesVisuales();
   const { CICLOS, cicloActivoId } = useRegistros();
   const { setVistaActual } = useUI();
   const [avisoInstalar, setAvisoInstalar] = useState(enIPhoneSinInstalar);
   const ciclo = CICLOS.find((c) => c.id === cicloActivoId);
   const estado = ciclo ? ESTADOS_CICLO[ciclo.estado] : null;
-  const accesos = ACCESOS_MOVIL.filter((a) => puede(moduloDeVista(a.id)));
+  const accesos = [...SECCIONES_MOVIL, ...MODULOS_SOLO_ESCRITORIO].filter((s) => !s.siempre && puede(moduloDeVista(s.id)));
+  if (esAdministradorTI(rolesSesion.filter(rolActivo))) {
+    accesos.push({ id: ESCRITORIO, etiqueta: 'Panel de control', detalle: 'Disponible en la versión de escritorio', icono: 'ri-settings-3-line', escritorio: true });
+  }
+
+  function abrir(acceso) {
+    if (acceso.escritorio) cambiarAjuste('vistaSistema', 'escritorio');
+    if (acceso.id !== ESCRITORIO) setVistaActual(acceso.id);
+  }
   const nombre = (cuentaActiva?.nombre ?? '').split(' ')[0];
 
   return (
@@ -55,18 +63,16 @@ export default function InicioMovil() {
 
       <div className="widget-inicio-movil-accesos">
         {accesos.map((a) => (
-          <button key={a.id} type="button" className="widget-inicio-movil-acceso" onClick={() => setVistaActual(a.id)}>
+          <button key={a.id} type="button" className={`widget-inicio-movil-acceso${a.escritorio ? ' widget-inicio-movil-acceso-escritorio' : ''}`} onClick={() => abrir(a)}>
             <i className={a.icono} aria-hidden="true" />
             <span className="widget-inicio-movil-acceso-textos">
-              <span className="widget-inicio-movil-acceso-titulo">{a.titulo}</span>
+              <span className="widget-inicio-movil-acceso-titulo">{a.etiqueta}</span>
               <span className="widget-inicio-movil-acceso-detalle">{a.detalle}</span>
             </span>
-            <i className="ri-arrow-right-s-line widget-inicio-movil-acceso-flecha" aria-hidden="true" />
+            <i className={`${a.escritorio ? 'ri-computer-line' : 'ri-arrow-right-s-line'} widget-inicio-movil-acceso-flecha`} aria-hidden="true" />
           </button>
         ))}
       </div>
-
-      <p className="widget-inicio-movil-nota">Las demás secciones están en la versión de escritorio.</p>
     </div>
   );
 }

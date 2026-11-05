@@ -1,0 +1,14 @@
+.widget-escaner-movil { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; background: #111; }
+.widget-escaner-movil-encabezado { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: calc(10px + env(safe-area-inset-top)) 12px 10px 16px; color: #fff; font-size: 16px; font-weight: 600; }
+.widget-escaner-movil-encabezado button { width: 40px; height: 40px; border: none; border-radius: 50%; background: rgba(255, 255, 255, 0.12); color: #fff; font-size: 22px; cursor: pointer; }
+.widget-escaner-movil-ayuda { flex-shrink: 0; margin: 0; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); color: #ddd; font-size: 13.5px; text-align: center; }
+.widget-escaner-movil-resultado { flex: 1; display: flex; flex-direction: column; gap: 14px; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); background: #f4f5f7; overflow-y: auto; }
+.widget-escaner-movil-tarjeta { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid #e3e6ea; border-radius: 12px; background: #fff; }
+.widget-escaner-movil-nombre { font-size: 17px; font-weight: 700; color: #1a1a1a; }
+.widget-escaner-movil-insignias { display: flex; flex-wrap: wrap; gap: 6px; }
+.widget-escaner-movil-mensaje { margin: 0; font-size: 13.5px; color: #777; }
+.widget-escaner-movil-acciones { display: flex; flex-direction: column; gap: 8px; }
+.widget-escaner-movil-accion { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid #d6e6f5; border-radius: 10px; background: #f3f8fd; font: inherit; font-size: 15px; color: #0078d4; text-align: left; cursor: pointer; }
+.widget-escaner-movil-accion span { flex: 1; }
+.widget-escaner-movil-accion i { font-size: 18px; }
+.widget-escaner-movil-otro { align-self: center; display: flex; align-items: center; gap: 8px; padding: 10px 18px; border: none; border-radius: 22px; background: #0078d4; color: #fff; font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer; }
