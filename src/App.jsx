@@ -41,6 +41,8 @@ const PAGES_MOVIL = {
   inicio: lazy(() => import('./pages/movil/Inicio.jsx')),
   horarios: lazy(() => import('./pages/movil/Horario.jsx')),
   bitacora: lazy(() => import('./pages/movil/Bitacora.jsx')),
+  kardex: lazy(() => import('./pages/movil/Kardex.jsx')),
+  evaluaciones: lazy(() => import('./pages/movil/Evaluaciones.jsx')),
 };
 
 const NoDisponibleMovil = lazy(() => import('./pages/movil/NoDisponible.jsx'));

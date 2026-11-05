@@ -1,7 +1,7 @@
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import '../../styles/base/MarcoMovil.css';
 
-export default function MarcoMovil({ titulo, subtitulo, accion, navegacion, children }) {
+export default function MarcoMovil({ titulo, subtitulo, accion, navegacion, flotante, children }) {
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   return (
     <div className="base-marco-movil">
@@ -17,6 +17,7 @@ export default function MarcoMovil({ titulo, subtitulo, accion, navegacion, chil
         {thumb.visible && (
           <div className="base-marco-movil-thumb" style={{ height: thumb.alto, top: thumb.top }} onMouseDown={onArrastrarThumb} />
         )}
+        {flotante}
       </div>
       {navegacion}
     </div>
