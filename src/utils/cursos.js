@@ -1,5 +1,11 @@
 import { CALIFICACION_APROBATORIA } from './kardex.js';
 
+export function cicloParaNuevoCurso(ciclos) {
+  const iniciados = ciclos.filter((c) => c.iniciado && !c.cerrado);
+  return iniciados.find((c) => c.estado === 'en-curso')
+    ?? [...iniciados].sort((a, b) => (a.fechaInicio ?? '').localeCompare(b.fechaInicio ?? ''))[0];
+}
+
 export function reprobadosPorMateria(kardex, estudiantes) {
   const activos = new Set(estudiantes.filter((e) => e.activo !== false).map((e) => e.id));
   const conteo = new Map();

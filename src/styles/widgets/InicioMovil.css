@@ -1,0 +1,111 @@
+.widget-inicio-movil {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.widget-inicio-movil-saludo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.widget-inicio-movil-hola {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.widget-inicio-movil-ciclo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: #555;
+}
+.widget-inicio-movil-semana {
+  font-weight: 600;
+  color: #0078d4;
+}
+.widget-inicio-movil-instalar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #c7ddf3;
+  border-radius: 12px;
+  background: #eef5fc;
+  font-size: 13.5px;
+  color: #234;
+}
+.widget-inicio-movil-instalar > i {
+  font-size: 22px;
+  color: #0078d4;
+}
+.widget-inicio-movil-instalar p {
+  flex: 1;
+  margin: 0;
+  line-height: 1.45;
+}
+.widget-inicio-movil-instalar button {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: #567;
+  padding: 0;
+}
+.widget-inicio-movil-accesos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.widget-inicio-movil-acceso {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #e3e6ea;
+  border-radius: 14px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.widget-inicio-movil-acceso:active {
+  background: #f1f5fa;
+}
+.widget-inicio-movil-acceso > i:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #e6f1fb;
+  color: #0078d4;
+  font-size: 22px;
+}
+.widget-inicio-movil-acceso-textos {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.widget-inicio-movil-acceso-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.widget-inicio-movil-acceso-detalle {
+  font-size: 13px;
+  color: #777;
+}
+.widget-inicio-movil-acceso-flecha {
+  font-size: 22px;
+  color: #aab;
+}
+.widget-inicio-movil-nota {
+  margin: 0;
+  font-size: 12.5px;
+  color: #999;
+  text-align: center;
+}

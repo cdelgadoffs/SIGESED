@@ -13,6 +13,12 @@ import '../../styles/widgets/Topbar.css';
 
 const PREFIJO_BRILLO = 'brillo:';
 const MAX_SUGERENCIAS = 8;
+const PREFIJO_VISTA = 'vista:';
+const VISTAS_SISTEMA = [
+  { id: 'auto', label: 'Automática (según la pantalla)' },
+  { id: 'escritorio', label: 'Escritorio' },
+  { id: 'movil', label: 'Móvil' },
+];
 
 export default function Topbar({ opcionesConfiguracion = [], onSeleccionarConfiguracion }) {
   const { toggleSidebar5, terminoBusqueda, setTerminoBusqueda, setVistaActual, setRegistroSeleccionadoId, setRegistrosAbierto, setFiltroEstado } = useUI();
@@ -33,7 +39,13 @@ export default function Topbar({ opcionesConfiguracion = [], onSeleccionarConfig
     setFiltroEstado(sugerencia.activo ? 'activos' : 'inactivos');
     setTerminoBusqueda('');
   }
-  const { brilloPantalla, cambiarAjuste } = useAjustesVisuales();
+  const { brilloPantalla, vistaSistema, cambiarAjuste } = useAjustesVisuales();
+  const opcionesVista = VISTAS_SISTEMA.map((v) => ({
+    id: `${PREFIJO_VISTA}${v.id}`,
+    label: v.label,
+    grupo: 'Versión del sistema',
+    icono: v.id === vistaSistema ? 'ri-radio-button-line' : 'ri-checkbox-blank-circle-line',
+  }));
   const opcionesBrillo = NIVELES_BRILLO.map((nivel) => ({
     id: `${PREFIJO_BRILLO}${nivel}`,
     label: nivel === 0 ? 'Normal' : `Atenuado ${nivel} %`,
@@ -42,7 +54,8 @@ export default function Topbar({ opcionesConfiguracion = [], onSeleccionarConfig
   }));
 
   function seleccionarConfiguracion(id) {
-    if (id.startsWith(PREFIJO_BRILLO)) cambiarAjuste('brilloPantalla', Number(id.slice(PREFIJO_BRILLO.length)));
+    if (id.startsWith(PREFIJO_VISTA)) cambiarAjuste('vistaSistema', id.slice(PREFIJO_VISTA.length));
+    else if (id.startsWith(PREFIJO_BRILLO)) cambiarAjuste('brilloPantalla', Number(id.slice(PREFIJO_BRILLO.length)));
     else if (onSeleccionarConfiguracion) onSeleccionarConfiguracion(id);
   }
 
@@ -66,7 +79,7 @@ export default function Topbar({ opcionesConfiguracion = [], onSeleccionarConfig
         <BotonExpandible
           icono="ri-settings-3-line"
           ariaLabel="Configuración visual"
-          opciones={[...opcionesConfiguracion, ...opcionesBrillo]}
+          opciones={[...opcionesConfiguracion, ...opcionesVista, ...opcionesBrillo]}
           onSeleccionar={seleccionarConfiguracion}
           textoVacio="Sin configuraciones en esta vista."
         />

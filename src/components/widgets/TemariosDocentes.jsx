@@ -1,14 +1,14 @@
 import { useRef, useState } from 'react';
 import BotonS from '../base/BotonS.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
+import { esSoloDocente } from '../../utils/permisos.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import { nombreCompleto, nombreDeCatalogo, ordenarPorTexto } from '../../utils/registros.js';
 import { documentoPlanEstudios } from '../../utils/planEstudios.js';
 import { imprimirDocumento } from '../../utils/impresion.js';
+import logoIcom from '../../assets/IcomTransparente.png';
 import '../../styles/widgets/TemariosDocentes.css';
-
-const ROL_DOCENTE = 'docente';
 
 function primeraPalabra(texto) {
   return (texto ?? '').trim().split(/\s+/)[0] ?? '';
@@ -22,7 +22,7 @@ export default function TemariosDocentes() {
   const { PERSONAL, GRUPOS, MATERIAS, INSCRIPCIONES, PROGRAMAS_EDUCATIVOS, PLANTEL, cicloActivoId } = useRegistros();
   const { cuentaActiva, rolesSesion, rolActivo } = useAuth();
   const rolesVigentes = rolesSesion.filter(rolActivo);
-  const soloPropios = rolesVigentes.length > 0 && rolesVigentes.every((r) => r === ROL_DOCENTE);
+  const soloPropios = esSoloDocente(rolesVigentes);
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   const [documento, setDocumento] = useState('');
   const [impresiones, setImpresiones] = useState(0);
@@ -56,6 +56,7 @@ export default function TemariosDocentes() {
     setDocumento(documentoPlanEstudios({
       materias: materiasCon(grupos),
       etiqueta: 'Temario',
+      logo: new URL(logoIcom, window.location.href).href,
       titulo: `Temario_${corto}_${cicloActivoId}`.replace(/\s+/g, '_'),
       institucion: PLANTEL?.institucion ?? '',
       programa: programas.join(' · '),

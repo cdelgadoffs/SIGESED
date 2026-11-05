@@ -14,7 +14,7 @@ import { coincideBusqueda } from '../../utils/texto.js';
 import { inscritosDe } from '../../utils/cursos.js';
 import { ROLES_FIRMA, cuerpoAlumno, cuerpoDocente, documentoConstancias, textoPeriodo } from '../../utils/constancias.js';
 import { imprimirDocumento } from '../../utils/impresion.js';
-import logoIcom from '../../assets/Icom.jpg';
+import logoIcom from '../../assets/Icom.png';
 import logo55 from '../../assets/55.jpg';
 import '../../styles/widgets/FichaCurso.css';
 

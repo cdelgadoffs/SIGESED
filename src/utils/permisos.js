@@ -9,6 +9,12 @@ const VISTAS_DE_RESPALDO = [
   'bitacora', 'cursos', 'asistencia', 'planTrabajo',
 ];
 
+export const ROL_DOCENTE = 'docente';
+
+export function esSoloDocente(rolesVigentes) {
+  return rolesVigentes.length > 0 && rolesVigentes.every((r) => r === ROL_DOCENTE);
+}
+
 export function moduloDeVista(vista) {
   return MODULO_DE_VISTA[vista] ?? vista;
 }

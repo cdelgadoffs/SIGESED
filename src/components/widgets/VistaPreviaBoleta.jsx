@@ -9,7 +9,7 @@ import { CALIFICACION_MINIMA, evaluacionDe, filasDeBoleta, materiasInscritas } f
 import { ALTO_HOJA, ANCHO_HOJA, documentoBoleta } from '../../utils/boleta.js';
 import { imprimirDocumento } from '../../utils/impresion.js';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
-import logoIcom from '../../assets/Icom.jpg';
+import logoIcom from '../../assets/Icom.png';
 import logo55 from '../../assets/55.jpg';
 import '../../styles/widgets/VistaPreviaBoleta.css';
 

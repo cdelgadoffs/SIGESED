@@ -3,6 +3,7 @@ import { leerAjustesVisuales, guardarAjustesVisuales } from '../services/Ajustes
 import { NIVELES_BRILLO } from '../utils/brillo.js';
 
 const AjustesVisualesContext = createContext(null);
+const VISTAS_SISTEMA = ['auto', 'escritorio', 'movil'];
 
 export function AjustesVisualesProvider({ children }) {
   const [ajustes, setAjustes] = useState(leerAjustesVisuales);
@@ -14,6 +15,7 @@ export function AjustesVisualesProvider({ children }) {
 
   const value = {
     brilloPantalla: NIVELES_BRILLO.includes(ajustes.brilloPantalla) ? ajustes.brilloPantalla : 0,
+    vistaSistema: VISTAS_SISTEMA.includes(ajustes.vistaSistema) ? ajustes.vistaSistema : 'auto',
     cambiarAjuste,
   };
   return <AjustesVisualesContext.Provider value={value}>{children}</AjustesVisualesContext.Provider>;

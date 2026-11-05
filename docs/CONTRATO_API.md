@@ -192,7 +192,7 @@ Nunca se guarda: lo calcula el servidor con las calificaciones de kárdex, las e
 | `docenteId` | string | Persona activa con rol Docente. |
 | `materia` | string \| null | Materia que recupera; `null` = curso voluntario. |
 | `horaInicio` | string | `HH:MM`, por omisión `10:00`; dura **3 horas** y termina el mismo día. |
-| `cicloId` | string | Lo asigna el servidor: el ciclo **en curso e iniciado** (si no hay, `VALIDACION`). Se imparte en la semana 8 (Cierre de ciclo). |
+| `cicloId` | string | Lo asigna el servidor: el ciclo **iniciado y sin concluir**; si hay varios, el en curso y si no, el de fecha de inicio más cercana (decisión del usuario: se planean antes de que empiece; si no hay, `VALIDACION`). Se imparte en la semana 8 (Cierre de ciclo). |
 | `voluntarios` | string[] | Estudiantes inscritos a mano (activos, que no sean obligatorios). |
 | `acreditados` | string[] | Inscritos (obligatorios o voluntarios) que acreditaron. |
 | `version`, `creadoEn`, `creadoPor`, `modificadoEn` | | Servidor. |
