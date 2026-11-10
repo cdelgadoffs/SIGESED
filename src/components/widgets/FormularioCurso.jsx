@@ -10,8 +10,10 @@ import { nombreCompleto, ordenarPorTexto } from '../../utils/registros.js';
 import { puedeImpartir } from '../../utils/inscripciones.js';
 import { cicloParaNuevoCurso, reprobadosPorMateria } from '../../utils/cursos.js';
 import { normalizarTexto } from '../../utils/texto.js';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { esAdministradorTI } from '../../utils/permisos.js';
 
-const VACIO = { nombre: '', docenteId: '', materia: '', horaInicio: '10:00' };
+const VACIO = { nombre: '', docenteId: '', materia: '', horaInicio: '10:00', fecha: '' };
 const SIN_MATERIA = '';
 
 export default function FormularioCurso() {
@@ -20,6 +22,8 @@ export default function FormularioCurso() {
     crearCurso, editarCurso, guardarBorrador, obtenerBorrador, eliminarBorrador,
   } = useRegistros();
   const { sidebar3Abierto, registroEnEdicionId, cerrarSidebar3, setRegistroSeleccionadoId } = useUI();
+  const { rolesSesion, rolActivo } = useAuth();
+  const superusuario = esAdministradorTI(rolesSesion.filter(rolActivo));
   const registro = registroEnEdicionId ? CURSOS.find((c) => c.id === registroEnEdicionId) ?? null : null;
   const { form, setCampos, reiniciar, apertura } = useFormularioRegistro({
     vacio: VACIO, registro, abierto: sidebar3Abierto, claveBorrador: 'formularioCurso',
@@ -38,25 +42,27 @@ export default function FormularioCurso() {
     setFallo(null);
   }
 
-  const ciclo = registro
-    ? CICLOS.find((c) => c.id === registro.cicloId)
-    : cicloParaNuevoCurso(CICLOS);
+  const fechaTI = superusuario && /^\d{4}-\d{2}-\d{2}$/.test(form.fecha ?? '') ? form.fecha : null;
+  const cicloDeFecha = fechaTI ? CICLOS.find((c) => c.fechaInicio && c.fechaFin && fechaTI >= c.fechaInicio && fechaTI <= c.fechaFin) : null;
+  let ciclo = registro ? CICLOS.find((c) => c.id === registro.cicloId) : cicloParaNuevoCurso(CICLOS);
+  if (fechaTI) ciclo = cicloDeFecha;
   const docentes = ordenarPorTexto(PERSONAL.filter((p) => puedeImpartir(p) || p.id === form.docenteId), nombreCompleto);
   const docente = PERSONAL.find((p) => p.id === form.docenteId);
   const reprobados = reprobadosPorMateria(KARDEX, ESTUDIANTES);
   const materias = MATERIAS.filter((m) => reprobados.has(m.id) || m.id === form.materia);
   const etiquetaMateria = (m) => `${m.clave} · ${m.nombre}${reprobados.has(m.id) ? ` (${reprobados.get(m.id)})` : ''}`;
   const materia = MATERIAS.find((m) => m.id === form.materia);
-  const cicloId = registro?.cicloId ?? ciclo?.id;
+  const cicloId = fechaTI ? cicloDeFecha?.id ?? null : registro?.cicloId ?? ciclo?.id;
   const nombreRepetido = form.nombre.trim() && CURSOS.some((c) => c.id !== registro?.id && c.cicloId === cicloId
     && normalizarTexto(c.nombre).replace(/\s+/g, ' ') === normalizarTexto(form.nombre).replace(/\s+/g, ' '));
   const horaValida = /^([01]\d|2[0-3]):[0-5]\d$/.test(form.horaInicio) && Number(form.horaInicio.slice(0, 2)) <= 21;
-  const puedeConfirmar = !!ciclo && !!form.nombre.trim() && !!form.docenteId && horaValida && !nombreRepetido && !ocupado;
+  const puedeConfirmar = (!!ciclo || !!fechaTI || (!!registro && superusuario)) && !!form.nombre.trim() && !!form.docenteId && horaValida && !nombreRepetido && !ocupado;
 
   async function confirmar() {
     setOcupado(true);
     setFallo(null);
-    const datos = { ...form, materia: form.materia || null };
+    const { fecha, ...resto } = form;
+    const datos = { ...resto, materia: form.materia || null, ...(fechaTI ? { fecha: fechaTI } : {}) };
     try {
       if (registro) {
         await editarCurso(registro.id, datos);
@@ -81,12 +87,23 @@ export default function FormularioCurso() {
       onCancelar={cerrarSidebar3}
       onConfirmar={confirmar}
     >
-      <CampoFormulario
-        etiqueta="Ciclo escolar"
-        error={ciclo ? null : 'No hay un ciclo escolar iniciado: los cursos pertenecen al ciclo iniciado.'}
-      >
-        <CampoTexto value={ciclo ? `${ciclo.id} · se imparte en la semana 8` : '—'} disabled onChange={() => {}} />
-      </CampoFormulario>
+      {superusuario ? (
+        <CampoFormulario etiqueta="Fecha del curso (Administrador TI)">
+          <CampoTexto tipo="date" value={form.fecha ?? ''} onChange={(v) => cambiar('fecha', v)} />
+          <span style={{ fontSize: 12, color: '#777' }}>
+            {fechaTI
+              ? (cicloDeFecha ? `Pertenece al ciclo ${cicloDeFecha.id}.` : 'Fuera de ciclo escolar.')
+              : `Sin fecha: ${ciclo ? `ciclo ${ciclo.id}, semana 8` : 'elige una fecha'}.`}
+          </span>
+        </CampoFormulario>
+      ) : (
+        <CampoFormulario
+          etiqueta="Ciclo escolar"
+          error={ciclo ? null : 'No hay un ciclo escolar iniciado: los cursos pertenecen al ciclo iniciado.'}
+        >
+          <CampoTexto value={ciclo ? `${ciclo.id} · se imparte en la semana 8` : '—'} disabled onChange={() => {}} />
+        </CampoFormulario>
+      )}
       <CampoFormulario etiqueta="Nombre del curso" requerido error={nombreRepetido ? 'Ya existe un curso con ese nombre en el ciclo.' : null}>
         <CampoTexto value={form.nombre} onChange={(v) => cambiar('nombre', v)} enfocar={sidebar3Abierto ? apertura : null} />
       </CampoFormulario>

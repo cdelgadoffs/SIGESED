@@ -38,7 +38,7 @@ export default function TemariosDocentes() {
       const grupos = porDocente.get(m.docenteId);
       if (!grupos.has(grupo.id)) grupos.set(grupo.id, { grupo, materias: [] });
       const materia = materiaDe.get(m.materia);
-      if (materia) grupos.get(grupo.id).materias.push(materia);
+      if (materia && !grupos.get(grupo.id).materias.includes(materia)) grupos.get(grupo.id).materias.push(materia);
     });
   });
   const docentes = ordenarPorTexto(PERSONAL.filter((p) => porDocente.has(p.id) && (!soloPropios || p.id === cuentaActiva?.usuario)), nombreCompleto);

@@ -46,7 +46,7 @@ export default function VistaPreviaBoleta() {
     ciclo: cicloActivoId,
     alumno: nombreCompleto(alumno),
     genero: alumno.genero,
-    filas: filasDeBoleta(materiasInscritas(MATERIAS, INSCRIPCIONES, cicloActivoId, alumno.grupo), evaluacion.calificaciones, acreditadasFuera(KARDEX.find((k) => k.estudianteId === alumno.id), cicloActivoId))
+    filas: filasDeBoleta(materiasInscritas(MATERIAS, INSCRIPCIONES, cicloActivoId, alumno), evaluacion.calificaciones, acreditadasFuera(KARDEX.find((k) => k.estudianteId === alumno.id), cicloActivoId))
       .map((f) => ({ ...f, reprobada: f.calificacion === CALIFICACION_MINIMA })),
     promedio: evaluacion.promedio,
     observaciones: evaluacion.observaciones,

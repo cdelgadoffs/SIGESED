@@ -1,10 +1,16 @@
 import Card from '../base/Card.jsx';
 import BadgeDinamico from '../base/BadgeDinamico.jsx';
 import BotonS from '../base/BotonS.jsx';
+import Modal from '../base/Modal.jsx';
+import HorariosPersonalizados from './HorariosPersonalizados.jsx';
+import BotonHorarioPersonalizado from './BotonHorarioPersonalizado.jsx';
+import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { esAdministradorTI } from '../../utils/permisos.js';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { ESTADOS_CICLO, diasEntre, fechaDiaMes, hoyLocal } from '../../utils/fechas.js';
-import { inscripcionDe, textoHorario, tipoHorario } from '../../utils/inscripciones.js';
+import { inscripcionDe, tramosHorario, tipoHorario } from '../../utils/inscripciones.js';
 import { nombreCompleto, nombreDeCatalogo } from '../../utils/registros.js';
 import '../../styles/widgets/ResumenCiclo.css';
 
@@ -28,7 +34,10 @@ function avanceDe(ciclo, hoy) {
 
 export default function ResumenCiclo() {
   const { CICLOS, cicloActivoId, GRUPOS, MODALIDADES, MATERIAS, HORAS_CLASE, PERSONAL, INSCRIPCIONES, CARGA } = useRegistros();
-  const { abrirPanelControl } = useUI();
+  const { abrirPanelControl, setGrupoEnInscripcionId } = useUI();
+  const { puede, rolesSesion, rolActivo } = useAuth();
+  const superusuario = puede('inicio', 'editar') && esAdministradorTI(rolesSesion.filter(rolActivo));
+  const [porEditar, setPorEditar] = useState(null);
   const ciclo = CICLOS.find((c) => c.id === cicloActivoId);
   const hoy = hoyLocal();
 
@@ -97,6 +106,11 @@ export default function ResumenCiclo() {
             <div className="widget-resumen-ciclo-grupo">
               <span className="widget-resumen-ciclo-grupo-nombre">{grupo.nombre}</span>
               <BadgeDinamico texto={nombreDeCatalogo(MODALIDADES, grupo.modalidad)} tono="gris" />
+              <span className="widget-resumen-ciclo-grupo-accion">
+                {superusuario
+                  ? <BotonS variant="claro" onClick={() => setPorEditar(grupo)}>Editar horario</BotonS>
+                  : !ciclo.cerrado && <BotonHorarioPersonalizado grupoId={grupo.id} />}
+              </span>
             </div>
             <div className="widget-resumen-ciclo-materias">
               {materias.map((m) => {
@@ -107,15 +121,27 @@ export default function ResumenCiclo() {
                     <span className="widget-resumen-ciclo-materia-nombre">{materia ? `${materia.clave} · ${materia.nombre}` : m.materia}</span>
                     <span>{docente ? nombreCompleto(docente) : 'Sin docente'}</span>
                     <span className="widget-resumen-ciclo-materia-horario">
-                      {tipo === null ? 'Online, sin horario' : (textoHorario(m.horario, HORAS_CLASE) || 'Sin horario')}
+                      {tipo === null ? 'Sin horario (Online)' : m.horario.length === 0 ? 'Sin horario' : tramosHorario(m.horario, HORAS_CLASE).map((t, k) => (
+                        <span key={k} className={`widget-resumen-ciclo-dia widget-resumen-ciclo-dia-${t.dia}`}>{t.texto}</span>
+                      ))}
                     </span>
                   </div>
                 );
               })}
             </div>
+            <HorariosPersonalizados grupo={grupo} />
           </Card>
         );
       })}
+      <Modal abierto={porEditar !== null} titulo="Editar horario" onCerrar={() => setPorEditar(null)}>
+        <p className="widget-resumen-ciclo-modal-texto">
+          {`El ciclo escolar ${ciclo.id} ya ${ciclo.cerrado ? 'se concluyó' : 'se inició'}. Como Administrador TI puedes modificar las materias, docentes y horario de ${porEditar?.nombre ?? ''}, pero el cambio puede afectar evaluaciones, boletas y kárdex ya registrados. ¿Continuar?`}
+        </p>
+        <div className="widget-resumen-ciclo-modal-acciones">
+          <BotonS variant="claro" onClick={() => setPorEditar(null)}>Cancelar</BotonS>
+          <BotonS variant="claro" onClick={() => { setGrupoEnInscripcionId(porEditar.id); setPorEditar(null); }}>Editar</BotonS>
+        </div>
+      </Modal>
     </div>
   );
 }

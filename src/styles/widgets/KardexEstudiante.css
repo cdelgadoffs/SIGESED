@@ -293,3 +293,35 @@ td.widget-kardex-estudiante-reprobada {
   vertical-align: middle;
   margin-right: 2px;
 }
+
+.widget-kardex-estudiante-mencion {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.widget-kardex-estudiante-modal-texto {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+.widget-kardex-estudiante-modal-error {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #c62828;
+}
+.widget-kardex-estudiante-modal-acciones {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.widget-kardex-estudiante-impresion {
+  position: fixed;
+  width: 0;
+  height: 0;
+  border: 0;
+  visibility: hidden;
+}

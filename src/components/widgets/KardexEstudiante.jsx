@@ -1,4 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import BotonS from '../base/BotonS.jsx';
+import Modal from '../base/Modal.jsx';
+import CampoTexto from '../base/CampoTexto.jsx';
+import { esAdministradorTI } from '../../utils/permisos.js';
+import { hoyLocal } from '../../utils/fechas.js';
+import { documentoMencion } from '../../utils/mencionHonorifica.js';
+import { imprimirDocumento } from '../../utils/impresion.js';
+import logoIcom from '../../assets/Icom.png';
 import BadgeDinamico from '../base/BadgeDinamico.jsx';
 import ListaExpandible from '../base/ListaExpandible.jsx';
 import OpcionesRegistro from './OpcionesRegistro.jsx';
@@ -65,6 +73,7 @@ function Kardex({ alumno }) {
             <strong>{formatoPromedio(kardex?.promedioGeneral ?? null)}</strong>
             <small>{kardex?.totalMaterias ?? 0} {kardex?.totalMaterias === 1 ? 'materia' : 'materias'}</small>
           </div>
+          <MencionHonorifica alumno={alumno} />
           <dl className="widget-kardex-estudiante-datos">
             <div><dt>Programa</dt><dd>{nombreDeCatalogo(PROGRAMAS_EDUCATIVOS, grupo?.programaEducativo) || '—'}</dd></div>
             <div><dt>Grupo</dt><dd>{grupo?.nombre ?? '—'}</dd></div>
@@ -145,6 +154,96 @@ function Kardex({ alumno }) {
         </div>
       </section>
       {!sidebar3Abierto && <VistaPreviaKardex />}
+    </div>
+  );
+}
+
+const ROL_FIRMA_MENCION = 'director';
+
+function MencionHonorifica({ alumno }) {
+  const { MENCIONES, PLANTEL, PERSONAL, ROLES, otorgarMencion, revocarMencion } = useRegistros();
+  const { rolesSesion, rolActivo } = useAuth();
+  const superusuario = esAdministradorTI(rolesSesion.filter(rolActivo));
+  const [modal, setModal] = useState(null);
+  const [fecha, setFecha] = useState(hoyLocal());
+  const [error, setError] = useState(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [documento, setDocumento] = useState('');
+  const [impresiones, setImpresiones] = useState(0);
+  const iframeRef = useRef(null);
+  const mencion = MENCIONES.find((m) => m.estudianteId === alumno.id);
+  if (!mencion && !superusuario) return null;
+
+  function cerrar() {
+    setModal(null);
+    setError(null);
+  }
+
+  async function ejecutar(operacion) {
+    setOcupado(true);
+    setError(null);
+    try {
+      await operacion();
+      cerrar();
+    } catch (e) {
+      setError(e?.mensaje ?? 'No se pudo completar la operación.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  function imprimir() {
+    const firmante = PERSONAL.find((p) => p.activo !== false && (p.roles ?? []).includes(ROL_FIRMA_MENCION));
+    const nombre = nombreCompleto(alumno);
+    setImpresiones((n) => n + 1);
+    setDocumento(documentoMencion({
+      titulo: `Constancia_Mencion_Honorifica_${alumno.nombre.split(' ')[0]}_${alumno.primerApellido}`.replace(/\s+/g, '_'),
+      menciones: [{ nombre, fecha: mencion.fecha }],
+      institucion: PLANTEL?.institucion ?? '',
+      lugar: PLANTEL?.municipio ?? '',
+      firma: { nombre: firmante ? nombreCompleto(firmante) : '', cargo: ROLES.find((r) => r.id === ROL_FIRMA_MENCION)?.nombre ?? '' },
+      logo: new URL(logoIcom, window.location.href).href,
+    }));
+  }
+
+  return (
+    <div className="widget-kardex-estudiante-mencion">
+      {mencion ? (
+        <>
+          <BadgeDinamico texto="Mención honorífica" icono="ri-award-fill" tono="naranja" title={`Folio ${mencion.folio}`} />
+          <BotonS variant="claro" onClick={imprimir}><i className="ri-file-pdf-2-line" /> Imprimir mención</BotonS>
+          {superusuario && <BotonS variant="claro" onClick={() => setModal('revocar')}>Revocar</BotonS>}
+        </>
+      ) : (
+        <BotonS variant="claro" onClick={() => { setFecha(hoyLocal()); setModal('otorgar'); }}><i className="ri-award-line" /> Otorgar mención honorífica</BotonS>
+      )}
+      <Modal abierto={modal === 'otorgar'} titulo="Otorgar mención honorífica" onCerrar={cerrar}>
+        <p className="widget-kardex-estudiante-modal-texto">{`Mención honorífica por titulación para ${nombreCompleto(alumno)}. Fecha de la constancia:`}</p>
+        <CampoTexto tipo="date" value={fecha} onChange={setFecha} ariaLabel="Fecha de la mención" />
+        {error && <p className="widget-kardex-estudiante-modal-error">{error}</p>}
+        <div className="widget-kardex-estudiante-modal-acciones">
+          <BotonS variant="claro" onClick={cerrar}>Cancelar</BotonS>
+          <BotonS variant="claro" disabled={ocupado || !fecha} onClick={() => ejecutar(() => otorgarMencion({ estudianteId: alumno.id, fecha }))}>Otorgar</BotonS>
+        </div>
+      </Modal>
+      <Modal abierto={modal === 'revocar'} titulo="Revocar mención honorífica" onCerrar={cerrar}>
+        <p className="widget-kardex-estudiante-modal-texto">{`¿Revocar la mención honorífica de ${nombreCompleto(alumno)} (folio ${mencion?.folio ?? ''})? El folio no se reutiliza.`}</p>
+        {error && <p className="widget-kardex-estudiante-modal-error">{error}</p>}
+        <div className="widget-kardex-estudiante-modal-acciones">
+          <BotonS variant="claro" onClick={cerrar}>Cancelar</BotonS>
+          <BotonS variant="claro" disabled={ocupado} onClick={() => ejecutar(() => revocarMencion(mencion.id))}>Revocar</BotonS>
+        </div>
+      </Modal>
+      {documento && (
+        <iframe
+          key={impresiones}
+          ref={iframeRef}
+          className="widget-kardex-estudiante-impresion"
+          title="Mención honorífica para imprimir"
+          srcDoc={documento}
+          onLoad={() => imprimirDocumento(iframeRef.current?.contentWindow)}
+        />
+      )}
     </div>
   );
 }

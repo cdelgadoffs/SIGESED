@@ -1,18 +1,20 @@
 import { ApiError } from '../ApiError.js';
+import { CATALOGOS_SEMILLA } from './semilla.js';
 import {
-  STORE_CATALOGOS, STORE_UNICOS, STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES, STORE_KARDEX, STORE_CURSOS,
+  STORE_CATALOGOS, STORE_UNICOS, STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES, STORE_KARDEX, STORE_CURSOS, STORE_MENCIONES,
   obtenerTodos, obtener, guardar, escribirVarios, DB_VERSION, almacenesRespaldo, leerTodo, reemplazarTodo,
 } from './db.js';
 import {
-  usuarioActual, exigirEscritura, alcanceEscritura, calificacionesDelDocente, fijarSesion, sesionDeTokenEntra, sesionDeTokenGoogle, exigirRol, ROL_ADMINISTRADOR_TI, armarRespaldo, validarRespaldo, prepararRegistro, exigirVersion,
+  usuarioActual, esSuperusuario, exigirEscritura, alcanceEscritura, calificacionesDelDocente, fijarSesion, sesionDeTokenEntra, sesionDeTokenGoogle, exigirRol, ROL_ADMINISTRADOR_TI, armarRespaldo, validarRespaldo, prepararRegistro, exigirVersion,
   exigirPlantel, generarMatricula, ordenarPersonas, validarRolesDisponibles, validarRolesAsignables, ciclosDelAnio, ordenarCiclos,
   prepararEvaluacion, idEvaluacion, conPromedio,
   validarNombreGrupoUnico, ordenarGrupos,
   prepararConfiguracionCiclo, validarCicloSinEncimar, cicloConDerivados, hoyServidor,
   exigirCicloPreparable, prepararInscripcion, validarDocentesSinChoque, pendientesDeInicio, idInscripcion,
+  idPersonalizada, inscripcionDeEstudiante, prepararEstudiantesPersonalizada,
   validarFechaReporte, cicloDeFecha, ordenarReportes,
   prepararCalificacionKardex, validarMateriaKardexUnica, armarKardex, materiasAcreditadas, exigirNoAcreditadas, prepararMateriaManual,
-  filaReprobada, recuperacionesDe, cicloParaCurso, exigirCursoModificable, prepararCurso, cursoConDerivados, ordenarCursos,
+  filaReprobada, recuperacionesDe, cicloParaCurso, exigirCursoModificable, fechaDeCurso, folioSiguiente, prepararMencion, prepararCurso, cursoConDerivados, ordenarCursos,
 } from './reglas.js';
 
 const CLAVE_PLANTEL = 'plantel';
@@ -72,6 +74,9 @@ export async function exportarRespaldo() {
 export async function restaurarRespaldo(respaldo) {
   exigirRol(ROL_ADMINISTRADOR_TI, SOLO_TI);
   const datos = validarRespaldo(respaldo, DB_VERSION, almacenesRespaldo());
+  if (respaldo.version < DB_VERSION) {
+    datos.catalogos = [...datos.catalogos.filter((c) => c.nombre !== 'roles'), { nombre: 'roles', items: CATALOGOS_SEMILLA.roles }];
+  }
   await reemplazarTodo(datos);
   return { restaurado: true, generadoEn: respaldo.generadoEn ?? null };
 }
@@ -220,6 +225,12 @@ export async function editarEstudiante(id, version, cambios) {
 }
 
 export async function eliminarEstudiante(id) {
+  if ((await obtenerTodos(STORE_INSCRIPCIONES)).some((i) => (i.estudiantes ?? []).includes(id))) {
+    throw new ApiError('EN_USO', 'No se puede eliminar: el estudiante está en un horario personalizado.');
+  }
+  if ((await obtenerTodos(STORE_MENCIONES)).some((m) => m.estudianteId === id)) {
+    throw new ApiError('CON_EVALUACIONES', 'No se puede eliminar: el estudiante tiene una mención honorífica.');
+  }
   if ((await obtenerTodos(STORE_CURSOS)).some((c) => c.voluntarios.includes(id) || c.acreditados.includes(id))) {
     throw new ApiError('CON_EVALUACIONES', 'No se puede eliminar: el estudiante está inscrito o acreditó cursos extracurriculares.');
   }
@@ -263,11 +274,15 @@ export async function configurarCiclo(id, version, datos) {
   const actual = await exigirExistente(STORE_CICLOS, id, 'El ciclo escolar no existe.');
   exigirVersion({ version: actual.version ?? 1 }, version);
   const todos = await listarCiclos();
-  exigirCicloPreparable({ ...actual, cerrado: actual.cerrado ?? false }, todos);
+  const superusuario = esSuperusuario();
+  if (!superusuario) exigirCicloPreparable({ ...actual, cerrado: actual.cerrado ?? false }, todos);
   const { semanasCiclo = [] } = await listarCatalogos();
   const { fechaFin, ...limpio } = prepararConfiguracionCiclo(datos, semanasCiclo);
   validarCicloSinEncimar(id, limpio.fechaInicio, fechaFin, todos);
-  const registro = { ...actual, ...limpio, version: (actual.version ?? 1) + 1, modificadoEn: new Date().toISOString() };
+  const ahora = new Date().toISOString();
+  const fijo = actual.iniciado || actual.cerrado;
+  const rastro = superusuario && fijo ? { modificadoPorTI: { en: ahora, por: usuarioActual().id } } : {};
+  const registro = { ...actual, ...limpio, ...rastro, version: (actual.version ?? 1) + 1, modificadoEn: ahora };
   await guardar(STORE_CICLOS, registro);
   return entregarCiclo(registro);
 }
@@ -322,25 +337,64 @@ export async function guardarInscripcion(cicloId, grupoId, version, datos) {
   exigirEscritura('inicio');
   const ciclo = await exigirExistente(STORE_CICLOS, cicloId, 'El ciclo escolar no existe.');
   const grupo = await exigirExistente(STORE_GRUPOS, grupoId, 'El grupo no existe.');
-  if (ciclo.cerrado) throw new ApiError('VALIDACION', `El ciclo ${cicloId} ya se concluyó y no se puede modificar.`);
-  exigirCicloPreparable(ciclo, await listarCiclos());
-  if (grupo.activo === false) throw new ApiError('VALIDACION', `El grupo ${grupo.nombre} está inactivo: solo se inscriben grupos activos.`);
+  const superusuario = esSuperusuario();
+  if (!superusuario) {
+    if (ciclo.cerrado) throw new ApiError('VALIDACION', `El ciclo ${cicloId} ya se concluyó y no se puede modificar.`);
+    exigirCicloPreparable(ciclo, await listarCiclos());
+    if (grupo.activo === false) throw new ApiError('VALIDACION', `El grupo ${grupo.nombre} está inactivo: solo se inscriben grupos activos.`);
+  }
+  const rastro = superusuario && (ciclo.iniciado || ciclo.cerrado) ? { modificadoPorTI: { en: new Date().toISOString(), por: usuarioActual().id } } : {};
   const { catalogos, grupos, inscripciones, personal } = await datosPreparacion();
   const limpio = prepararInscripcion(datos, grupo, catalogos, personal);
   const id = idInscripcion(cicloId, grupoId);
   const otras = inscripciones.filter((i) => i.cicloId === cicloId && i.id !== id);
-  validarDocentesSinChoque(limpio.materias, otras, grupos, personal, catalogos);
+  validarDocentesSinChoque(limpio.materias, otras, grupos, personal, catalogos, grupoId);
   const actual = inscripciones.find((i) => i.id === id);
   let inscripcion;
   if (actual) {
     exigirVersion(actual, version);
-    inscripcion = registroEditado(actual, limpio);
+    inscripcion = registroEditado(actual, { ...limpio, ...rastro });
   } else {
     const ahora = new Date().toISOString();
-    inscripcion = { id, cicloId, grupoId, ...limpio, version: 1, creadoEn: ahora, creadoPor: usuarioActual().id, modificadoEn: ahora };
+    inscripcion = { id, cicloId, grupoId, ...limpio, ...rastro, version: 1, creadoEn: ahora, creadoPor: usuarioActual().id, modificadoEn: ahora };
   }
   await guardar(STORE_INSCRIPCIONES, inscripcion);
   return inscripcion;
+}
+
+export async function guardarHorarioPersonalizado(cicloId, grupoId, id, version, datos) {
+  exigirEscritura('inicio');
+  const ciclo = await exigirExistente(STORE_CICLOS, cicloId, 'El ciclo escolar no existe.');
+  const grupo = await exigirExistente(STORE_GRUPOS, grupoId, 'El grupo no existe.');
+  const superusuario = esSuperusuario();
+  if (ciclo.cerrado && !superusuario) throw new ApiError('VALIDACION', `El ciclo ${cicloId} ya se concluyó y no se puede modificar.`);
+  const { catalogos, grupos, inscripciones, personal } = await datosPreparacion();
+  const actual = id ? inscripciones.find((i) => i.id === id && i.personalizada) : null;
+  if (id && !actual) throw new ApiError('NO_ENCONTRADO', 'El horario personalizado no existe.');
+  if (actual) exigirVersion(actual, version);
+  const limpio = prepararInscripcion(datos, grupo, catalogos, personal, true);
+  if (limpio.materias.length === 0) throw new ApiError('VALIDACION', 'Agrega al menos una materia al horario personalizado.');
+  const otras = inscripciones.filter((i) => i.cicloId === cicloId && i.id !== actual?.id);
+  validarDocentesSinChoque(limpio.materias, otras, grupos, personal, catalogos, grupoId);
+  const estudiantes = prepararEstudiantesPersonalizada(datos?.estudiantes, await obtenerTodos(STORE_ESTUDIANTES), otras.filter((i) => i.personalizada), actual?.estudiantes ?? []);
+  const rastro = superusuario && ciclo.cerrado ? { modificadoPorTI: { en: new Date().toISOString(), por: usuarioActual().id } } : {};
+  let registro;
+  if (actual) registro = registroEditado(actual, { ...limpio, estudiantes, ...rastro });
+  else {
+    const ahora = new Date().toISOString();
+    registro = { id: idPersonalizada(cicloId, grupoId), cicloId, grupoId, personalizada: true, estudiantes, ...limpio, ...rastro, version: 1, creadoEn: ahora, creadoPor: usuarioActual().id, modificadoEn: ahora };
+  }
+  await guardar(STORE_INSCRIPCIONES, registro);
+  return registro;
+}
+
+export async function eliminarHorarioPersonalizado(id) {
+  exigirEscritura('inicio');
+  const actual = await exigirExistente(STORE_INSCRIPCIONES, id, 'El horario personalizado no existe.');
+  if (!actual.personalizada) throw new ApiError('VALIDACION', 'Solo se eliminan horarios personalizados.');
+  const ciclo = await obtener(STORE_CICLOS, actual.cicloId);
+  if (ciclo?.cerrado && !esSuperusuario()) throw new ApiError('VALIDACION', `El ciclo ${actual.cicloId} ya se concluyó y no se puede modificar.`);
+  return eliminar(STORE_INSCRIPCIONES, id, 'inicio');
 }
 
 async function recuperadasDe(estudianteId) {
@@ -354,7 +408,7 @@ async function acreditadasFuera(estudianteId, cicloId) {
 
 async function materiasInscritasDe(estudianteId, cicloId) {
   const estudiante = await obtener(STORE_ESTUDIANTES, estudianteId);
-  const inscripcion = estudiante ? await obtener(STORE_INSCRIPCIONES, idInscripcion(cicloId, estudiante.grupo)) : null;
+  const inscripcion = inscripcionDeEstudiante(await obtenerTodos(STORE_INSCRIPCIONES), cicloId, estudiante);
   const fuera = await acreditadasFuera(estudianteId, cicloId);
   return (inscripcion?.materias ?? []).filter((m) => !fuera.has(m.materia)).length;
 }
@@ -370,7 +424,7 @@ export async function guardarEvaluacion(estudianteId, cicloId, version, datos) {
   const ciclo = await exigirExistente(STORE_CICLOS, cicloId, 'El ciclo escolar no existe.');
   if (!ciclo.iniciado) throw new ApiError('VALIDACION', `El ciclo ${cicloId} aún no se inicia: las evaluaciones se capturan en un ciclo iniciado.`);
   const grupo = await exigirExistente(STORE_GRUPOS, estudiante.grupo, 'El estudiante no tiene un grupo válido.');
-  const inscripcion = await obtener(STORE_INSCRIPCIONES, idInscripcion(cicloId, grupo.id));
+  const inscripcion = inscripcionDeEstudiante(await obtenerTodos(STORE_INSCRIPCIONES), cicloId, { ...estudiante, grupo: grupo.id });
   const inscritas = new Set((inscripcion?.materias ?? []).map((m) => m.materia));
   const { materias = [] } = await listarCatalogos();
   const id = idEvaluacion(cicloId, estudianteId);
@@ -474,8 +528,8 @@ async function cargarAcademico() {
 }
 
 function kardexDe(id, d, cursos = d.cursos) {
-  const grupo = d.estudiantes.find((e) => e.id === id)?.grupo;
-  const inscritasDe = (cicloId) => (d.inscripciones.find((i) => i.id === idInscripcion(cicloId, grupo))?.materias ?? []).map((m) => m.materia);
+  const estudiante = d.estudiantes.find((e) => e.id === id);
+  const inscritasDe = (cicloId) => (inscripcionDeEstudiante(d.inscripciones, cicloId, estudiante)?.materias ?? []).map((m) => m.materia);
   return armarKardex(id, d.registros, d.evaluaciones, d.ciclos, d.materias, inscritasDe, recuperacionesDe(id, cursos));
 }
 
@@ -509,11 +563,19 @@ export async function listarCursos() {
   return entregarCursos(await cargarAcademico());
 }
 
+async function cicloDeCurso(curso) {
+  return curso.cicloId ? obtener(STORE_CICLOS, curso.cicloId) : null;
+}
+
 async function cursoModificable(id, version) {
   const actual = await exigirExistente(STORE_CURSOS, id, 'El curso no existe.');
   exigirVersion(actual, version);
-  exigirCursoModificable(await obtener(STORE_CICLOS, actual.cicloId));
+  if (!esSuperusuario()) exigirCursoModificable(await cicloDeCurso(actual));
   return actual;
+}
+
+function rastroTI() {
+  return { modificadoPorTI: { en: new Date().toISOString(), por: usuarioActual().id } };
 }
 
 async function datosParaCurso(idPropio) {
@@ -523,9 +585,11 @@ async function datosParaCurso(idPropio) {
 
 export async function crearCurso(datos) {
   exigirEscritura('cursos');
-  const ciclo = cicloParaCurso(await listarCiclos());
-  const limpio = prepararCurso(datos, { ...(await datosParaCurso(null)), cicloId: ciclo.id });
-  const curso = nuevoRegistro({ ...limpio, cicloId: ciclo.id, voluntarios: [], acreditados: [] });
+  const ciclos = await listarCiclos();
+  const personalizada = esSuperusuario() && !!datos?.fecha;
+  const destino = personalizada ? fechaDeCurso(datos.fecha, ciclos) : { fecha: null, cicloId: cicloParaCurso(ciclos).id };
+  const limpio = prepararCurso(datos, { ...(await datosParaCurso(null)), cicloId: destino.cicloId });
+  const curso = nuevoRegistro({ ...limpio, ...destino, ...(personalizada ? rastroTI() : {}), voluntarios: [], acreditados: [] });
   await guardar(STORE_CURSOS, curso);
   return entregarCurso(curso.id);
 }
@@ -533,8 +597,10 @@ export async function crearCurso(datos) {
 export async function editarCurso(id, version, cambios) {
   exigirEscritura('cursos');
   const actual = await cursoModificable(id, version);
-  const limpio = prepararCurso({ ...actual, ...cambios }, { ...(await datosParaCurso(id)), cicloId: actual.cicloId });
-  let curso = registroEditado(actual, limpio);
+  const personalizada = esSuperusuario() && !!cambios?.fecha;
+  const destino = personalizada ? fechaDeCurso(cambios.fecha, await listarCiclos()) : { fecha: actual.fecha ?? null, cicloId: actual.cicloId };
+  const limpio = prepararCurso({ ...actual, ...cambios }, { ...(await datosParaCurso(id)), cicloId: destino.cicloId });
+  let curso = registroEditado(actual, { ...limpio, ...destino, ...(personalizada ? rastroTI() : {}) });
   const inscritos = new Set([...obligatoriosDe(curso, await cargarAcademico()), ...curso.voluntarios]);
   curso = { ...curso, acreditados: curso.acreditados.filter((e) => inscritos.has(e)) };
   await guardar(STORE_CURSOS, curso);
@@ -544,8 +610,8 @@ export async function editarCurso(id, version, cambios) {
 export async function eliminarCurso(id) {
   exigirEscritura('cursos');
   const actual = await exigirExistente(STORE_CURSOS, id, 'El curso no existe.');
-  exigirCursoModificable(await obtener(STORE_CICLOS, actual.cicloId));
-  if (actual.acreditados.length > 0) throw new ApiError('EN_USO', 'No se puede eliminar: el curso ya tiene alumnos acreditados.');
+  if (!esSuperusuario()) exigirCursoModificable(await cicloDeCurso(actual));
+  if (actual.acreditados.length > 0 && !esSuperusuario()) throw new ApiError('EN_USO', 'No se puede eliminar: el curso ya tiene alumnos acreditados.');
   return eliminar(STORE_CURSOS, id, 'cursos');
 }
 
@@ -553,7 +619,7 @@ export async function inscribirEnCurso(id, version, estudianteId) {
   exigirEscritura('cursos');
   const actual = await cursoModificable(id, version);
   const estudiante = await exigirExistente(STORE_ESTUDIANTES, estudianteId, 'El estudiante no existe.');
-  if (estudiante.activo === false) throw new ApiError('VALIDACION', 'No se puede inscribir a un estudiante inactivo.');
+  if (estudiante.activo === false && !esSuperusuario()) throw new ApiError('VALIDACION', 'No se puede inscribir a un estudiante inactivo.');
   if (obligatoriosDe(actual, await cargarAcademico()).includes(estudianteId)) throw new ApiError('VALIDACION', 'El estudiante ya está inscrito como obligatorio.');
   if (actual.voluntarios.includes(estudianteId)) throw new ApiError('VALIDACION', 'El estudiante ya está inscrito.');
   await guardar(STORE_CURSOS, registroEditado(actual, { voluntarios: [...actual.voluntarios, estudianteId] }));
@@ -580,4 +646,44 @@ export async function marcarAcreditado(id, version, estudianteId, acreditado) {
   const sin = actual.acreditados.filter((e) => e !== estudianteId);
   await guardar(STORE_CURSOS, registroEditado(actual, { acreditados: acreditado ? [...sin, estudianteId] : sin }));
   return entregarCurso(id);
+}
+
+export async function emitirConstancias(id, destinatarios) {
+  exigirEscritura('cursos');
+  const actual = await exigirExistente(STORE_CURSOS, id, 'El curso no existe.');
+  if (!Array.isArray(destinatarios) || destinatarios.length === 0) throw new ApiError('VALIDACION', 'Indica para quién son las constancias.');
+  const superusuario = esSuperusuario();
+  destinatarios.forEach((d) => {
+    if (d !== 'docente' && !actual.acreditados.includes(d) && !superusuario) {
+      throw new ApiError('VALIDACION', 'Solo se emite constancia a los alumnos que acreditaron el curso.');
+    }
+  });
+  const otros = (await obtenerTodos(STORE_CURSOS)).filter((c) => c.id !== id);
+  const curso = { ...actual, folios: { ...(actual.folios ?? {}) } };
+  const ahora = new Date().toISOString();
+  destinatarios.forEach((d) => {
+    const clave = d === 'docente' ? `docente:${actual.docenteId}` : d;
+    if (curso.folios[clave]) return;
+    curso.folios[clave] = { folio: folioSiguiente(curso, [...otros, curso]), emitidoEn: ahora, emitidoPor: usuarioActual().id };
+  });
+  await guardar(STORE_CURSOS, registroEditado(curso, {}));
+  return entregarCurso(id);
+}
+
+export async function listarMenciones() {
+  return obtenerTodos(STORE_MENCIONES);
+}
+
+export async function otorgarMencion(datos) {
+  exigirRol(ROL_ADMINISTRADOR_TI, 'Solo el Administrador TI otorga menciones honoríficas.');
+  const estudiante = await exigirExistente(STORE_ESTUDIANTES, datos?.estudianteId, 'El estudiante no existe.');
+  const registro = nuevoRegistro(prepararMencion(datos, estudiante, await obtenerTodos(STORE_MENCIONES)));
+  await guardar(STORE_MENCIONES, registro);
+  return registro;
+}
+
+export async function revocarMencion(id) {
+  exigirRol(ROL_ADMINISTRADOR_TI, 'Solo el Administrador TI revoca menciones honoríficas.');
+  await exigirExistente(STORE_MENCIONES, id, 'La mención no existe.');
+  return eliminar(STORE_MENCIONES, id, 'kardex');
 }

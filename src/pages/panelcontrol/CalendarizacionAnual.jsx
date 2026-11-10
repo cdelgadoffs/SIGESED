@@ -7,6 +7,7 @@ import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { ESTADOS_CICLO } from '../../utils/fechas.js';
+import { esAdministradorTI } from '../../utils/permisos.js';
 import '../../styles/pages/panelcontrol/CalendarizacionAnual.css';
 
 const CICLOS_POR_ANIO = 6;
@@ -17,7 +18,10 @@ export default function CalendarizacionAnual() {
   const [errorCierre, setErrorCierre] = useState(null);
   const [cerrando, setCerrando] = useState(false);
   const { setPanelControlActivo, setSidebar5Ancho, setVistaActual, setCicloEnEdicionId, cerrarSidebar5 } = useUI();
-  const puedeEditar = useAuth().puede('panelControl', 'editar');
+  const { puede, rolesSesion, rolActivo } = useAuth();
+  const puedeEditar = puede('panelControl', 'editar');
+  const superusuario = esAdministradorTI(rolesSesion.filter(rolActivo));
+  const [porEditar, setPorEditar] = useState(null);
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
@@ -116,7 +120,11 @@ export default function CalendarizacionAnual() {
                 ? <BotonS variant="claro" onClick={() => setPorConcluir(c.id)}>Concluir ciclo escolar</BotonS>
                 : undefined}
               onClick={() => seleccionarCiclo(c.id)}
-              onEditar={!puedeEditar || c.cerrado || c.iniciado ? undefined : () => editar(c.id)}
+              onEditar={(() => {
+                if (!puedeEditar) return undefined;
+                if (!c.cerrado && !c.iniciado) return () => editar(c.id);
+                return superusuario ? () => setPorEditar(c) : undefined;
+              })()}
             />
           );
         })}
@@ -129,6 +137,15 @@ export default function CalendarizacionAnual() {
         <div className="panelcontrol-calendarizacion-anual-modal-acciones">
           <BotonS variant="claro" onClick={cerrarModal}>Cancelar</BotonS>
           <BotonS variant="claro" onClick={confirmarCierre} disabled={cerrando}>Concluir</BotonS>
+        </div>
+      </Modal>
+      <Modal abierto={porEditar !== null} titulo="Editar ciclo escolar" onCerrar={() => setPorEditar(null)}>
+        <p className="panelcontrol-calendarizacion-anual-modal-texto">
+          {`El ciclo escolar ${porEditar?.id ?? ''} ya ${porEditar?.cerrado ? 'se concluyó' : 'se inició'}. Como Administrador TI puedes modificar su calendario, pero el cambio puede alterar semanas, horarios, evaluaciones y reportes ya registrados. ¿Continuar?`}
+        </p>
+        <div className="panelcontrol-calendarizacion-anual-modal-acciones">
+          <BotonS variant="claro" onClick={() => setPorEditar(null)}>Cancelar</BotonS>
+          <BotonS variant="claro" onClick={() => { const id = porEditar.id; setPorEditar(null); editar(id); }}>Editar</BotonS>
         </div>
       </Modal>
     </div>

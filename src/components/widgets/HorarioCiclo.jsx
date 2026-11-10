@@ -5,7 +5,7 @@ import BotonS from '../base/BotonS.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
-import { horasDeModalidad, inscripcionDe, tipoHorario } from '../../utils/inscripciones.js';
+import { horasDeModalidad, inscripcionDe, personalizadasDe, tipoHorario } from '../../utils/inscripciones.js';
 import { COLORES_DIA, DIAS_POR_TIPO, bloquesDe, documentoHorarios, tieneDisenoHorario, tinte } from '../../utils/horarioEscolar.js';
 import { DIAS_SEMANA } from '../../utils/fechas.js';
 import { imprimirDocumento } from '../../utils/impresion.js';
@@ -88,24 +88,38 @@ function Rejilla({ hoja }) {
 }
 
 export default function HorarioCiclo() {
-  const { CICLOS, cicloActivoId, GRUPOS, MODALIDADES, MATERIAS, HORAS_CLASE, PERSONAL, INSCRIPCIONES, PLANTEL, CARGA } = useRegistros();
+  const { CICLOS, cicloActivoId, GRUPOS, MODALIDADES, MATERIAS, HORAS_CLASE, PERSONAL, ESTUDIANTES, INSCRIPCIONES, PLANTEL, CARGA } = useRegistros();
   const { setVistaActual } = useUI();
   const { puede } = useAuth();
   const iframeRef = useRef(null);
   const [documento, setDocumento] = useState(null);
   const [impresiones, setImpresiones] = useState(0);
+  const [abiertos, setAbiertos] = useState(() => new Set());
   const ciclo = CICLOS.find((c) => c.id === cicloActivoId);
 
   if (!ciclo) {
     return <p className="widget-horario-ciclo-mensaje">{CARGA.ciclos.cargando ? 'Cargando…' : 'Aún no hay ciclos escolares.'}</p>;
   }
 
-  const grupos = GRUPOS
-    .map((g) => ({ grupo: g, materias: inscripcionDe(INSCRIPCIONES, ciclo.id, g.id)?.materias ?? [] }))
+  const normales = GRUPOS
+    .map((g) => ({ id: g.id, grupo: g, materias: inscripcionDe(INSCRIPCIONES, ciclo.id, g.id)?.materias ?? [] }))
     .filter(({ grupo, materias }) => materias.length > 0 || (!ciclo.iniciado && grupo.activo !== false));
+  const personalizados = GRUPOS.flatMap((g) => personalizadasDe(INSCRIPCIONES, ciclo.id, g.id).map((p) => {
+    const nombres = (p.estudiantes ?? []).map((id) => ESTUDIANTES.find((e) => e.id === id)).filter(Boolean).map(nombreCompleto);
+    return { id: p.id, grupo: g, materias: p.materias, alumnos: Math.max(nombres.length, 1), nombres };
+  }));
+  const grupos = [...normales, ...personalizados];
+  const textoAlumnos = (nombres) => (nombres.length <= 2 ? nombres.join(' y ') : `${nombres[0]} y ${nombres.length - 1} más`);
+  const alternar = (id) => setAbiertos((a) => {
+    const nuevo = new Set(a);
+    if (nuevo.has(id)) nuevo.delete(id);
+    else nuevo.add(id);
+    return nuevo;
+  });
+  const nombreDe = (e) => (e.alumnos ? `${e.grupo.nombre} · Personalizado` : e.grupo.nombre);
   const imprimibles = grupos.filter(({ grupo, materias }) => materias.length > 0 && tieneDisenoHorario(tipoHorario(grupo, MODALIDADES)));
 
-  function hojaDe({ grupo, materias }) {
+  function hojaDe({ grupo, materias, alumnos, nombres }) {
     const asignaciones = materias.map((m) => {
       const materia = MATERIAS.find((x) => x.id === m.materia);
       const docente = PERSONAL.find((p) => p.id === m.docenteId);
@@ -118,11 +132,12 @@ export default function HorarioCiclo() {
       };
     });
     return {
-      grupo: grupo.nombre,
+      grupo: nombreDe({ grupo, alumnos }),
       modalidad: nombreDeCatalogo(MODALIDADES, grupo.modalidad),
       tipo: tipoHorario(grupo, MODALIDADES),
       horas: horasDeModalidad(HORAS_CLASE, grupo),
       asignaciones,
+      anotaciones: nombres ? [`Horario personalizado. Inscritos: ${nombres.join(', ')}.`] : [],
     };
   }
 
@@ -167,16 +182,22 @@ export default function HorarioCiclo() {
       {grupos.map((entrada) => {
         const { grupo, materias } = entrada;
         const tipo = tipoHorario(grupo, MODALIDADES);
+        const colapsado = !!entrada.nombres && !abiertos.has(entrada.id);
         return (
-          <Card key={grupo.id}>
-            <div className="widget-horario-ciclo-grupo">
-              <span className="widget-horario-ciclo-grupo-nombre">{grupo.nombre}</span>
+          <Card key={entrada.id}>
+            <div
+              className={`widget-horario-ciclo-grupo${entrada.nombres ? ' widget-horario-ciclo-grupo-plegable' : ''}`}
+              onClick={entrada.nombres ? () => alternar(entrada.id) : undefined}
+            >
+              {entrada.nombres && <i className={colapsado ? 'ri-arrow-right-s-line' : 'ri-arrow-down-s-line'} />}
+              <span className="widget-horario-ciclo-grupo-nombre">{nombreDe(entrada)}</span>
+              {entrada.nombres && <BadgeDinamico texto={textoAlumnos(entrada.nombres) || 'Sin alumnos'} icono="ri-user-settings-line" tono="azul" />}
               <BadgeDinamico texto={nombreDeCatalogo(MODALIDADES, grupo.modalidad)} tono="gris" />
               {imprimibles.includes(entrada) && (
-                <BotonS variant="claro" onClick={() => imprimir([entrada], `${grupo.nombre}_${ciclo.id}`)}>Imprimir / PDF</BotonS>
+                <BotonS variant="claro" onClick={(e) => { e?.stopPropagation?.(); imprimir([entrada], `${nombreDe(entrada).replace(' · ', '_')}_${ciclo.id}`); }}>Imprimir / PDF</BotonS>
               )}
             </div>
-            {materias.length === 0 ? (
+            {colapsado ? null : materias.length === 0 ? (
               <p className="widget-horario-ciclo-vacio">Sin materias inscritas.</p>
             ) : tieneDisenoHorario(tipo) ? (
               <div className="widget-horario-ciclo-cuerpo">

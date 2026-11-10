@@ -169,3 +169,7 @@
   border: 0;
   visibility: hidden;
 }
+.widget-horario-ciclo-grupo-plegable {
+  cursor: pointer;
+  user-select: none;
+}

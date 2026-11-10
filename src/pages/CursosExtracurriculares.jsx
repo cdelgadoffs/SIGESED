@@ -39,7 +39,7 @@ export default function CursosExtracurriculares() {
         mostrarCerrar={false}
         badge="Cursos extracurriculares"
         subtitulo={`${CURSOS.length} ${CURSOS.length === 1 ? 'curso' : 'cursos'}`}
-        accionesHeader={puedeEditar && <BotonAgregar etiqueta="Nuevo curso" onClick={abrirNuevoRegistro} />}
+        accionesHeader={puedeEditar && <BotonAgregar etiqueta="Nuevo curso" onClick={abrirNuevoRegistro}>+</BotonAgregar>}
       >
         <ListaCursosSidebar />
       </Sidebar2>

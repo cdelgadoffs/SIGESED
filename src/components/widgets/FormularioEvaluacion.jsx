@@ -9,7 +9,7 @@ import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { filtrarEstudiantes, nombreCompleto, registroActivo, segunEstado } from '../../utils/registros.js';
-import { inscripcionDe } from '../../utils/inscripciones.js';
+import { inscripcionDelEstudiante } from '../../utils/inscripciones.js';
 import { CALIFICACION_MAXIMA, CALIFICACION_MINIMA, ajustarCalificacion, calificacionValida, evaluacionDe, materiasInscritas } from '../../utils/evaluaciones.js';
 import { acreditadasFuera } from '../../utils/kardex.js';
 import '../../styles/widgets/FormularioEvaluacion.css';
@@ -175,13 +175,13 @@ export default function FormularioEvaluacion() {
   if (!ciclo?.iniciado) {
     return <div className="widget-formulario-evaluacion-mensaje"><p>{`El ciclo ${cicloActivoId} aún no se inicia. Las evaluaciones se capturan cuando el ciclo está iniciado (en Inicio).`}</p></div>;
   }
-  const materias = materiasInscritas(MATERIAS, INSCRIPCIONES, cicloActivoId, grupo.id);
+  const materias = materiasInscritas(MATERIAS, INSCRIPCIONES, cicloActivoId, alumno);
   if (materias.length === 0) {
     return <div className="widget-formulario-evaluacion-mensaje"><p>{`El grupo ${grupo.nombre} no tiene materias inscritas en el ciclo ${cicloActivoId}.`}</p></div>;
   }
 
   const evaluacion = evaluacionDe(EVALUACIONES, alumno.id, cicloActivoId);
-  const ajenas = new Set(puede('evaluaciones', 'editar') ? [] : (inscripcionDe(INSCRIPCIONES, cicloActivoId, grupo.id)?.materias ?? [])
+  const ajenas = new Set(puede('evaluaciones', 'editar') ? [] : (inscripcionDelEstudiante(INSCRIPCIONES, cicloActivoId, alumno)?.materias ?? [])
     .filter((m) => m.docenteId !== cuentaActiva?.usuario)
     .map((m) => m.materia));
   return (
