@@ -170,7 +170,7 @@ function Inscripcion({ ciclo, grupo, inscripcion, personalizada, libre, ocupados
   const elegibles = ESTUDIANTES.filter((e) => e.activo !== false || form.estudiantes?.includes(e.id));
   const listaAlumnos = libre ? [
     ...ordenarPorTexto(elegibles.filter((e) => form.estudiantes.includes(e.id)), nombreCompleto),
-    ...ordenarPorTexto(filtrarEstudiantes(elegibles, GRUPOS, filtroAlumnos).filter((e) => !form.estudiantes.includes(e.id)), nombreCompleto),
+    ...(filtroAlumnos.trim() ? ordenarPorTexto(filtrarEstudiantes(elegibles, GRUPOS, filtroAlumnos).filter((e) => !form.estudiantes.includes(e.id)), nombreCompleto) : []),
   ] : [];
 
   async function agregarMateria(i, cuatrimestre) {
@@ -292,7 +292,7 @@ function Inscripcion({ ciclo, grupo, inscripcion, personalizada, libre, ocupados
               <span className="widget-formulario-inscripcion-vacio">Marca al menos un alumno para poder guardar.</span>
             )}
             {listaAlumnos.length === 0 ? (
-              <span className="widget-formulario-inscripcion-vacio">Ningún alumno coincide con la búsqueda.</span>
+              filtroAlumnos.trim() && <span className="widget-formulario-inscripcion-vacio">Ningún alumno coincide con la búsqueda.</span>
             ) : (
               <div className="widget-formulario-inscripcion-alumnos">
                 {listaAlumnos.map((a) => {

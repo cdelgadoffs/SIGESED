@@ -36,7 +36,7 @@ function Semana({ semana, asuetos, hoy }) {
         {dias.map((d) => (
           <div
             key={d.fecha}
-            className={'widget-calendario-semanal-dia'
+            className={`widget-calendario-semanal-dia widget-calendario-semanal-dia-${d.diaSemana}`
               + (d.asueto ? ' widget-calendario-semanal-dia-asueto' : '')
               + (d.hoy ? ' widget-calendario-semanal-dia-hoy' : '')}
             title={`${fechaDia(d.fecha)}${d.asueto ? ' · Asueto' : ''}${d.hoy ? ' · Hoy' : ''}`}

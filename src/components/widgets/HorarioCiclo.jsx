@@ -174,8 +174,8 @@ export default function HorarioCiclo() {
           ? <BadgeDinamico texto="Iniciado" icono="ri-play-circle-line" tono="verde" />
           : <BadgeDinamico texto="En preparación" icono="ri-time-line" tono="naranja" />}
         {puede('inicio') && !ciclo.iniciado && !ciclo.cerrado && <BotonS variant="claro" onClick={() => setVistaActual('inicio')}>Configurar en Inicio</BotonS>}
-        {imprimibles.length > 1 && (
-          <BotonS variant="claro" onClick={() => imprimir(imprimibles, `Control de horarios_${ciclo.id}`)}>Imprimir todos</BotonS>
+        {imprimibles.filter((e) => !e.nombres).length > 1 && (
+          <BotonS variant="claro" onClick={() => imprimir(imprimibles.filter((e) => !e.nombres), `Control de horarios_${ciclo.id}`)}>Imprimir todos</BotonS>
         )}
       </div>
       {grupos.length === 0 && <p className="widget-horario-ciclo-mensaje">Ningún grupo está inscrito en este ciclo.</p>}

@@ -120,9 +120,15 @@
   align-items: center;
   gap: 1px;
   padding: 3px 0 4px;
+  border: 1.5px solid transparent;
   border-radius: 4px;
-  background: #f4f5f7;
+  background: var(--dia-fondo, #f4f5f7);
 }
+.widget-calendario-semanal-dia-1, .widget-calendario-semanal-dia-6 { --dia-fondo: #ffc7ce; --dia-acento: #e0607a; }
+.widget-calendario-semanal-dia-2 { --dia-fondo: #f7c7ac; --dia-acento: #d9804f; }
+.widget-calendario-semanal-dia-3 { --dia-fondo: #ffeb9c; --dia-acento: #d4a514; }
+.widget-calendario-semanal-dia-4 { --dia-fondo: #c6efce; --dia-acento: #3f9d5c; }
+.widget-calendario-semanal-dia-5 { --dia-fondo: #caedfb; --dia-acento: #2f97c9; }
 .widget-calendario-semanal-dia-nombre {
   font-size: 9.5px;
   text-transform: uppercase;
@@ -141,11 +147,12 @@
   color: #a35a0a;
 }
 .widget-calendario-semanal-dia-hoy {
-  background: #1a56db;
+  border-color: var(--dia-acento, #1a56db);
+  box-shadow: 0 0 0 1px var(--dia-acento, #1a56db);
 }
-.widget-calendario-semanal-dia-hoy .widget-calendario-semanal-dia-numero,
-.widget-calendario-semanal-dia-hoy .widget-calendario-semanal-dia-nombre {
-  color: #fff;
+.widget-calendario-semanal-dia-hoy .widget-calendario-semanal-dia-numero {
+  font-weight: 700;
+  color: #1a1a1a;
 }
 .widget-calendario-semanal-nota {
   display: flex;
