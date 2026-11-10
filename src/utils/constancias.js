@@ -37,14 +37,15 @@ body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; -webkit-print-
 .esquina.b { top: 3.5mm; right: 3.5mm; border-left: none; border-bottom: none; }
 .esquina.c { bottom: 3.5mm; left: 3.5mm; border-right: none; border-top: none; }
 .esquina.d { bottom: 3.5mm; right: 3.5mm; border-left: none; border-top: none; }
-.agua { position: absolute; top: 50%; left: 50%; width: 120mm; height: 120mm; transform: translate(-50%, -50%); object-fit: contain; opacity: 0.06; }
+.agua { position: absolute; top: 50%; left: 50%; width: 120mm; height: 120mm; transform: translate(-50%, -50%); object-fit: contain; opacity: 0.045; }
 .contenido { position: relative; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 6mm 16mm 0; text-align: center; }
 .encabezado { width: 100%; display: grid; grid-template-columns: 28mm 1fr 28mm; align-items: center; }
 .encabezado img { height: 24mm; width: 28mm; object-fit: contain; }
-.institucion { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: ${AZUL}; }
-.plantel { margin-top: 3px; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; }
-h1 { margin-top: 11mm; font-family: Georgia, 'Times New Roman', serif; font-size: 44px; font-weight: 400; letter-spacing: 0.42em; color: ${AZUL}; padding-left: 0.42em; }
-.tipo { margin-top: 2mm; font-size: 10.5px; letter-spacing: 0.24em; text-transform: uppercase; color: ${ORO}; }
+.institucion { font-family: Georgia, 'Times New Roman', serif; font-size: 20px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: ${AZUL}; }
+.plantel { margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: ${ORO}; }
+.plantel::before, .plantel::after, .tipo::before, .tipo::after { content: ''; width: 18mm; height: 1px; background: ${ORO}; }
+h1 { margin-top: 5mm; font-family: Georgia, 'Times New Roman', serif; font-size: 68px; line-height: 1.05; font-weight: 700; letter-spacing: 0.22em; color: #0b2a5b; padding-left: 0.22em; }
+.tipo { margin-top: 2mm; display: flex; align-items: center; gap: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: ${ORO}; }
 .otorga { margin-top: 10mm; font-size: 14px; font-style: italic; color: #4b5563; }
 .nombre { margin-top: 4mm; padding: 0 10mm 2.5mm; min-width: 60%; font-family: Georgia, 'Times New Roman', serif; font-size: 34px; font-weight: 700; color: #111827; border-bottom: 1.5px solid ${ORO}; }
 .matricula { margin-top: 1.5mm; font-size: 10.5px; letter-spacing: 0.12em; color: #6b7280; }
@@ -85,7 +86,7 @@ function hoja(c, comunes) {
       <div class="contenido">
         <div class="encabezado">
           <img src="${comunes.logoIzquierdo}" alt="">
-          <div><div class="institucion">${escapar(comunes.institucion)}</div><div class="plantel">${escapar(comunes.plantel)}</div></div>
+          <div><div class="institucion">${escapar(comunes.institucion)}</div>${comunes.plantel ? `<div class="plantel">Plantel ${escapar(comunes.plantel)}</div>` : ''}</div>
           <img src="${comunes.logoDerecho}" alt="">
         </div>
         <h1>CONSTANCIA</h1>
