@@ -22,11 +22,12 @@
 
 .base-boton-agregar.base-boton-agregar-expandible {
   width: auto;
-  height: 28px;
+  height: 24px;
   border-radius: 4px;
-  border: 1px solid #444;
-  background: transparent;
-  color: #ccc;
+  border: none;
+  background: #333;
+  color: #fff;
+  font-size: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -34,9 +35,7 @@
   opacity: 1;
 }
 .base-boton-agregar.base-boton-agregar-expandible:hover {
-  background: #333;
-  border-color: #666;
-  color: #fff;
+  background: #111;
 }
 .base-boton-agregar-etiqueta {
   max-width: 0;

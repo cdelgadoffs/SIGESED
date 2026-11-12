@@ -4,21 +4,24 @@ import CampoTexto from '../base/CampoTexto.jsx';
 import ListaExpandible from '../base/ListaExpandible.jsx';
 import BotonIcono from '../base/BotonIcono.jsx';
 import BotonS from '../base/BotonS.jsx';
+import Checkbox from '../base/Checkbox.jsx';
 import MarcoFormulario from './MarcoFormulario.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { esAdministradorTI } from '../../utils/permisos.js';
 import { DIAS_SEMANA } from '../../utils/fechas.js';
-import { nombreCompleto, ordenarPorTexto } from '../../utils/registros.js';
+import { nombreCompleto, ordenarPorTexto, filtrarEstudiantes } from '../../utils/registros.js';
 import {
-  HORAS_POR_MATERIA, MATERIAS_POR_GRUPO, cursaronAntes, diasDeHorario, horasDeModalidad, inscripcionDe, puedeImpartir, tipoHorario,
+  HORAS_POR_MATERIA, MATERIAS_POR_GRUPO, NUEVO_PERSONALIZADO, clasesDeOtrosGrupos, claseDeOtroGrupo, textoHorario, cursaronAntes, diasDeHorario, horasDeModalidad, inscripcionDe, puedeImpartir, tipoHorario,
 } from '../../utils/inscripciones.js';
 import '../../styles/widgets/FormularioInscripcion.css';
 
 const clave = (dia, hora) => `${dia}:${hora}`;
 const sinCero = (hora) => hora.replace(/^0/, '');
 
-function CuadriculaHorario({ horas, dias, propias, ocupadas, onAlternar }) {
-  const llena = propias.size >= HORAS_POR_MATERIA;
+function CuadriculaHorario({ horas, dias, propias, ocupadas, onAlternar, maxHoras, bloqueada }) {
+  const llena = propias.size >= maxHoras;
   return (
     <table className="widget-formulario-inscripcion-cuadricula">
       <thead>
@@ -48,7 +51,7 @@ function CuadriculaHorario({ horas, dias, propias, ocupadas, onAlternar }) {
                   <button
                     type="button"
                     className={`widget-formulario-inscripcion-celda widget-formulario-inscripcion-dia-${d}` + (otra ? ' widget-formulario-inscripcion-celda-ocupada' : '') + (propia ? ' widget-formulario-inscripcion-celda-propia' : '')}
-                    disabled={!!otra || (llena && !propia)}
+                    disabled={bloqueada || !!otra || (llena && !propia)}
                     title={otra ? `Ocupada por ${otra}` : undefined}
                     aria-label={`${DIAS_SEMANA[d]}, ${h.nombre}`}
                     aria-pressed={propia}
@@ -70,15 +73,17 @@ const CUATRIMESTRES = 9;
 const NUEVA = '__nueva';
 
 function sinHorariosViejos(form) {
-  return { materias: form.materias.map((m) => ({ ...m, horario: (m.horario ?? []).filter((b) => b.hora) })) };
+  return { ...form, materias: form.materias.map((m) => ({ ...m, horario: (m.horario ?? []).filter((b) => b.hora) })) };
 }
 
-function desdeInscripcion(inscripcion, materias) {
+const MATERIA_VACIA = { cuatrimestre: null, materia: '', docenteId: '', horario: [] };
+
+function desdeInscripcion(inscripcion, materias, cantidad = MATERIAS_POR_GRUPO) {
   const guardadas = inscripcion?.materias ?? [];
   return {
-    materias: Array.from({ length: MATERIAS_POR_GRUPO }, (_, i) => {
+    materias: Array.from({ length: cantidad }, (_, i) => {
       const m = guardadas[i];
-      if (!m) return { cuatrimestre: null, materia: '', docenteId: '', horario: [] };
+      if (!m) return { ...MATERIA_VACIA };
       return {
         cuatrimestre: materias.find((x) => x.id === m.materia)?.cuatrimestre ?? null,
         materia: m.materia,
@@ -93,15 +98,22 @@ function igual(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-function Inscripcion({ ciclo, grupo, inscripcion }) {
+function Inscripcion({ ciclo, grupo, inscripcion, personalizada, libre, ocupadosEnOtros }) {
   const {
-    MATERIAS, MODALIDADES, HORAS_CLASE, PERSONAL, ESTUDIANTES, EVALUACIONES,
-    crearMateria, guardarInscripcion, guardarBorrador, obtenerBorrador, eliminarBorrador,
+    MATERIAS, MODALIDADES, HORAS_CLASE, PERSONAL, ESTUDIANTES, EVALUACIONES, GRUPOS, INSCRIPCIONES,
+    crearMateria, guardarInscripcion, guardarHorarioPersonalizado, guardarBorrador, obtenerBorrador, eliminarBorrador,
   } = useRegistros();
   const { setGrupoEnInscripcionId } = useUI();
   const delPrograma = MATERIAS.filter((m) => m.programaEducativo === grupo.programaEducativo);
-  const [base] = useState(() => desdeInscripcion(inscripcion, delPrograma));
-  const claveBorrador = `formularioInscripcion:${ciclo.id}:${grupo.id}`;
+  const [base] = useState(() => {
+    if (!libre) return desdeInscripcion(inscripcion, delPrograma);
+    const origen = personalizada ?? inscripcion;
+    return { ...desdeInscripcion(origen, delPrograma, Math.max(origen?.materias.length ?? 0, 1)), estudiantes: personalizada?.estudiantes ?? [] };
+  });
+  const maxHoras = libre ? Infinity : HORAS_POR_MATERIA;
+  const claveBorrador = libre
+    ? `formularioInscripcion:${ciclo.id}:${grupo.id}:${personalizada?.id ?? NUEVO_PERSONALIZADO}`
+    : `formularioInscripcion:${ciclo.id}:${grupo.id}`;
   const [form, setForm] = useState(base);
   const [restaurado, setRestaurado] = useState(false);
   const [error, setError] = useState(null);
@@ -109,11 +121,57 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
   const tipo = tipoHorario(grupo, MODALIDADES);
   const horas = horasDeModalidad(HORAS_CLASE, grupo);
   const dias = diasDeHorario(tipo);
-  const alumnos = ESTUDIANTES.filter((e) => e.grupo === grupo.id && e.activo !== false);
+  const alumnos = libre
+    ? ESTUDIANTES.filter((e) => form.estudiantes.includes(e.id))
+    : ESTUDIANTES.filter((e) => e.grupo === grupo.id && e.activo !== false);
   const docentes = ordenarPorTexto(PERSONAL.filter(puedeImpartir), nombreCompleto);
   const cuatrimestres = Array.from({ length: CUATRIMESTRES }, (_, i) => i + 1);
   const [nuevas, setNuevas] = useState({});
   const [agregando, setAgregando] = useState(false);
+  const [filtroAlumnos, setFiltroAlumnos] = useState('');
+  const clasesOtros = libre ? clasesDeOtrosGrupos(INSCRIPCIONES, GRUPOS, ciclo.id, grupo) : [];
+
+  function opcionesOtroGrupo(i) {
+    const m = form.materias[i];
+    const otras = form.materias.filter((_, j) => j !== i).map((x) => x.materia);
+    const ocupadas = ocupadasPorOtras(i);
+    const propias = new Set(m.horario.map((b) => clave(b.dia, b.hora)));
+    const disponibles = clasesOtros.filter((c) => !otras.includes(c.materia) && c.horario.every((b) => !ocupadas.has(clave(b.dia, b.hora))));
+    const aEsaHora = propias.size > 0 && !claseDeOtroGrupo(clasesOtros, m)
+      ? disponibles.filter((c) => c.horario.some((b) => propias.has(clave(b.dia, b.hora))))
+      : [];
+    return aEsaHora.length > 0 ? aEsaHora : disponibles;
+  }
+
+  function etiquetaClase(c) {
+    const materia = MATERIAS.find((x) => x.id === c.materia);
+    const docente = PERSONAL.find((p) => p.id === c.docenteId);
+    return `${c.grupoNombre} · ${materia ? `${materia.clave} ${materia.nombre}` : c.materia} · ${docente ? nombreCompleto(docente) : 'Sin docente'} · ${textoHorario(c.horario, HORAS_CLASE)}`;
+  }
+
+  function tomarClase(i, c) {
+    cambiarMateria(i, {
+      cuatrimestre: MATERIAS.find((x) => x.id === c.materia)?.cuatrimestre ?? null,
+      materia: c.materia,
+      docenteId: c.docenteId,
+      horario: c.horario.map((b) => ({ dia: b.dia, hora: b.hora })),
+    });
+  }
+
+  function volverAlGrupo(i) {
+    const enUso = form.materias.filter((_, j) => j !== i).map((x) => x.materia);
+    const original = (inscripcion?.materias ?? []).find((x) => !enUso.includes(x.materia));
+    if (!original) {
+      cambiarMateria(i, { ...MATERIA_VACIA });
+      return;
+    }
+    tomarClase(i, { materia: original.materia, docenteId: original.docenteId ?? '', horario: original.horario });
+  }
+  const elegibles = ESTUDIANTES.filter((e) => e.activo !== false || form.estudiantes?.includes(e.id));
+  const listaAlumnos = libre ? [
+    ...ordenarPorTexto(elegibles.filter((e) => form.estudiantes.includes(e.id)), nombreCompleto),
+    ...(filtroAlumnos.trim() ? ordenarPorTexto(filtrarEstudiantes(elegibles, GRUPOS, filtroAlumnos).filter((e) => !form.estudiantes.includes(e.id)), nombreCompleto) : []),
+  ] : [];
 
   async function agregarMateria(i, cuatrimestre) {
     setAgregando(true);
@@ -151,7 +209,7 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
   }, [form, restaurado, base, claveBorrador, guardarBorrador, eliminarBorrador]);
 
   function cambiarMateria(i, cambios) {
-    setForm((f) => ({ materias: f.materias.map((m, j) => (j === i ? { ...m, ...cambios } : m)) }));
+    setForm((f) => ({ ...f, materias: f.materias.map((m, j) => (j === i ? { ...m, ...cambios } : m)) }));
     setError(null);
   }
 
@@ -171,8 +229,23 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
     return mapa;
   }
 
+  function agregarFila() {
+    setForm((f) => ({ ...f, materias: [...f.materias, { ...MATERIA_VACIA }] }));
+  }
+
+  function quitarFila(i) {
+    if (!libre || form.materias.length === 1) cambiarMateria(i, { ...MATERIA_VACIA });
+    else setForm((f) => ({ ...f, materias: f.materias.filter((_, j) => j !== i) }));
+  }
+
+  function alternarAlumno(id) {
+    setForm((f) => ({ ...f, estudiantes: f.estudiantes.includes(id) ? f.estudiantes.filter((x) => x !== id) : [...f.estudiantes, id] }));
+    setError(null);
+  }
+
   const elegidas = form.materias.filter((m) => m.materia);
-  const puedeGuardar = restaurado && !igual(form, base) && !ocupado;
+  const completo = !libre || (elegidas.length > 0 && form.estudiantes.length > 0);
+  const puedeGuardar = restaurado && completo && (!igual(form, base) || (libre && !personalizada)) && !ocupado;
 
   function cerrar() {
     setGrupoEnInscripcionId(null);
@@ -188,13 +261,13 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
     setError(null);
     await eliminarBorrador(claveBorrador).catch(() => {});
     try {
-      await guardarInscripcion(ciclo.id, grupo.id, {
-        materias: elegidas.map((m) => ({
-          materia: m.materia,
-          docenteId: m.docenteId || null,
-          horario: tipo === null ? [] : m.horario.map(({ dia, hora }) => ({ dia, hora })),
-        })),
-      });
+      const materias = elegidas.map((m) => ({
+        materia: m.materia,
+        docenteId: m.docenteId || null,
+        horario: tipo === null ? [] : m.horario.map(({ dia, hora }) => ({ dia, hora })),
+      }));
+      if (libre) await guardarHorarioPersonalizado(ciclo.id, grupo.id, personalizada?.id ?? null, { materias, estudiantes: form.estudiantes });
+      else await guardarInscripcion(ciclo.id, grupo.id, { materias });
       cerrar();
     } catch (e) {
       guardarBorrador(claveBorrador, form).catch(() => {});
@@ -211,11 +284,35 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
       onCancelar={cancelar}
       onConfirmar={guardar}
     >
-      <p className="widget-formulario-inscripcion-nota">
-        {`Elige las ${MATERIAS_POR_GRUPO} materias que cursará el grupo en el ciclo ${ciclo.id}, su docente`}
-        {tipo === null ? '. Modalidad Online: sin horario.' : ` y sus horas de clase (${tipo === 'sabado' ? 'sábados' : 'de lunes a viernes'}); 1 o ${HORAS_POR_MATERIA} horas por materia; las horas que ya ocupa otra materia del grupo aparecen con su clave.`}
-        {' Puedes guardar a medias y completar después.'}
-      </p>
+      {libre ? (
+        <>
+          <CampoFormulario etiqueta={`Alumnos que lo toman (${form.estudiantes.length})`} requerido>
+            <CampoTexto value={filtroAlumnos} placeholder="Buscar alumno por nombre, matrícula o grupo" onChange={setFiltroAlumnos} />
+            {form.estudiantes.length === 0 && (
+              <span className="widget-formulario-inscripcion-vacio">Marca al menos un alumno para poder guardar.</span>
+            )}
+            {listaAlumnos.length === 0 ? (
+              filtroAlumnos.trim() && <span className="widget-formulario-inscripcion-vacio">Ningún alumno coincide con la búsqueda.</span>
+            ) : (
+              <div className="widget-formulario-inscripcion-alumnos">
+                {listaAlumnos.map((a) => {
+                  const enOtro = ocupadosEnOtros.has(a.id);
+                  const suGrupo = GRUPOS.find((g) => g.id === a.grupo)?.nombre;
+                  return (
+                    <Checkbox
+                      key={a.id}
+                      label={`${nombreCompleto(a)}${suGrupo ? ` · ${suGrupo}` : ''}${enOtro ? ' (en otro horario personalizado)' : ''}`}
+                      checked={form.estudiantes.includes(a.id)}
+                      disabled={enOtro}
+                      onChange={() => alternarAlumno(a.id)}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </CampoFormulario>
+        </>
+      ) : null}
       {form.materias.map((m, i) => {
         const materia = delPrograma.find((x) => x.id === m.materia);
         const ocupadas = form.materias.filter((_, j) => j !== i).map((x) => x.materia);
@@ -227,20 +324,40 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
           });
         const cursaron = materia ? cursaronAntes(materia.id, alumnos, EVALUACIONES, ciclo.id) : [];
         const docente = PERSONAL.find((p) => p.id === m.docenteId);
+        const prestada = libre ? claseDeOtroGrupo(clasesOtros, m) : null;
+        const deOtros = libre && !prestada ? opcionesOtroGrupo(i) : [];
         let etiquetaDocente = 'Sin asignar';
         if (docente) etiquetaDocente = nombreCompleto(docente) + (puedeImpartir(docente) ? '' : ' (no disponible)');
         return (
           <div key={i} className="widget-formulario-inscripcion-materia">
             <div className="widget-formulario-inscripcion-materia-encabezado">
               <span>{`Materia ${i + 1}`}</span>
-              {m.materia && (
+              {(m.materia || (libre && form.materias.length > 1)) && (
                 <BotonIcono
                   icono="ri-delete-bin-line"
                   ariaLabel={`Quitar materia ${i + 1}`}
-                  onClick={() => cambiarMateria(i, { cuatrimestre: null, materia: '', docenteId: '', horario: [] })}
+                  onClick={() => quitarFila(i)}
                 />
               )}
             </div>
+            {prestada && (
+              <div className="widget-formulario-inscripcion-prestada">
+                <span className="widget-formulario-inscripcion-prestada-badge"><i className="ri-arrow-left-right-line" />{` Clase de ${prestada.grupoNombre}`}</span>
+                <span className="widget-formulario-inscripcion-prestada-texto">{etiquetaClase(prestada)}</span>
+                <BotonS variant="claro" onClick={() => volverAlGrupo(i)}>Volver a la del grupo</BotonS>
+              </div>
+            )}
+            {libre && !prestada && deOtros.length > 0 && (
+              <CampoFormulario etiqueta="Tomar en otro grupo">
+                <ListaExpandible
+                  valorActual=""
+                  etiquetaActual="Elige una clase de otro grupo…"
+                  opciones={deOtros.map((c, n) => ({ id: n, label: etiquetaClase(c) }))}
+                  onSeleccionar={(n) => tomarClase(i, deOtros[n])}
+                />
+              </CampoFormulario>
+            )}
+            {!prestada && (
             <div className="widget-formulario-inscripcion-fila">
               <CampoFormulario etiqueta="Cuatrimestre" medio>
                 <ListaExpandible
@@ -267,6 +384,7 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
                 ) : <CampoTexto value="" placeholder="Elige el cuatrimestre" disabled />}
               </CampoFormulario>
             </div>
+            )}
             {m.cuatrimestre && nuevas[i] !== undefined && (
               <div className="widget-formulario-inscripcion-nueva">
                 <CampoTexto
@@ -285,6 +403,7 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
             )}
             {m.materia && (
               <>
+                {!prestada && (
                 <CampoFormulario etiqueta="Docente">
                   {docentes.length === 0 && !docente ? (
                     <span className="widget-formulario-inscripcion-vacio">No hay personal activo con el rol Docente.</span>
@@ -297,14 +416,17 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
                     />
                   )}
                 </CampoFormulario>
+                )}
                 {tipo !== null && (
-                  <CampoFormulario etiqueta={`Horario (${m.horario.length} de máx. ${HORAS_POR_MATERIA} horas)`}>
+                  <CampoFormulario etiqueta={libre ? `Horario (${m.horario.length} ${m.horario.length === 1 ? 'hora' : 'horas'})` : `Horario (${m.horario.length} de máx. ${HORAS_POR_MATERIA} horas)`}>
                     <CuadriculaHorario
                       horas={horas}
                       dias={dias}
                       propias={new Set(m.horario.map((b) => clave(b.dia, b.hora)))}
                       ocupadas={ocupadasPorOtras(i)}
                       onAlternar={(d, h) => alternarHora(i, d, h)}
+                      maxHoras={maxHoras}
+                      bloqueada={!!prestada}
                     />
                   </CampoFormulario>
                 )}
@@ -313,13 +435,20 @@ function Inscripcion({ ciclo, grupo, inscripcion }) {
           </div>
         );
       })}
+      {libre && (
+        <div className="widget-formulario-inscripcion-agregar">
+          <BotonS variant="claro" onClick={agregarFila}><i className="ri-add-line" /> Agregar materia</BotonS>
+        </div>
+      )}
     </MarcoFormulario>
   );
 }
 
 export default function FormularioInscripcion() {
   const { CICLOS, GRUPOS, INSCRIPCIONES, cicloActivoId } = useRegistros();
-  const { grupoEnInscripcionId } = useUI();
+  const { grupoEnInscripcionId, horarioPersonalizadoId } = useUI();
+  const { rolesSesion, rolActivo } = useAuth();
+  const superusuario = esAdministradorTI(rolesSesion.filter(rolActivo));
   const ciclo = CICLOS.find((c) => c.id === cicloActivoId);
   const grupo = GRUPOS.find((g) => g.id === grupoEnInscripcionId);
   if (!ciclo || !grupo) return null;
@@ -331,8 +460,26 @@ export default function FormularioInscripcion() {
   else if (ciclo.iniciado) aviso = `El ciclo ${ciclo.id} ya se inició: sus inscripciones quedaron fijas.`;
   else if (abierto) aviso = `Primero concluye el ciclo ${abierto.id} (Panel de control › Calendarización anual) para poder preparar el ${ciclo.id}.`;
   else if (grupo.activo === false) aviso = `El grupo ${grupo.nombre} está inactivo: solo se inscriben grupos activos.`;
-  if (aviso) return <p className="widget-formulario-inscripcion-aviso-general">{aviso}</p>;
-
   const inscripcion = inscripcionDe(INSCRIPCIONES, ciclo.id, grupo.id);
+  if (horarioPersonalizadoId) {
+    if (ciclo.cerrado && !superusuario) return <p className="widget-formulario-inscripcion-aviso-general">{`El ciclo ${ciclo.id} ya se concluyó y no se puede modificar.`}</p>;
+    const personalizada = horarioPersonalizadoId === NUEVO_PERSONALIZADO ? null : INSCRIPCIONES.find((i) => i.id === horarioPersonalizadoId) ?? null;
+    if (horarioPersonalizadoId !== NUEVO_PERSONALIZADO && !personalizada) return null;
+    const ocupadosEnOtros = new Set(INSCRIPCIONES
+      .filter((i) => i.cicloId === ciclo.id && i.personalizada && i.id !== personalizada?.id)
+      .flatMap((i) => i.estudiantes ?? []));
+    return (
+      <Inscripcion
+        key={`${ciclo.id}:${grupo.id}:${horarioPersonalizadoId}:${personalizada?.version ?? 0}`}
+        ciclo={ciclo}
+        grupo={grupo}
+        inscripcion={inscripcion}
+        personalizada={personalizada}
+        ocupadosEnOtros={ocupadosEnOtros}
+        libre
+      />
+    );
+  }
+  if (aviso && !superusuario) return <p className="widget-formulario-inscripcion-aviso-general">{aviso}</p>;
   return <Inscripcion key={`${ciclo.id}:${grupo.id}:${inscripcion?.version ?? 0}`} ciclo={ciclo} grupo={grupo} inscripcion={inscripcion} />;
 }

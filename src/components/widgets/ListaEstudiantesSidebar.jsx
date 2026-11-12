@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { useScrollbarPersonalizada } from '../../hooks/useScrollbarPersonalizada.js';
 import { filtrarEstudiantes, nombreCompleto, ordenarPorTexto, registroActivo, segunEstado } from '../../utils/registros.js';
+import { estudiantesDelDocente } from '../../utils/inscripciones.js';
 import '../../styles/widgets/ListaEstudiantesSidebar.css';
 
 export default function ListaEstudiantesSidebar({ onAgregar, soloDelDocente = false }) {
@@ -13,10 +14,7 @@ export default function ListaEstudiantesSidebar({ onAgregar, soloDelDocente = fa
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   const { cargando, error } = CARGA.estudiantes;
   const { cuentaActiva } = useAuth();
-  const gruposPropios = new Set(INSCRIPCIONES
-    .filter((i) => i.cicloId === cicloActivoId && i.materias.some((m) => m.docenteId === cuentaActiva?.usuario))
-    .map((i) => i.grupoId));
-  const disponibles = soloDelDocente ? ESTUDIANTES.filter((e) => gruposPropios.has(e.grupo)) : ESTUDIANTES;
+  const disponibles = soloDelDocente ? estudiantesDelDocente(ESTUDIANTES, INSCRIPCIONES, cicloActivoId, cuentaActiva?.usuario) : ESTUDIANTES;
   const visibles = ordenarPorTexto(segunEstado(filtrarEstudiantes(disponibles, GRUPOS, terminoBusqueda), filtroEstado), nombreCompleto);
   const activo = registroActivo(visibles, registroSeleccionadoId);
 

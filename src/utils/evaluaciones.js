@@ -5,8 +5,10 @@ export function evaluacionDe(evaluaciones, estudianteId, cicloId) {
   return evaluaciones.find((e) => e.estudianteId === estudianteId && e.cicloId === cicloId) ?? null;
 }
 
-export function materiasInscritas(materias, inscripciones, cicloId, grupoId) {
-  const inscritas = new Set((inscripciones.find((i) => i.cicloId === cicloId && i.grupoId === grupoId)?.materias ?? []).map((m) => m.materia));
+import { inscripcionDelEstudiante } from './inscripciones.js';
+
+export function materiasInscritas(materias, inscripciones, cicloId, estudiante) {
+  const inscritas = new Set((inscripcionDelEstudiante(inscripciones, cicloId, estudiante)?.materias ?? []).map((m) => m.materia));
   return materias.filter((m) => inscritas.has(m.id));
 }
 

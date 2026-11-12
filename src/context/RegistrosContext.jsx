@@ -15,10 +15,11 @@ const RECURSOS = {
   calificacionesKardex: { listar: api.listarCalificacionesKardex, crear: api.crearCalificacionKardex, editar: api.editarCalificacionKardex, eliminar: api.eliminarCalificacionKardex },
   kardex: { listar: api.listarKardex },
   cursos: { listar: api.listarCursos, crear: api.crearCurso, editar: api.editarCurso, eliminar: api.eliminarCurso },
+  menciones: { listar: api.listarMenciones, crear: api.otorgarMencion, eliminar: api.revocarMencion },
 };
 const AFECTAN_CICLOS = ['grupos', 'personal'];
 const CLAVES = Object.keys(RECURSOS);
-const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [], reportes: [], inscripciones: [], calificacionesKardex: [], kardex: [], cursos: [] };
+const VACIOS = { catalogos: {}, plantel: null, grupos: [], personal: [], estudiantes: [], ciclos: [], evaluaciones: [], reportes: [], inscripciones: [], calificacionesKardex: [], kardex: [], cursos: [], menciones: [] };
 
 const RegistrosContext = createContext(null);
 
@@ -77,6 +78,7 @@ export function RegistrosProvider({ children }) {
   }
 
   async function recargarTodo() {
+    setCicloElegidoId(null);
     await Promise.all(CLAVES.map((recurso) => recargar(recurso)));
   }
 
@@ -141,7 +143,7 @@ export function RegistrosProvider({ children }) {
   }
 
   async function guardarInscripcion(cicloId, grupoId, valores) {
-    const actual = datosRef.current.inscripciones.find((i) => i.cicloId === cicloId && i.grupoId === grupoId);
+    const actual = datosRef.current.inscripciones.find((i) => i.cicloId === cicloId && i.grupoId === grupoId && !i.personalizada);
     try {
       const [inscripcion] = conSincronizacion('inscripciones', [await api.guardarInscripcion(cicloId, grupoId, actual?.version ?? null, valores)]);
       const valor = [...datosRef.current.inscripciones.filter((i) => i.id !== inscripcion.id), inscripcion];
@@ -153,6 +155,31 @@ export function RegistrosProvider({ children }) {
       if (e?.codigo === 'CONFLICTO' || e?.codigo === 'NO_ENCONTRADO') recargar('inscripciones');
       throw e;
     }
+  }
+
+  async function recargarTrasPersonalizado() {
+    await recargar('inscripciones');
+    recargar('ciclos');
+    recargar('evaluaciones');
+    recargar('kardex');
+    recargar('cursos');
+  }
+
+  async function guardarHorarioPersonalizado(cicloId, grupoId, id, valores) {
+    const actual = id ? datosRef.current.inscripciones.find((i) => i.id === id) : null;
+    try {
+      const registro = await api.guardarHorarioPersonalizado(cicloId, grupoId, id, actual?.version ?? null, valores);
+      await recargarTrasPersonalizado();
+      return registro;
+    } catch (e) {
+      if (e?.codigo === 'CONFLICTO' || e?.codigo === 'NO_ENCONTRADO') recargar('inscripciones');
+      throw e;
+    }
+  }
+
+  async function eliminarHorarioPersonalizado(id) {
+    await api.eliminarHorarioPersonalizado(id);
+    await recargarTrasPersonalizado();
   }
 
   async function actualizarCiclo(id, operacion) {
@@ -214,7 +241,9 @@ export function RegistrosProvider({ children }) {
   const anioEnCurso = new Date().getFullYear();
   const cicloActivo = ciclos.find((c) => c.id === cicloElegidoId)
     ?? ciclos.find((c) => c.estado === 'en-curso')
+    ?? ciclos.find((c) => c.iniciado && !c.cerrado)
     ?? ciclos.find((c) => c.estado === 'proximo')
+    ?? [...ciclos].reverse().find((c) => c.estado !== 'sin-configurar' && !c.cerrado)
     ?? ciclos.find((c) => c.anio === anioEnCurso)
     ?? ciclos[0]
     ?? null;
@@ -222,6 +251,9 @@ export function RegistrosProvider({ children }) {
   const value = {
     GENEROS: catalogos.generos || [],
     ROLES: catalogos.roles || [],
+    MENCIONES: datos.menciones,
+    otorgarMencion: (v) => crear('menciones', v),
+    revocarMencion: (id) => eliminar('menciones', id),
     PROGRAMAS_EDUCATIVOS: catalogos.programasEducativos || [],
     TIEMPOS: catalogos.tiempos || [],
     MODALIDADES: catalogos.modalidades || [],
@@ -245,10 +277,13 @@ export function RegistrosProvider({ children }) {
     inscribirEnCurso: (id, estudianteId) => operarCurso(id, (v) => api.inscribirEnCurso(id, v, estudianteId)),
     quitarDeCurso: (id, estudianteId) => operarCurso(id, (v) => api.quitarDeCurso(id, v, estudianteId)),
     marcarAcreditado: (id, estudianteId, acreditado) => operarCurso(id, (v) => api.marcarAcreditado(id, v, estudianteId, acreditado)),
+    emitirConstancias: (id, destinatarios) => operarCurso(id, () => api.emitirConstancias(id, destinatarios)),
     crearCalificacionKardex: (v) => crear('calificacionesKardex', v),
     editarCalificacionKardex: (id, c) => editar('calificacionesKardex', id, c),
     eliminarCalificacionKardex: (id) => eliminar('calificacionesKardex', id),
     guardarInscripcion,
+    guardarHorarioPersonalizado,
+    eliminarHorarioPersonalizado,
     iniciarCiclo,
     crearReporte: (v) => crear('reportes', v),
     guardarEvaluacion,

@@ -96,8 +96,9 @@
 }
 .widget-resumen-ciclo-materia {
   display: grid;
-  grid-template-columns: 2fr 1.4fr 1.8fr;
-  gap: 10px;
+  grid-template-columns: minmax(0, 2.6fr) minmax(0, 1.2fr) 150px;
+  align-items: center;
+  gap: 10px 20px;
   padding: 6px 8px;
   border-radius: 4px;
   background: #fafafa;
@@ -107,10 +108,31 @@
 .widget-resumen-ciclo-materia-nombre {
   font-weight: 500;
   color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .widget-resumen-ciclo-materia-horario {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
   color: #666;
 }
+.widget-resumen-ciclo-dia {
+  padding: 1px 8px;
+  border: 1px solid var(--dia-acento);
+  border-radius: 10px;
+  background: var(--dia-fondo);
+  color: #1a1a1a;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.widget-resumen-ciclo-dia-1, .widget-resumen-ciclo-dia-6 { --dia-fondo: #ffc7ce; --dia-acento: #e0607a; }
+.widget-resumen-ciclo-dia-2 { --dia-fondo: #f7c7ac; --dia-acento: #d9804f; }
+.widget-resumen-ciclo-dia-3 { --dia-fondo: #ffeb9c; --dia-acento: #d4a514; }
+.widget-resumen-ciclo-dia-4 { --dia-fondo: #c6efce; --dia-acento: #3f9d5c; }
+.widget-resumen-ciclo-dia-5 { --dia-fondo: #caedfb; --dia-acento: #2f97c9; }
 .widget-resumen-ciclo-vacio {
   margin: 0;
   font-size: 13px;
@@ -126,4 +148,19 @@
 }
 .widget-resumen-ciclo-mensaje p {
   margin: 0;
+}
+
+.widget-resumen-ciclo-grupo-accion {
+  margin-left: auto;
+}
+.widget-resumen-ciclo-modal-texto {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+.widget-resumen-ciclo-modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }

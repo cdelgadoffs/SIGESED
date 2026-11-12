@@ -64,6 +64,10 @@ export function usuarioActual() {
   return sesion ? { id: sesion.usuario, nombre: sesion.nombre } : USUARIO;
 }
 
+export function esSuperusuario() {
+  return !!sesion && sesion.roles.includes(ROL_ADMINISTRADOR_TI);
+}
+
 export function exigirRol(rol, mensaje) {
   if (!sesion) throw new ApiError('NO_AUTORIZADO', 'Inicia sesión para continuar.');
   if (!sesion.roles.includes(rol)) throw new ApiError('PERMISO_DENEGADO', mensaje);
@@ -452,11 +456,11 @@ function seEnciman(a, b) {
   return a.dia === b.dia && a.inicio < b.fin && b.inicio < a.fin;
 }
 
-function prepararHorario(horario, tipo, horas, nombreMateria) {
+function prepararHorario(horario, tipo, horas, nombreMateria, maxHoras = HORAS_POR_MATERIA) {
   if (tipo === null) return [];
   const lista = horario ?? [];
   if (!Array.isArray(lista)) throw falla(`El horario de «${nombreMateria}» debe ser una lista.`);
-  if (lista.length > HORAS_POR_MATERIA) throw falla(`«${nombreMateria}» admite máximo ${HORAS_POR_MATERIA} horas de clase.`);
+  if (lista.length > maxHoras) throw falla(`«${nombreMateria}» admite máximo ${maxHoras} horas de clase.`);
   const vistos = new Set();
   const bloques = lista.map((b) => {
     if (!b || typeof b !== 'object') throw falla(`Hay un bloque inválido en el horario de «${nombreMateria}».`);
@@ -472,9 +476,9 @@ function prepararHorario(horario, tipo, horas, nombreMateria) {
   return bloques.sort((a, b) => a.dia - b.dia || orden(a.hora) - orden(b.hora));
 }
 
-export function prepararInscripcion(datos, grupo, catalogos, personal) {
+export function prepararInscripcion(datos, grupo, catalogos, personal, libre = false) {
   if (!datos || typeof datos !== 'object' || !Array.isArray(datos.materias)) throw falla('Faltan las materias de la inscripción.');
-  if (datos.materias.length > MATERIAS_POR_GRUPO) throw falla(`Un grupo se inscribe en máximo ${MATERIAS_POR_GRUPO} materias por ciclo.`);
+  if (!libre && datos.materias.length > MATERIAS_POR_GRUPO) throw falla(`Un grupo se inscribe en máximo ${MATERIAS_POR_GRUPO} materias por ciclo.`);
   const delPrograma = (catalogos.materias || []).filter((m) => m.programaEducativo === grupo.programaEducativo);
   const tipo = tipoHorario(grupo, catalogos);
   const horas = horasDeClase(grupo, catalogos);
@@ -488,7 +492,7 @@ export function prepararInscripcion(datos, grupo, catalogos, personal) {
     if (docenteId && !puedeImpartir(personal.find((p) => p.id === docenteId))) {
       throw falla(`El docente de «${materia.nombre}» debe estar activo y tener el rol Docente.`);
     }
-    return { materia: materia.id, docenteId, horario: prepararHorario(m.horario, tipo, horas, materia.nombre) };
+    return { materia: materia.id, docenteId, horario: prepararHorario(m.horario, tipo, horas, materia.nombre, libre ? Infinity : HORAS_POR_MATERIA) };
   });
   const nombre = (id) => delPrograma.find((x) => x.id === id).nombre;
   const bloques = materias.flatMap((m) => m.horario.map((b) => ({ ...conTiempo(b, catalogos), materia: m.materia })));
@@ -498,11 +502,18 @@ export function prepararInscripcion(datos, grupo, catalogos, personal) {
   return { materias };
 }
 
-export function validarDocentesSinChoque(materias, otras, grupos, personal, catalogos) {
+function mismoHorario(a, b) {
+  const clave = (lista) => lista.map((x) => `${x.dia}|${x.hora}`).sort().join(',');
+  return a.length > 0 && clave(a) === clave(b);
+}
+
+export function validarDocentesSinChoque(materias, otras, grupos, personal, catalogos, grupoId) {
   materias.forEach((m) => {
     if (!m.docenteId) return;
     otras.forEach((ins) => ins.materias.forEach((o) => {
       if (o.docenteId !== m.docenteId) return;
+      if (ins.grupoId === grupoId && o.materia === m.materia) return;
+      if (o.materia === m.materia && mismoHorario(o.horario, m.horario)) return;
       if (m.horario.some((a) => o.horario.some((b) => seEnciman(conTiempo(a, catalogos), conTiempo(b, catalogos))))) {
         const docente = nombrePersona(personal.find((p) => p.id === m.docenteId));
         const grupo = grupos.find((g) => g.id === ins.grupoId)?.nombre ?? ins.grupoId;
@@ -523,7 +534,7 @@ export function pendientesDeInicio(ciclo, { grupos, inscripciones, personal, cat
   if (activos.length === 0) delCiclo('grupos', 'Registra al menos un grupo activo.');
   activos.forEach((g) => {
     const agregar = (texto) => pendientes.push({ paso: 'grupo', grupoId: g.id, mensaje: texto });
-    const materias = inscripciones.find((i) => i.cicloId === ciclo.id && i.grupoId === g.id)?.materias ?? [];
+    const materias = inscripciones.find((i) => i.id === idInscripcion(ciclo.id, g.id))?.materias ?? [];
     if (materias.length < MATERIAS_POR_GRUPO) agregar(`Inscribe ${MATERIAS_POR_GRUPO} materias (lleva ${materias.length}).`);
     const tipo = tipoHorario(g, catalogos);
     const horas = horasDeClase(g, catalogos);
@@ -544,6 +555,30 @@ export function pendientesDeInicio(ciclo, { grupos, inscripciones, personal, cat
 
 export function idInscripcion(cicloId, grupoId) {
   return `${cicloId}:${grupoId}`;
+}
+
+export function idPersonalizada(cicloId, grupoId) {
+  return `${cicloId}:${grupoId}:p:${crypto.randomUUID()}`;
+}
+
+export function inscripcionDeEstudiante(inscripciones, cicloId, estudiante) {
+  if (!estudiante) return null;
+  return inscripciones.find((i) => i.cicloId === cicloId && i.personalizada && (i.estudiantes ?? []).includes(estudiante.id))
+    ?? inscripciones.find((i) => i.id === idInscripcion(cicloId, estudiante.grupo))
+    ?? null;
+}
+
+export function prepararEstudiantesPersonalizada(lista, estudiantes, otras, actuales = []) {
+  if (!Array.isArray(lista) || lista.length === 0) throw falla('Elige al menos un alumno que tome el horario personalizado.');
+  const ids = [...new Set(lista)];
+  ids.forEach((id) => {
+    const alumno = estudiantes.find((e) => e.id === id);
+    if (!alumno) throw falla('Algún alumno no existe.');
+    if (alumno.activo === false && !actuales.includes(id) && !esSuperusuario()) throw falla(`${nombrePersona(alumno)} está inactivo.`);
+    const otra = otras.find((i) => (i.estudiantes ?? []).includes(id));
+    if (otra) throw falla(`${nombrePersona(alumno)} ya tiene otro horario personalizado en este ciclo.`);
+  });
+  return ids;
 }
 
 export function ordenarCiclos(ciclos) {
@@ -746,7 +781,23 @@ export function cicloParaCurso(ciclos) {
 }
 
 export function exigirCursoModificable(ciclo) {
-  if (!ciclo || ciclo.cerrado) throw falla('El ciclo escolar del curso ya se concluyó: el curso no se puede modificar.');
+  if (ciclo?.cerrado) throw falla('El ciclo escolar del curso ya se concluyó: el curso no se puede modificar.');
+}
+
+export function fechaDeCurso(fecha, ciclos) {
+  const iso = aIso(exigirFecha(fecha, 'La fecha del curso'));
+  return { fecha: iso, cicloId: cicloDeFecha(iso, ciclos) };
+}
+
+const PREFIJO_FOLIO = 'CE';
+
+export function folioSiguiente(curso, cursos) {
+  const base = `${PREFIJO_FOLIO}-${curso.cicloId ?? `SC-${(curso.fecha ?? new Date().toISOString()).slice(0, 4)}`}-`;
+  const usados = cursos.flatMap((c) => Object.values(c.folios ?? {}))
+    .map((f) => f.folio)
+    .filter((f) => f.startsWith(base))
+    .map((f) => Number(f.slice(base.length)) || 0);
+  return `${base}${String(Math.max(0, ...usados) + 1).padStart(4, '0')}`;
 }
 
 export function prepararCurso(datos, { materias, personal, otros, cicloId }) {
@@ -769,18 +820,22 @@ export function prepararCurso(datos, { materias, personal, otros, cicloId }) {
 }
 
 export function cursoConDerivados(curso, ciclo, obligatorios) {
-  const semana = ciclo?.semanas.find((s) => s.numero === SEMANA_CURSO) ?? null;
+  const semana = curso.fecha
+    ? { inicio: curso.fecha, fin: curso.fecha }
+    : ciclo?.semanas.find((s) => s.numero === SEMANA_CURSO) ?? null;
   const [h, m] = curso.horaInicio.split(':');
   return {
     ...curso,
     semana: semana ? { inicio: semana.inicio, fin: semana.fin } : null,
     horaFin: `${String(Number(h) + HORAS_CURSO).padStart(2, '0')}:${m}`,
+    fecha: curso.fecha ?? null,
+    folios: curso.folios ?? {},
     obligatorios,
   };
 }
 
 export function ordenarCursos(cursos) {
-  return [...cursos].sort((a, b) => b.cicloId.localeCompare(a.cicloId) || comparar(a.nombre, b.nombre));
+  return [...cursos].sort((a, b) => (b.cicloId ?? '').localeCompare(a.cicloId ?? '') || comparar(a.nombre, b.nombre));
 }
 
 export const ROL_ADMINISTRADOR_TI = 'administrador-ti';
@@ -790,12 +845,14 @@ export function armarRespaldo(datos, version) {
   return { app: APP_RESPALDO, version, generadoEn: new Date().toISOString(), generadoPor: usuarioActual().id, datos };
 }
 
+export const VERSION_MINIMA_RESPALDO = 17;
+
 export function validarRespaldo(respaldo, version, almacenes) {
   if (!respaldo || typeof respaldo !== 'object' || respaldo.app !== APP_RESPALDO || !respaldo.datos || typeof respaldo.datos !== 'object') {
     throw falla('El archivo no es un respaldo de SIGESED.');
   }
-  if (respaldo.version !== version) {
-    throw falla(`El respaldo es de otra versión de la base de datos (${respaldo.version}); esta usa la ${version}.`);
+  if (!Number.isInteger(respaldo.version) || respaldo.version < VERSION_MINIMA_RESPALDO || respaldo.version > version) {
+    throw falla(`El respaldo es de una versión de la base de datos que no se puede restaurar (${respaldo.version}); se aceptan de la ${VERSION_MINIMA_RESPALDO} a la ${version}.`);
   }
   const limpio = {};
   almacenes.forEach(({ store, clave }) => {
@@ -813,4 +870,18 @@ export function validarRespaldo(respaldo, version, almacenes) {
   });
   if (limpio.catalogos.length === 0) throw falla('El respaldo está dañado: no tiene catálogos.');
   return limpio;
+}
+
+const PREFIJO_MENCION = 'MH';
+export const MOTIVO_MENCION = 'titulacion';
+
+export function prepararMencion(datos, estudiante, menciones) {
+  if (!datos || typeof datos !== 'object') throw falla('Faltan los datos de la mención honorífica.');
+  const fecha = aIso(exigirFecha(datos.fecha, 'La fecha de la mención'));
+  if (menciones.some((m) => m.estudianteId === estudiante.id && m.motivo === MOTIVO_MENCION)) {
+    throw falla(`${nombrePersona(estudiante)} ya tiene la mención honorífica.`);
+  }
+  const base = `${PREFIJO_MENCION}-${fecha.slice(0, 4)}-`;
+  const usados = menciones.map((m) => m.folio).filter((f) => f?.startsWith(base)).map((f) => Number(f.slice(base.length)) || 0);
+  return { estudianteId: estudiante.id, motivo: MOTIVO_MENCION, fecha, folio: `${base}${String(Math.max(0, ...usados) + 1).padStart(4, '0')}` };
 }

@@ -36,7 +36,16 @@ html, body { background: #fff; -webkit-print-color-adjust: exact; print-color-ad
 
 .cuerpo { flex: 1; min-height: 0; display: flex; gap: 16pt; }
 .cuerpo-columna { flex-direction: column; }
-.cuerpo:not(.cuerpo-columna) .leyenda { flex: 1; }
+.lateral { display: flex; flex-direction: column; gap: 10pt; }
+.cuerpo:not(.cuerpo-columna) .lateral { flex: 1; }
+.cuerpo-columna .lateral { flex-direction: row; align-items: stretch; }
+.cuerpo-columna .lateral .leyenda { flex: 2; }
+.cuerpo-columna .lateral .anotaciones { flex: 1; }
+.anotaciones { flex: 1; border: 0.75pt solid #c9d0d6; border-radius: 6pt; overflow: hidden; display: flex; flex-direction: column; }
+.anotaciones .titulo-anotaciones { padding: 5pt 8pt; background: #f1f3f5; font-family: 'Comfortaa', Arial, sans-serif; font-size: 8.5pt; font-weight: 700; color: #4b5563; }
+.anotaciones ul { margin: 0; padding: 6pt 8pt 6pt 20pt; font-size: 9pt; color: #1f2933; }
+.anotaciones li + li { margin-top: 3pt; }
+.anotaciones .sin-anotaciones { padding: 6pt 8pt; font-size: 9pt; font-style: italic; color: #8a94a0; }
 .rejilla { display: grid; border: 0.75pt solid #c9d0d6; border-radius: 6pt; overflow: hidden; background: #fff; }
 .cabecera { display: flex; align-items: center; justify-content: center; font-size: 11pt; font-weight: 700; color: #1f2933; border-bottom: 0.75pt solid #c9d0d6; }
 .cabecera-hora { background: #f1f3f5; border-right: 0.75pt solid #c9d0d6; }
@@ -157,6 +166,16 @@ function leyenda(hoja) {
   </table></div>`;
 }
 
+function anotaciones(hoja) {
+  const lista = hoja.anotaciones ?? [];
+  return `<div class="anotaciones">
+    <div class="titulo-anotaciones">Anotaciones</div>
+    ${lista.length === 0
+    ? '<div class="sin-anotaciones">Sin anotaciones</div>'
+    : `<ul>${lista.map((a) => `<li>${escapar(a)}</li>`).join('')}</ul>`}
+  </div>`;
+}
+
 function hoja(datos, comunes) {
   const compacta = datos.tipo === 'sabado';
   return `<section class="hoja">
@@ -175,7 +194,10 @@ function hoja(datos, comunes) {
   </header>
   <div class="cuerpo${compacta ? '' : ' cuerpo-columna'}">
     ${rejilla(datos, compacta)}
-    ${leyenda(datos)}
+    <div class="lateral">
+      ${leyenda(datos)}
+      ${anotaciones(datos)}
+    </div>
   </div>
   <footer class="pie">
     <span>${escapar([comunes.plantel, comunes.municipio].filter(Boolean).join(' · '))}</span>

@@ -41,7 +41,18 @@ export function UIProvider({ children }) {
   const [filtroEstado, setFiltroEstado] = useState('activos');
   const [programaPlanEstudios, setProgramaPlanEstudios] = useState(null);
   const [cicloEnEdicionId, setCicloEnEdicionId] = useState(null);
-  const [grupoEnInscripcionId, setGrupoEnInscripcionId] = useState(null);
+  const [grupoEnInscripcionId, setGrupoEnInscripcionIdEstado] = useState(null);
+  const [horarioPersonalizadoId, setHorarioPersonalizadoId] = useState(null);
+
+  function setGrupoEnInscripcionId(id) {
+    setGrupoEnInscripcionIdEstado(id);
+    setHorarioPersonalizadoId(null);
+  }
+
+  function abrirHorarioPersonalizado(grupoId, id) {
+    setGrupoEnInscripcionIdEstado(grupoId);
+    setHorarioPersonalizadoId(id);
+  }
   const [pantallaAngosta, setPantallaAngosta] = useState(pantallaEsAngosta);
   const izquierdaSidebar1 = 0;
   const izquierdaSidebar3 = izquierdaSidebar1 + ANCHO_SIDEBAR1;
@@ -102,7 +113,7 @@ export function UIProvider({ children }) {
     filtroEstado, setFiltroEstado,
     programaPlanEstudios, setProgramaPlanEstudios,
     cicloEnEdicionId, setCicloEnEdicionId,
-    grupoEnInscripcionId, setGrupoEnInscripcionId,
+    grupoEnInscripcionId, setGrupoEnInscripcionId, horarioPersonalizadoId, abrirHorarioPersonalizado,
     sidebar4Abierto, setSidebar4Abierto,
     sidebar5Abierto, toggleSidebar5, cerrarSidebar5,
     sidebar5Ancho, setSidebar5Ancho,

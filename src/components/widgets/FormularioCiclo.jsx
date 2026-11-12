@@ -7,6 +7,8 @@ import BotonS from '../base/BotonS.jsx';
 import MarcoFormulario from './MarcoFormulario.jsx';
 import { useRegistros } from '../../context/RegistrosContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { esAdministradorTI } from '../../utils/permisos.js';
 import { DIAS_SEMANA, diaDeSemana } from '../../utils/fechas.js';
 import '../../styles/widgets/FormularioCiclo.css';
 
@@ -177,8 +179,10 @@ function Configuracion({ ciclo }) {
 
 export default function FormularioCiclo() {
   const { CICLOS, cicloActivoId } = useRegistros();
+  const { rolesSesion, rolActivo } = useAuth();
   const ciclo = CICLOS.find((c) => c.id === cicloActivoId);
   if (!ciclo) return null;
+  if (esAdministradorTI(rolesSesion.filter(rolActivo))) return <Configuracion key={`${ciclo.id}:${ciclo.version}`} ciclo={ciclo} />;
   const abierto = CICLOS.find((c) => c.id !== ciclo.id && c.fechaInicio && !c.cerrado
     && (c.anio < ciclo.anio || (c.anio === ciclo.anio && c.numero < ciclo.numero)));
   if (ciclo.cerrado || ciclo.iniciado || abierto) {

@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useUI } from '../../context/UIContext.jsx';
 import { filtrarEstudiantes, nombreCompleto, ordenarPorTexto, segunEstado } from '../../utils/registros.js';
 import { ESTADOS_CICLO } from '../../utils/fechas.js';
+import { estudiantesDelDocente } from '../../utils/inscripciones.js';
 import '../../styles/widgets/EvaluacionesMovil.css';
 
 const MAX_RESULTADOS = 30;
@@ -20,10 +21,7 @@ export default function EvaluacionesMovil() {
   const estado = ciclo ? ESTADOS_CICLO[ciclo.estado] : null;
 
   const soloPropios = !puede('evaluaciones', 'editar');
-  const gruposPropios = new Set(INSCRIPCIONES
-    .filter((i) => i.cicloId === cicloActivoId && i.materias.some((m) => m.docenteId === cuentaActiva?.usuario))
-    .map((i) => i.grupoId));
-  const disponibles = segunEstado(soloPropios ? ESTUDIANTES.filter((e) => gruposPropios.has(e.grupo)) : ESTUDIANTES, 'activos');
+  const disponibles = segunEstado(soloPropios ? estudiantesDelDocente(ESTUDIANTES, INSCRIPCIONES, cicloActivoId, cuentaActiva?.usuario) : ESTUDIANTES, 'activos');
   const alumno = disponibles.find((e) => e.id === registroSeleccionadoId);
 
   const selectorCiclo = (
@@ -63,7 +61,7 @@ export default function EvaluacionesMovil() {
       <CampoTexto value={terminoBusqueda} onChange={setTerminoBusqueda} placeholder="Buscar por nombre, matrícula o grupo…" ariaLabel="Buscar estudiante" />
       {CARGA.estudiantes.cargando && <p className="widget-evaluaciones-movil-mensaje">Cargando…</p>}
       {!CARGA.estudiantes.cargando && resultados.length === 0 && (
-        <p className="widget-evaluaciones-movil-mensaje">{soloPropios && gruposPropios.size === 0 ? 'No tienes grupos en este ciclo escolar.' : 'Sin resultados.'}</p>
+        <p className="widget-evaluaciones-movil-mensaje">{soloPropios && disponibles.length === 0 ? 'No tienes alumnos en este ciclo escolar.' : 'Sin resultados.'}</p>
       )}
       <div className="widget-evaluaciones-movil-lista">
         {resultados.slice(0, MAX_RESULTADOS).map((e) => {

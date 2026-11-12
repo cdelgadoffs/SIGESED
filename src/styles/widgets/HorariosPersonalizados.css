@@ -1,0 +1,126 @@
+.widget-horarios-personalizados {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.widget-horarios-personalizados-item {
+  border: 1px dashed #b9c6da;
+  border-radius: 8px;
+  background: #f7f9fd;
+  padding: 8px 12px;
+}
+.widget-horarios-personalizados-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.widget-horarios-personalizados-encabezado > i {
+  color: #0078d4;
+}
+.widget-horarios-personalizados-titulo {
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+.widget-horarios-personalizados-alumnos {
+  flex: 1;
+  min-width: 0;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.widget-horarios-personalizados-materia {
+  display: grid;
+  grid-template-columns: minmax(0, 2.6fr) minmax(0, 1.2fr) max-content;
+  align-items: center;
+  gap: 10px 20px;
+  padding: 6px 0 0;
+  font-size: 13px;
+  color: #444;
+}
+.widget-horarios-personalizados-materia-nombre {
+  color: #1a1a1a;
+}
+.widget-horarios-personalizados-agregar {
+  display: flex;
+  justify-content: flex-end;
+}
+.widget-horarios-personalizados-modal-texto {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+.widget-horarios-personalizados-modal-error {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #c62828;
+}
+.widget-horarios-personalizados-modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.widget-horarios-personalizados-materia-nombre {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.widget-horarios-personalizados-horario {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  color: #666;
+}
+.widget-horarios-personalizados-dia {
+  padding: 1px 8px;
+  border: 1px solid var(--dia-acento);
+  border-radius: 10px;
+  background: var(--dia-fondo);
+  color: #1a1a1a;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.widget-horarios-personalizados-dia-1, .widget-horarios-personalizados-dia-6 { --dia-fondo: #ffc7ce; --dia-acento: #e0607a; }
+.widget-horarios-personalizados-dia-2 { --dia-fondo: #f7c7ac; --dia-acento: #d9804f; }
+.widget-horarios-personalizados-dia-3 { --dia-fondo: #ffeb9c; --dia-acento: #d4a514; }
+.widget-horarios-personalizados-dia-4 { --dia-fondo: #c6efce; --dia-acento: #3f9d5c; }
+.widget-horarios-personalizados-dia-5 { --dia-fondo: #caedfb; --dia-acento: #2f97c9; }
+.widget-horarios-personalizados-quitar {
+  display: inline-flex;
+  width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.2s, margin-left 0.2s, opacity 0.2s;
+}
+.widget-horarios-personalizados-materia:hover .widget-horarios-personalizados-quitar,
+.widget-horarios-personalizados-quitar:focus-within {
+  width: 20px;
+  margin-left: 8px;
+  opacity: 1;
+}
+@media (hover: none) {
+  .widget-horarios-personalizados-quitar { width: 20px; margin-left: 8px; opacity: 1; }
+}
+.widget-horarios-personalizados-quitar .base-boton-icono {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+}
+.widget-horarios-personalizados-materia {
+  min-height: 26px;
+}
+
+.widget-horarios-personalizados-celda {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 150px;
+}

@@ -2,7 +2,7 @@ import { ApiError } from '../ApiError.js';
 import { CATALOGOS_SEMILLA } from './semilla.js';
 
 const DB_NAME = 'LocalAPI';
-export const DB_VERSION = 23;
+export const DB_VERSION = 24;
 
 export const STORE_CATALOGOS = 'catalogos';
 export const STORE_UNICOS = 'unicos';
@@ -15,6 +15,7 @@ export const STORE_REPORTES = 'reportes';
 export const STORE_INSCRIPCIONES = 'inscripciones';
 export const STORE_KARDEX = 'kardex';
 export const STORE_CURSOS = 'cursos';
+export const STORE_MENCIONES = 'menciones';
 
 function quitarCamposPersonal(store) {
   store.getAll().onsuccess = (evento) => {
@@ -109,7 +110,7 @@ function conectar() {
         });
       }
       if (anterior >= 5 && anterior < 17) db.deleteObjectStore(STORE_CATALOGOS);
-      if (anterior >= 17 && anterior < 23) {
+      if (anterior >= 17 && anterior < 24) {
         req.transaction.objectStore(STORE_CATALOGOS).put({ nombre: 'roles', items: CATALOGOS_SEMILLA.roles });
       }
       if (anterior === 15) vaciarHorarios(req.transaction.objectStore(STORE_INSCRIPCIONES));
@@ -117,7 +118,7 @@ function conectar() {
       if (anterior > 0 && anterior < 14 && db.objectStoreNames.contains(STORE_EVALUACIONES)) db.deleteObjectStore(STORE_EVALUACIONES);
       if (anterior >= 4 && anterior < 8) agregarGeneroVacio(req.transaction.objectStore(STORE_ESTUDIANTES));
       if (anterior >= 4 && anterior < 9) pasarEstudiantesAGrupo(req.transaction.objectStore(STORE_ESTUDIANTES));
-      [STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES, STORE_KARDEX, STORE_CURSOS].forEach((nombre) => {
+      [STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES, STORE_KARDEX, STORE_CURSOS, STORE_MENCIONES].forEach((nombre) => {
         if (!db.objectStoreNames.contains(nombre)) db.createObjectStore(nombre, { keyPath: 'id' });
       });
       if (!db.objectStoreNames.contains(STORE_UNICOS)) db.createObjectStore(STORE_UNICOS, { keyPath: 'clave' });
@@ -182,7 +183,7 @@ export async function escribirVarios({ poner = [], borrar = [] }) {
 const ALMACENES = [
   { store: STORE_CATALOGOS, clave: 'nombre' },
   { store: STORE_UNICOS, clave: 'clave' },
-  ...[STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES, STORE_KARDEX, STORE_CURSOS]
+  ...[STORE_PERSONAL, STORE_ESTUDIANTES, STORE_CICLOS, STORE_EVALUACIONES, STORE_GRUPOS, STORE_REPORTES, STORE_INSCRIPCIONES, STORE_KARDEX, STORE_CURSOS, STORE_MENCIONES]
     .map((store) => ({ store, clave: 'id' })),
 ];
 

@@ -23,7 +23,7 @@ export const CATALOGOS_SEMILLA = {
   ],
   roles: [
     { id: 'administrador-ti', nombre: 'Administrador TI', maximo: 1, asignacion: 'entra-id', permisos: { '*': 'editar' } },
-    { id: 'director', nombre: 'Director', maximo: 1, asignacion: 'registro', permisos: { '*': 'ver', inicio: 'ninguno', planEstudios: 'ninguno', bitacora: 'ninguno' } },
+    { id: 'director', nombre: 'Director Administrativo', maximo: 1, asignacion: 'registro', permisos: { '*': 'ver', inicio: 'ninguno', planEstudios: 'ninguno', bitacora: 'ninguno' } },
     { id: 'coordinador-educativo', nombre: 'Coordinador educativo', maximo: null, asignacion: 'registro', permisos: { '*': 'editar' } },
     { id: 'administrador-escolar', nombre: 'Administrador escolar', maximo: null, asignacion: 'registro', permisos: { '*': 'ver', inicio: 'ninguno', planEstudios: 'ninguno', bitacora: 'editar' } },
     { id: 'docente', nombre: 'Docente', maximo: null, asignacion: 'registro', permisos: { horarios: 'ver', evaluaciones: 'propio', bitacora: 'editar' } },

@@ -12,7 +12,7 @@ export default function ListaCursosSidebar() {
   const { contenedorRef, thumb, onScroll, onArrastrarThumb } = useScrollbarPersonalizada();
   const visibles = CURSOS.filter((c) => coincideBusqueda(terminoBusqueda, [c.nombre, c.cicloId]));
   const activo = registroActivo(visibles, registroSeleccionadoId);
-  const ciclos = [...new Set(visibles.map((c) => c.cicloId))];
+  const ciclos = [...new Set(visibles.map((c) => c.cicloId ?? null))];
 
   let mensaje = null;
   if (CURSOS.length === 0) mensaje = CARGA.cursos?.cargando ? 'Cargando…' : 'Aún no hay cursos extracurriculares.';
@@ -23,9 +23,9 @@ export default function ListaCursosSidebar() {
       <div className="widget-lista-cursos-sidebar" ref={contenedorRef} onScroll={onScroll}>
         {mensaje && <p className="widget-lista-cursos-sidebar-mensaje">{mensaje}</p>}
         {ciclos.map((ciclo) => (
-          <div key={ciclo}>
-            <p className="widget-lista-cursos-sidebar-ciclo">{`Ciclo ${ciclo}`}</p>
-            {visibles.filter((c) => c.cicloId === ciclo).map((c) => (
+          <div key={ciclo ?? 'sin-ciclo'}>
+            <p className="widget-lista-cursos-sidebar-ciclo">{ciclo ? `Ciclo ${ciclo}` : 'Fuera de ciclo'}</p>
+            {visibles.filter((c) => (c.cicloId ?? null) === ciclo).map((c) => (
               <BotonSeleccionableMenu
                 key={c.id}
                 icono="ri-medal-line"

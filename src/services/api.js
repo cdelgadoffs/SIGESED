@@ -31,6 +31,8 @@ export const {
   iniciarCiclo,
   listarInscripciones,
   guardarInscripcion,
+  guardarHorarioPersonalizado,
+  eliminarHorarioPersonalizado,
   listarCalificacionesKardex,
   crearCalificacionKardex,
   editarCalificacionKardex,
@@ -47,4 +49,8 @@ export const {
   inscribirEnCurso,
   quitarDeCurso,
   marcarAcreditado,
+  emitirConstancias,
+  listarMenciones,
+  otorgarMencion,
+  revocarMencion,
 } = implementacion;

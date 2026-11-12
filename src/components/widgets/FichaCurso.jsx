@@ -14,6 +14,9 @@ import { coincideBusqueda } from '../../utils/texto.js';
 import { inscritosDe } from '../../utils/cursos.js';
 import { ROLES_FIRMA, cuerpoAlumno, cuerpoDocente, documentoConstancias, textoPeriodo } from '../../utils/constancias.js';
 import { imprimirDocumento } from '../../utils/impresion.js';
+import { imagenQR } from '../../utils/qr.js';
+import { esAdministradorTI } from '../../utils/permisos.js';
+import { fechaLarga } from '../../utils/fechas.js';
 import logoIcom from '../../assets/Icom.png';
 import logo55 from '../../assets/55.jpg';
 import '../../styles/widgets/FichaCurso.css';
@@ -23,10 +26,12 @@ const AGREGAR = '__agregar';
 export default function FichaCurso() {
   const {
     CURSOS, CICLOS, PERSONAL, ESTUDIANTES, GRUPOS, MATERIAS, PLANTEL, CARGA,
-    eliminarCurso, inscribirEnCurso, quitarDeCurso, marcarAcreditado,
+    eliminarCurso, inscribirEnCurso, quitarDeCurso, marcarAcreditado, emitirConstancias,
   } = useRegistros();
   const { terminoBusqueda, registroSeleccionadoId, abrirEdicionRegistro, setRegistroSeleccionadoId } = useUI();
-  const puedeEditar = useAuth().puede('cursos', 'editar');
+  const { puede, rolesSesion, rolActivo } = useAuth();
+  const puedeEditar = puede('cursos', 'editar');
+  const superusuario = esAdministradorTI(rolesSesion.filter(rolActivo));
   const [error, setError] = useState(null);
   const [ocupado, setOcupado] = useState(false);
   const [documento, setDocumento] = useState('');
@@ -42,7 +47,7 @@ export default function FichaCurso() {
   }
 
   const ciclo = CICLOS.find((c) => c.id === curso.cicloId);
-  const modificable = puedeEditar && !!ciclo && !ciclo.cerrado;
+  const modificable = puedeEditar && (superusuario || !ciclo?.cerrado);
   const docente = PERSONAL.find((p) => p.id === curso.docenteId);
   const materia = MATERIAS.find((m) => m.id === curso.materia);
   const horario = `${curso.horaInicio} a ${curso.horaFin} horas`;
@@ -74,12 +79,22 @@ export default function FichaCurso() {
     });
   }
 
-  function imprimir(titulo, constancias) {
-    setImpresiones((n) => n + 1);
-    setDocumento(documentoConstancias({
+  async function imprimir(titulo, destinatarios) {
+    await ejecutar(async () => {
+      const emitido = await emitirConstancias(curso.id, destinatarios.map((d) => d.clave));
+      const constancias = await Promise.all(destinatarios.map(async (d) => {
+        const folio = emitido.folios[d.clave === 'docente' ? `docente:${emitido.docenteId}` : d.clave]?.folio ?? '';
+        return { ...d.constancia, folio, qr: folio ? await imagenQR(folio) : '' };
+      }));
+      setImpresiones((n) => n + 1);
+      setDocumento(armarDocumento({ titulo, constancias }));
+    });
+  }
+
+  function armarDocumento({ titulo, constancias }) {
+    return documentoConstancias({
       titulo,
       constancias,
-      cicloId: curso.cicloId,
       institucion: PLANTEL?.institucion ?? '',
       plantel: PLANTEL?.nombre ?? '',
       municipio: PLANTEL?.municipio ?? '',
@@ -87,16 +102,24 @@ export default function FichaCurso() {
       firmas: firmas(),
       logoIzquierdo: new URL(logoIcom, window.location.href).href,
       logoDerecho: new URL(logo55, window.location.href).href,
-    }));
+    });
   }
 
   const comunes = { curso: curso.nombre, materia: materia?.nombre, periodo, horario };
-  const constanciaAlumno = (a) => ({
-    nombre: nombreCompleto(a),
-    matricula: a.matricula,
-    cuerpo: cuerpoAlumno({ ...comunes, docente: docente ? nombreCompleto(docente) : '' }),
-  });
-  const archivo = (texto) => `Constancia_${texto}_${curso.cicloId}`.replace(/\s+/g, '_');
+  const tipoDe = (id) => inscritos.find((i) => i.id === id)?.tipo;
+  const paraAlumno = (a) => {
+    const voluntario = !materia || tipoDe(a.id) === 'voluntario';
+    return {
+      clave: a.id,
+      constancia: {
+        tipo: voluntario ? 'Curso extracurricular' : 'Curso extracurricular de recuperación',
+        nombre: nombreCompleto(a),
+        matricula: a.matricula,
+        cuerpo: cuerpoAlumno({ ...comunes, voluntario, docente: docente ? nombreCompleto(docente) : '' }),
+      },
+    };
+  };
+  const archivo = (texto) => `Constancia_${texto}_${curso.cicloId ?? curso.fecha ?? ''}`.replace(/\s+/g, '_');
 
   return (
     <div className="widget-ficha-curso">
@@ -104,7 +127,7 @@ export default function FichaCurso() {
         <div className="widget-ficha-curso-encabezado">
           <span className="widget-ficha-curso-nombre">{curso.nombre}</span>
           <BadgeDinamico texto={materia ? 'Recuperación' : 'Voluntario'} icono={materia ? 'ri-refresh-line' : 'ri-hand-heart-line'} tono={materia ? 'naranja' : 'azul'} />
-          <BadgeDinamico texto={`Ciclo ${curso.cicloId}`} tono="gris" />
+          <BadgeDinamico texto={curso.cicloId ? `Ciclo ${curso.cicloId}` : 'Fuera de ciclo'} tono="gris" />
         </div>
         <dl className="widget-ficha-curso-datos">
           <dt>Docente</dt>
@@ -112,28 +135,36 @@ export default function FichaCurso() {
           <dt>Materia que recupera</dt>
           <dd>{materia ? `${materia.clave} · ${materia.nombre}` : 'Ninguna (inscripción voluntaria)'}</dd>
           <dt>Fecha</dt>
-          <dd>{`Semana 8, ${periodo}`}</dd>
+          <dd>{curso.fecha ? fechaLarga(curso.fecha) : `Semana 8, ${periodo}`}</dd>
           <dt>Horario</dt>
           <dd>{`${horario} (3 horas)`}</dd>
         </dl>
         <div className="widget-ficha-curso-acciones">
+          {puedeEditar && (
           <BotonS
             variant="claro"
-            disabled={!docente}
+            disabled={!docente || ocupado}
             onClick={() => imprimir(archivo(`${docente.nombre.split(' ')[0]}_${docente.primerApellido}`), [{
-              nombre: nombreCompleto(docente),
-              cuerpo: cuerpoDocente({ ...comunes, alumnos: inscritos.length }),
+              clave: 'docente',
+              constancia: {
+                tipo: 'Curso extracurricular · Docente',
+                nombre: nombreCompleto(docente),
+                cuerpo: cuerpoDocente({ ...comunes, alumnos: inscritos.length }),
+              },
             }])}
           >
             <i className="ri-file-pdf-2-line" /> Constancia del docente
           </BotonS>
+          )}
+          {puedeEditar && (
           <BotonS
             variant="claro"
-            disabled={acreditados.length === 0}
-            onClick={() => imprimir(archivo(curso.nombre), acreditados.map((i) => constanciaAlumno(i.alumno)))}
+            disabled={acreditados.length === 0 || ocupado}
+            onClick={() => imprimir(archivo(curso.nombre), acreditados.map((i) => paraAlumno(i.alumno)))}
           >
             <i className="ri-file-pdf-2-line" /> Constancias de acreditados
           </BotonS>
+          )}
           {modificable && (
             <OpcionesRegistro
               descripcion={`el curso «${curso.nombre}»`}
@@ -180,12 +211,14 @@ export default function FichaCurso() {
                 disabled={!modificable || ocupado}
                 onChange={(v) => ejecutar(() => marcarAcreditado(curso.id, id, v))}
               />
-              <BotonIcono
-                icono="ri-file-pdf-2-line"
-                ariaLabel="Constancia"
-                disabled={!acreditado}
-                onClick={() => imprimir(archivo(`${alumno.nombre.split(' ')[0]}_${alumno.primerApellido}`), [constanciaAlumno(alumno)])}
-              />
+              {puedeEditar ? (
+                <BotonIcono
+                  icono="ri-file-pdf-2-line"
+                  ariaLabel="Constancia"
+                  disabled={!acreditado || ocupado}
+                  onClick={() => imprimir(archivo(`${alumno.nombre.split(' ')[0]}_${alumno.primerApellido}`), [paraAlumno(alumno)])}
+                />
+              ) : <span className="widget-ficha-curso-hueco" />}
               {tipo === 'voluntario' && modificable ? (
                 <BotonIcono icono="ri-close-line" ariaLabel="Quitar del curso" disabled={ocupado} onClick={() => ejecutar(() => quitarDeCurso(curso.id, id))} />
               ) : <span className="widget-ficha-curso-hueco" />}

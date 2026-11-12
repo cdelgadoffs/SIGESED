@@ -9,6 +9,7 @@ import { useUI } from '../../context/UIContext.jsx';
 import { ESTADOS_CICLO } from '../../utils/fechas.js';
 import { MATERIAS_POR_GRUPO, inscripcionDe, tramosHorario, tipoHorario } from '../../utils/inscripciones.js';
 import { nombreCompleto, nombreDeCatalogo } from '../../utils/registros.js';
+import HorariosPersonalizados from './HorariosPersonalizados.jsx';
 import '../../styles/widgets/PreparacionCiclo.css';
 
 function Marca({ completo }) {
@@ -121,6 +122,7 @@ export default function PreparacionCiclo() {
                   </div>
                 )}
                 <Pendientes lista={propios} />
+                <HorariosPersonalizados grupo={g} />
               </section>
             );
           })}
